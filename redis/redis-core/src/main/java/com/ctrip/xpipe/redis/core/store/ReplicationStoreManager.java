@@ -33,6 +33,14 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	ReplId getReplId();
 
 	/**
+	 * The only place store resources are freed (stop/dispose don't): close the current store and the manager-meta
+	 * file. Call after stop(); reopen is refused by the stopped lifecycle, not permanently.
+	 * Unlike {@link #destroy()}, never deletes {@link #getBaseDir()} — for a shared TFS store, the
+	 * directory outlives this keeper instance. {@code destroy()} is {@code release()} followed by rmdir.
+	 */
+	boolean release() throws Exception;
+
+	/**
 	 * Close current store and clear the in-memory reference only (PREPARE lease release).
 	 * Does <b>not</b> destroy files or change {@code latest.store.dir}.
 	 */
@@ -43,11 +51,6 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	/** @return see {@link ReplicationStore#close(boolean)} */
 	default boolean releaseCurrentStore(boolean ignoreCloseFail) throws IOException {
 		throw new UnsupportedOperationException("releaseCurrentStore(boolean) not supported: " + getClass().getName());
-	}
-
-	/** Return and clear whether the latest {@code stop()} failed to release (or left write handles unclosed). */
-	default boolean takeStopReleaseFailed() {
-		return false;
 	}
 
 	/**

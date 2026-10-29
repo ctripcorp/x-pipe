@@ -26,23 +26,27 @@ import java.util.function.Supplier;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
-	
+
 	private DefaultKeeperStateController defaultKeeperStateController;
 
 	private int sleepInterval = 0;
 
 	private Supplier<Command<?>> addCommandSupplier;
-	
+
 	private TestCommand addCommand = new TestCommand("success", sleepInterval);
-	
+
 	@Mock
-	private KeeperContainerService keeperContainerService; 
+	private KeeperContainerService keeperContainerService;
 
 	private TestCommand deleteCommand = new TestCommand("success", sleepInterval);
 
+	private TestCommand releaseCommand = new TestCommand("success", sleepInterval);
+
+	private boolean isBm;
+
 	@Before
 	public void beforeDefaultKeeperStateControllerTest() throws Exception{
-		
+
 		defaultKeeperStateController = new DefaultKeeperStateController(){
 			@Override
 			protected Command<?> createAddKeeperCommand(KeeperContainerService keeperContainerService,
@@ -50,31 +54,42 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 					int addKeeperSuccessTimeoutMilli) {
 				return addCommandSupplier.get();
 			}
-			
+
 			@Override
 			protected Command<?> createDeleteKeeperCommand(KeeperContainerService keeperContainerService,
 					KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled,
 					int removeKeeperSuccessTimeoutMilli) {
 				return deleteCommand;
 			}
-			
+
+			@Override
+			protected Command<?> createReleaseKeeperCommand(KeeperContainerService keeperContainerService,
+					KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled,
+					int removeKeeperSuccessTimeoutMilli) {
+				return releaseCommand;
+			}
+
+			@Override
+			protected boolean isBm(KeeperTransMeta keeperTransMeta) {
+				return isBm;
+			}
 
 			@Override
 			protected KeeperContainerService getKeeperContainerService(KeeperTransMeta keeperTransMeta) {
 				return keeperContainerService;
 			}
-			
+
 		};
 
 		defaultKeeperStateController.setExecutors(executors);
 		LifecycleHelper.initializeIfPossible(defaultKeeperStateController);
 		LifecycleHelper.startIfPossible(defaultKeeperStateController);
-		
+
 		add(defaultKeeperStateController);
-		
+
 	}
-	
-	
+
+
 	@Test
 	public void testAdd(){
 		addCommandSupplier = new Supplier<Command<?>>() {
@@ -84,19 +99,57 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 			}
 		};
 		Assert.assertFalse(addCommand.isBeginExecute());
-		
+
 		defaultKeeperStateController.addKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()));
 		sleep(50);
 		Assert.assertTrue(addCommand.isBeginExecute());
-		
+
 	}
 
 	@Test
-	public void testDelete() throws TimeoutException {
-	
+	public void testDeleteOnPurge() throws TimeoutException {
+
+		isBm = false;
 		Assert.assertFalse(deleteCommand.isBeginExecute());
-		defaultKeeperStateController.removeKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()));
+		defaultKeeperStateController.removeKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()), true);
 		waitConditionUntilTimeOut(() -> deleteCommand.isBeginExecute(), 1000);
+		Assert.assertFalse(releaseCommand.isBeginExecute());
+	}
+
+	@Test
+	public void testDeleteOnBmEvenWithoutPurge() throws TimeoutException {
+
+		isBm = true;
+		Assert.assertFalse(deleteCommand.isBeginExecute());
+		defaultKeeperStateController.removeKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()), false);
+		waitConditionUntilTimeOut(() -> deleteCommand.isBeginExecute(), 1000);
+		Assert.assertFalse(releaseCommand.isBeginExecute());
+	}
+
+	@Test
+	public void testReleaseOnTfsWithoutPurge() throws TimeoutException {
+
+		isBm = false;
+		Assert.assertFalse(releaseCommand.isBeginExecute());
+		defaultKeeperStateController.removeKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()), false);
+		waitConditionUntilTimeOut(() -> releaseCommand.isBeginExecute(), 1000);
+		Assert.assertFalse(deleteCommand.isBeginExecute());
+	}
+
+	/** A stale keeper found on the target port is only released on TFS, removed on BM. */
+	@Test
+	public void testAddKeeperCommandReleasesStaleKeeperOnlyOnTfs() {
+		for (boolean bm : new boolean[]{true, false}) {
+			DefaultKeeperStateController controller = new DefaultKeeperStateController() {
+				@Override
+				protected boolean isBm(KeeperTransMeta keeperTransMeta) {
+					return bm;
+				}
+			};
+			AddKeeperCommand command = (AddKeeperCommand) controller.createAddKeeperCommand(keeperContainerService,
+					new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()), scheduled, 1000);
+			Assert.assertEquals("bm=" + bm, !bm, command.isReleaseStaleKeeper());
+		}
 	}
 
 	@Test

@@ -76,6 +76,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		LifecycleHelper.startIfPossible(replicationStoreManager);
 		replicationStoreManager.createIfNotExist();
 		LifecycleHelper.stopIfPossible(replicationStoreManager);
+		replicationStoreManager.release();
 		try {
 			replicationStoreManager.createIfNotExist();
 			Assert.fail("createIfNotExist should refuse after stop (PREPARE lease)");
@@ -115,6 +116,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			Assert.assertSame(healed, manager.getCurrent());
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 		}
 	}
@@ -131,6 +133,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			ReplicationStore store = manager.createIfNotExist();
 			store.close();
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
 			try {
 				manager.createIfNotExist();
@@ -211,6 +214,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			Assert.assertEquals(oldStoreDir, storeBaseDir(manager.getCurrent()));
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			fs.shutdown();
 		}
@@ -264,6 +268,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			Assert.assertEquals(oldStoreDir, storeBaseDir(manager.getCurrent()));
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			fs.shutdown();
 		}
@@ -323,6 +328,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 			// latest.store.dir must still recover the old store after manager recycle.
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			DefaultReplicationStoreManager recovered = new DefaultReplicationStoreManager(
 					keeperConfig, replId, keeperRunid, managerBase,
@@ -335,6 +341,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			}
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			try {
 				fs.shutdown();
@@ -386,6 +393,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			Assert.assertTrue(oldStore.checkOk());
 
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			DefaultReplicationStoreManager recovered = new DefaultReplicationStoreManager(
 					keeperConfig, replId, keeperRunid, managerBase,
@@ -398,6 +406,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			}
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			try {
 				fs.shutdown();
@@ -440,6 +449,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			Assert.assertTrue(storeDir.isDirectory());
 
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
 			Assert.assertNull(manager.getCurrent());
 
@@ -537,6 +547,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			Assert.assertTrue(store.checkOk());
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			fs.shutdown();
 		}
@@ -619,6 +630,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		
 
 		LifecycleHelper.stopIfPossible(replicationStoreManager);
+		replicationStoreManager.release();
 		LifecycleHelper.disposeIfPossible(replicationStoreManager);
 		
 		long gcCount = replicationStoreManager.getGcCount();
@@ -643,6 +655,9 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			DefaultReplicationStore store = (DefaultReplicationStore) replicationStoreManager.create();
 			Assert.assertTrue(store.getBaseDir().exists());
 
+			// production order: stop + dispose (container deRegister) before destroy
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			LifecycleHelper.disposeIfPossible(replicationStoreManager);
 			clearInvocations(fileSystem);
 			replicationStoreManager.destroy();
 
@@ -654,6 +669,58 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		} finally {
 			try {
 				LifecycleHelper.stopIfPossible(replicationStoreManager);
+				replicationStoreManager.release();
+			} catch (Throwable ignore) {
+			}
+			try {
+				LifecycleHelper.disposeIfPossible(replicationStoreManager);
+			} catch (Throwable ignore) {
+			}
+			try {
+				fileSystem.shutdown();
+			} catch (Throwable ignore) {
+			}
+		}
+	}
+
+	/**
+	 * release() closes the store like destroy() does, but must never rmdir baseDir — the shared
+	 * TFS store outlives this keeper instance.
+	 */
+	@Test
+	public void testReleaseDoesNotRmdir() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
+				mock(SyncRateManager.class), createRedisOpParser(), fileSystem);
+		try {
+			LifecycleHelper.initializeIfPossible(replicationStoreManager);
+			LifecycleHelper.startIfPossible(replicationStoreManager);
+
+			DefaultReplicationStore store = (DefaultReplicationStore) replicationStoreManager.create();
+			Assert.assertTrue(store.getBaseDir().exists());
+
+			clearInvocations(fileSystem);
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			replicationStoreManager.release();
+
+			Assert.assertTrue(replicationStoreManager.getBaseDir().exists());
+			Assert.assertNull(replicationStoreManager.getOpenedStore());
+			Assert.assertFalse(replicationStoreManager.isManagerMetaHandleOpen());
+			verify(fileSystem, atLeastOnce()).close(any(AsyncFile.class));
+			verify(fileSystem, never()).rmdir(anyString(), anyBoolean());
+
+			// release is not permanent: the stopped lifecycle refuses reopen, start allows it again
+			try {
+				replicationStoreManager.create();
+				Assert.fail("create must refuse after stop + release");
+			} catch (IOException e) {
+				Assert.assertTrue(e.getMessage(), e.getMessage().contains("stopped"));
+			}
+		} finally {
+			try {
+				LifecycleHelper.stopIfPossible(replicationStoreManager);
+				replicationStoreManager.release();
 			} catch (Throwable ignore) {
 			}
 			try {
@@ -669,7 +736,6 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 	@Test
 	public void saveManagerMetaWithAtomicReplace() throws Exception {
-
 		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
 		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
@@ -687,6 +753,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
 		} finally {
 			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			replicationStoreManager.release();
 			LifecycleHelper.disposeIfPossible(replicationStoreManager);
 			fileSystem.shutdown();
 		}
@@ -712,10 +779,11 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		doThrow(new IOException("injected releaseCurrentStore fail")).when(manager).releaseCurrentStore(false);
 		clearInvocations(fileSystem);
 		LifecycleHelper.stopIfPossible(manager);
+		boolean releaseFailed = manager.release();
 		Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
-		// releaseCurrentStore is stubbed: the only close in doStop finally is manager-meta.
+		// releaseCurrentStore is stubbed: the only close in release's finally is manager-meta.
 		verify(fileSystem, atLeastOnce()).close(any(AsyncFile.class));
-		Assert.assertTrue(manager.takeStopReleaseFailed());
+		Assert.assertTrue(releaseFailed);
 		try {
 			LifecycleHelper.disposeIfPossible(manager);
 		} catch (Throwable ignore) {
@@ -729,6 +797,67 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 	/**
 	 * Sc review fix: destroy permanently refuses manager-meta reopen (even if lifecycle still started).
 	 */
+	/** stop keeps the meta write handle; TFS destroy deletes through it and never opens meta again. */
+	@Test
+	public void testTfsDestroyAfterStopUsesHeldMetaHandle() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
+				mock(SyncRateManager.class), createRedisOpParser(), fileSystem, new TfsStoreDeleter(fileSystem, 0));
+		try {
+			LifecycleHelper.initializeIfPossible(manager);
+			LifecycleHelper.startIfPossible(manager);
+			manager.create();
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			Assert.assertTrue("stop / dispose keep the meta handle", manager.isManagerMetaHandleOpen());
+
+			clearInvocations(fileSystem);
+			manager.destroy();
+
+			Assert.assertFalse(manager.getBaseDir().exists());
+			Assert.assertFalse(manager.isManagerMetaHandleOpen());
+			verify(fileSystem, never()).open(contains("store_manager_meta.properties"),
+					any(AbstractStorageFile.OpenMode.class), any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
+		} finally {
+			try {
+				LifecycleHelper.disposeIfPossible(manager);
+			} catch (Throwable ignore) {
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/** After stop + release there is no handle: TFS destroy must not open meta, it leaves the store to the orphan GC. */
+	@Test
+	public void testTfsDestroyAfterReleaseLeavesStoreToOrphanGc() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
+				mock(SyncRateManager.class), createRedisOpParser(), fileSystem, new TfsStoreDeleter(fileSystem, 0));
+		try {
+			LifecycleHelper.initializeIfPossible(manager);
+			LifecycleHelper.startIfPossible(manager);
+			manager.create();
+			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
+			Assert.assertFalse(manager.isManagerMetaHandleOpen());
+
+			clearInvocations(fileSystem);
+			manager.destroy();
+
+			Assert.assertTrue(new File(manager.getBaseDir(), "store_manager_meta.properties").exists());
+			verify(fileSystem, never()).open(contains("store_manager_meta.properties"),
+					any(AbstractStorageFile.OpenMode.class), any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
+		} finally {
+			try {
+				LifecycleHelper.disposeIfPossible(manager);
+			} catch (Throwable ignore) {
+			}
+			fileSystem.shutdown();
+		}
+	}
+
 	@Test
 	public void testDestroyRefusesManagerMetaReopen() throws Exception {
 		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
@@ -739,15 +868,21 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			LifecycleHelper.initializeIfPossible(manager);
 			LifecycleHelper.startIfPossible(manager);
 			manager.create();
+			// destroy before dispose is a no-op: the store is kept
 			manager.destroy();
-			Assert.assertTrue(manager.getLifecycleState().isStarted());
+			Assert.assertTrue(manager.getBaseDir().exists());
 
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			manager.destroy();
+
+			// the disposed lifecycle is the permanent gate: no create, no reopen of manager meta
 			clearInvocations(fileSystem);
 			try {
 				manager.create();
 				Assert.fail("create must refuse manager meta after destroy");
-			} catch (IOException e) {
-				Assert.assertTrue(e.getMessage().contains("destroyed"));
+			} catch (ReplicationStoreManagerStateException e) {
+				// disposed: refused before any manager-meta access
 				logger.info("[testDestroyRefusesManagerMetaReopen] expected: {}", e.getMessage());
 			}
 			verify(fileSystem, never()).open(contains("store_manager_meta.properties"),
@@ -755,6 +890,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		} finally {
 			try {
 				LifecycleHelper.stopIfPossible(manager);
+				manager.release();
 			} catch (Throwable ignore) {
 			}
 			try {
@@ -785,6 +921,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
 
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
 			clearInvocations(fileSystem);
 			try {
@@ -802,6 +939,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			fileSystem.shutdown();
 		}
@@ -901,6 +1039,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		String expectedReplId = metaStore.getReplId();
 		Long expectedBeginOffset = metaStore.beginOffset();
 		DefaultEndPoint expectedMasterAddress = metaStore.getMasterAddress();
+		mgr.release();
 		LifecycleHelper.disposeIfPossible(mgr);
 
 		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(replId, keeperRunid, baseDir);

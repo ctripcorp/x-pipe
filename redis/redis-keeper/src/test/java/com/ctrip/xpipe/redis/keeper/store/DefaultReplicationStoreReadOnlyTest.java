@@ -86,6 +86,7 @@ public class DefaultReplicationStoreReadOnlyTest extends AbstractRedisKeeperTest
 			File storeDir = writable.getBaseDir();
 
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			manager.setReadOnly(true);
 			LifecycleHelper.startIfPossible(manager);
 
@@ -97,6 +98,7 @@ public class DefaultReplicationStoreReadOnlyTest extends AbstractRedisKeeperTest
 			Assert.assertNull(readOnly.getRdbStore());
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 		}
 	}

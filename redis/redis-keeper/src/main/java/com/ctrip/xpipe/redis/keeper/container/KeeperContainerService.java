@@ -12,9 +12,11 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
@@ -25,6 +27,9 @@ import com.ctrip.xpipe.redis.keeper.health.HealthState;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.store.TfsStoreDeleter;
 import com.ctrip.xpipe.redis.keeper.store.searcher.CmdKeyItem;
 import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcher;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -39,10 +44,14 @@ import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -77,6 +86,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
     private ExecutorService searcherExecutor;
 
+    private ExecutorService gcExecutor;
+
     private Logger logger = LoggerFactory.getLogger(KeeperContainerService.class);
 
     @Override
@@ -84,11 +95,22 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
         this.diskHealthChecker.addObserver(this);
         this.searcherExecutor = new ThreadPoolExecutor(1, 5, 1L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(128), XpipeThreadFactory.create("keeper-searcher"));
+        int gcParallelism = Math.max(1, keeperConfig.getOrphanStoreGcParallelism());
+        this.gcExecutor = Executors.newFixedThreadPool(gcParallelism, XpipeThreadFactory.create("keeper-orphan-gc"));
     }
 
     @Override
     protected void doDispose() throws Exception {
+        // process exit: registry has stopped every keeper, nothing writes; free stores before the FS goes down
+        for (RedisKeeperServer keeperServer : redisKeeperServers.values()) {
+            try {
+                keeperServer.release();
+            } catch (Throwable th) {
+                logger.warn("[doDispose][release]{}", keeperServer, th);
+            }
+        }
         this.searcherExecutor.shutdown();
+        this.gcExecutor.shutdown();
         containerResourceManager.shutdownAsyncFileSystem();
     }
 
@@ -155,6 +177,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                                 logger.info("[add][rollback] dispose fail", th);
                             }
                         }
+                        // stop/dispose no longer free the store
+                        releaseQuietly(redisKeeperServer);
                         if (!redisKeeperServers.containsKey(keeperServerKey)) {
                             containerResourceManager.releasePort(keeperMeta.getPort());
                         }
@@ -291,6 +315,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
         try {
             keeperServer.stop();
+            // stop no longer frees the store: hand the TFS lease back; /start reopens lazily
+            keeperServer.release();
         } catch (Throwable ex) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
@@ -316,11 +342,129 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
             // 3. clean external resources, such as replication stores
             keeperServer.destroy();
+
         } catch (Throwable ex) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
                             String.format("Remove keeper failed for %s", replId)), ex);
+        } finally {
+            releaseQuietly(keeperServer);
         }
+    }
+
+    /** Stop the manager (its gc may still run after a failed server stop) and free the store; never throws. */
+    private void releaseQuietly(RedisKeeperServer keeperServer) {
+        try {
+            keeperServer.release();
+        } catch (Throwable th) {
+            logger.error("[releaseQuietly]{}", keeperServer, th);
+        }
+    }
+
+
+    /**
+     * Like {@link #remove(ReplId)}, but never deletes the replication store — for a shared TFS store
+     * that must outlive this keeper instance (e.g. migration, non-holder keepers).
+     */
+    public void release(ReplId replId) {
+        String keeperServerKey = replId.toString();
+
+        RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
+
+        if (keeperServer == null) {
+            return;
+        }
+
+        try {
+            // 1. stop and dispose keeper server
+            deRegister(keeperServer);
+
+            // 2. remove keeper
+            removeKeeperCache(keeperServerKey);
+        } catch (Throwable ex) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
+                            String.format("Release keeper failed for %s", replId)), ex);
+        } finally {
+            // 3. close external resources without deleting them, even if stop/dispose failed
+            releaseQuietly(keeperServer);
+        }
+    }
+
+    /**
+     * Entry names under the TFS store root; the caller keeps only {@code repl_<id>}. Throws when the
+     * root can't be listed (or this container isn't TFS), so the caller retries another container
+     * instead of reading it as an empty mount.
+     */
+    public List<String> listStoreDirNames() {
+        if (!keeperContainerConfig.isTfsMode()) {
+            throw new RedisKeeperRuntimeException(new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
+                    "not tfs mode, no shared store root"), null);
+        }
+        String root = StringUtils.trimTrailingCharacter(keeperContainerConfig.getReplicationStoreDir(), '/');
+        AsyncFileSystem fs = containerResourceManager.getAsyncFileSystem();
+        try {
+            List<String> names = AsyncFileSystemHelper.await(() -> fs.list(root), "gc list store root " + root);
+            return names == null ? Collections.emptyList() : names;
+        } catch (IOException e) {
+            throw new RedisKeeperRuntimeException(new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
+                    "list store root failed: " + root), e);
+        }
+    }
+
+    /**
+     * Fallback GC for a TFS store with no live keeper on this container; the delete itself is the same
+     * {@link TfsStoreDeleter} destroy uses, with the orphan idle threshold.
+     */
+    public GcOrphanStoreResult gcOrphanStore(Long replId) {
+        if (!keeperContainerConfig.isTfsMode()) {
+            return GcOrphanStoreResult.skip(replId, "not tfs mode");
+        }
+        if (redisKeeperServers.containsKey(ReplId.from(replId).toString())) {
+            return GcOrphanStoreResult.skip(replId, "live keeper on this container");
+        }
+        File baseDir = new File(
+                StringUtils.trimTrailingCharacter(keeperContainerConfig.getReplicationStoreDir(), '/'),
+                ReplId.from(replId).toString());
+        GcOrphanStoreResult result = new TfsStoreDeleter(containerResourceManager.getAsyncFileSystem(),
+                keeperConfig.getOrphanStoreMinIdleMilliToGc()).delete(baseDir, ReplId.from(replId));
+        logger.info("[gcOrphanStore]{}", result);
+        return result;
+    }
+
+    /**
+     * Batches {@link #gcOrphanStore(Long)} over the transport <b>and</b> runs each replId's
+     * safety-check-then-delete concurrently on {@link #gcExecutor} — one request/response for a batch
+     * that can have dozens to low hundreds of candidates, with their IO waits overlapping instead of
+     * serialized. Every replId's checks and file ops are independent of every other's (different
+     * directories, different meta files), so running them concurrently changes nothing about what gets
+     * deleted — only how long the whole batch takes wall-clock. {@code gcExecutor} is a small, fixed
+     * pool (see {@code keeperConfig.getOrphanStoreGcParallelism}): this is a background task that must
+     * never meaningfully compete with normal replication traffic for TFS IOPS, so concurrency here is
+     * capped on purpose rather than fanned out to match the batch size.
+     * <p>
+     * Results line up with {@code replIds} by index, not completion order, so callers never have to
+     * care that this ran concurrently.
+     */
+    public List<GcOrphanStoreResult> gcOrphanStores(List<Long> replIds) {
+        List<Future<GcOrphanStoreResult>> futures = new ArrayList<>(replIds.size());
+        for (Long replId : replIds) {
+            futures.add(gcExecutor.submit(() -> gcOrphanStore(replId)));
+        }
+
+        List<GcOrphanStoreResult> results = new ArrayList<>(replIds.size());
+        for (int i = 0; i < futures.size(); i++) {
+            Long replId = replIds.get(i);
+            try {
+                results.add(futures.get(i).get());
+            } catch (Throwable th) {
+                // gcOrphanStore itself never throws; this is only reachable via executor-level failure
+                // (rejection, interruption) — never silently drop a candidate from the result list.
+                logger.error("[gcOrphanStores][{}] gc task failed", replId, th);
+                results.add(GcOrphanStoreResult.fail(replId, th.getMessage()));
+            }
+        }
+        return results;
     }
 
     private void removeKeeperCache(String keeperServerKey) {

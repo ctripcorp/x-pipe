@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.tfs.KeeperMediumResolver;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -72,22 +73,48 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 
 	protected Command<?> createAddKeeperCommand(KeeperContainerService keeperContainerService,
 			KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled, int addKeeperSuccessTimeoutMilli) {
-		return new AddKeeperCommand(keeperContainerService, keeperTransMeta, clientKeyedObjectPool, scheduled, addKeeperSuccessTimeoutMilli);
+		// TFS: never destroy a stale keeper found on the target port, its shared store may be live elsewhere
+		return new AddKeeperCommand(keeperContainerService, keeperTransMeta, clientKeyedObjectPool, scheduled,
+				addKeeperSuccessTimeoutMilli, !isBm(keeperTransMeta));
 	}
 
 	@Override
-	public void removeKeeper(KeeperTransMeta keeperTransMeta) {
-		
-		logger.info("[removeKeeper]{}", keeperTransMeta);
+	public void removeKeeper(KeeperTransMeta keeperTransMeta, boolean purge) {
+
+		logger.info("[removeKeeper]{}, purge={}", keeperTransMeta, purge);
+
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
 		shardExecutor.execute(new Pair<>(keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId()),
-				createDeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli));
+				createRemoveKeeperCommand(keeperContainerService, keeperTransMeta, purge, scheduled, removeKeeperSuccessTimeoutMilli));
+	}
+
+	/**
+	 * purge (cluster/shard deleted, or shard left with no keepers) always deletes the store; a BM
+	 * keeper always deletes its private store; otherwise (TFS, non-purge: migration, dead-keeper
+	 * cleanup) release only — the shared store must outlive this keeper instance.
+	 */
+	protected Command<?> createRemoveKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
+			boolean purge, ScheduledExecutorService scheduled, int removeKeeperSuccessTimeoutMilli) {
+		if (purge || isBm(keeperTransMeta)) {
+			return createDeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli);
+		}
+		return createReleaseKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli);
+	}
+
+	protected boolean isBm(KeeperTransMeta keeperTransMeta) {
+		return KeeperMediumResolver.isBm(dcMetaCache.getKeeperContainer(keeperTransMeta.getKeeperMeta()));
 	}
 
 	protected Command<?> createDeleteKeeperCommand(KeeperContainerService keeperContainerService,
 			KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled,
 			int removeKeeperSuccessTimeoutMilli) {
 		return new DeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli);
+	}
+
+	protected Command<?> createReleaseKeeperCommand(KeeperContainerService keeperContainerService,
+			KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled,
+			int removeKeeperSuccessTimeoutMilli) {
+		return new ReleaseKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli);
 	}
 
 	protected KeeperContainerService getKeeperContainerService(KeeperTransMeta keeperTransMeta) {

@@ -132,14 +132,14 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		Long clusterDbId = clusterMeta.getDbId();
 		for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
 			for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-				removeKeeper(clusterDbId, shardMeta.getDbId(), keeperMeta);
+				removeKeeper(clusterDbId, shardMeta.getDbId(), keeperMeta, true);
 			}
 		}
 	}
 
-	private void removeKeeper(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
+	private void removeKeeper(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta, boolean purge) {
 		try {
-			keeperStateController.removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, keeperMeta));
+			keeperStateController.removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, keeperMeta), purge);
 		} catch (Exception e) {
 			logger.error(String.format("[removeKeeper]cluster_%s:shard_%s,%s", clusterDbId, shardDbId, keeperMeta), e);
 		}
@@ -229,7 +229,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			for (KeeperMeta removedKeeper : removedKeepers) {
 				try {
 					KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, removedKeeper);
-					keeperStateController.removeKeeper(keeperTransMeta);
+					// dead-keeper cleanup never purges: the shard still expects keepers, this one is just stale
+					keeperStateController.removeKeeper(keeperTransMeta, false);
 				} catch (ResourceAccessException e) {
 					logger.error(String.format("[check removed keepers]cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
 							removedKeeper, e.getMessage()));
@@ -263,7 +264,10 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 			ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator;
 			ShardMeta shard = shardMetaComparator.getCurrent();
-			shardMetaComparator.accept(new ShardComparatorVisitor(clusterType, clusterDbId, shard.getDbId()));
+			// getCurrent() is the meta before this change; keepers left afterwards come from getFuture()
+			ShardMeta future = shardMetaComparator.getFuture();
+			boolean shardEmptyAfterChange = future == null || future.getKeepers() == null || future.getKeepers().isEmpty();
+			shardMetaComparator.accept(new ShardComparatorVisitor(clusterType, clusterDbId, shard.getDbId(), shardEmptyAfterChange));
 
 		}
 
@@ -271,7 +275,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitRemoved(ShardMeta removed) {
 			logger.info("[visitRemoved][remove shard]{}", removed);
 			for (KeeperMeta keeperMeta : removed.getKeepers()) {
-				removeKeeper(clusterDbId, removed.getDbId(), keeperMeta);
+				removeKeeper(clusterDbId, removed.getDbId(), keeperMeta, true);
 			}
 		}
 	}
@@ -282,10 +286,14 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		private Long clusterDbId;
 		private Long shardDbId;
 
-		protected ShardComparatorVisitor(String clusterType, Long clusterDbId, Long shardDbId) {
+		/** shard 下的 keeper 在这次变更后是否已经清空（对应"shard下keeper全空"场景，需要 purge） */
+		private boolean shardEmptyAfterChange;
+
+		protected ShardComparatorVisitor(String clusterType, Long clusterDbId, Long shardDbId, boolean shardEmptyAfterChange) {
 			this.clusterType = clusterType;
 			this.clusterDbId = clusterDbId;
 			this.shardDbId = shardDbId;
+			this.shardEmptyAfterChange = shardEmptyAfterChange;
 		}
 
 		@Override
@@ -308,7 +316,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitRemoved(InstanceNode removed) {
 
 			if (removed instanceof KeeperMeta) {
-				removeKeeper(clusterDbId, shardDbId, (KeeperMeta) removed);
+				removeKeeper(clusterDbId, shardDbId, (KeeperMeta) removed, shardEmptyAfterChange);
 			} else {
 				logger.debug("[visitAdded][do nothng]{}", removed);
 			}

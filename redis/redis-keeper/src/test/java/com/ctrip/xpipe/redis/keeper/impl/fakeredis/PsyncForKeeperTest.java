@@ -65,6 +65,7 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
 
         keeperServer2.stop();
         keeperServer2.dispose();
+        keeperServer2.release();
 
         fakeRedisServer.reGenerateRdb();
         waitKeeperSyncWithRedis(keeperServer);

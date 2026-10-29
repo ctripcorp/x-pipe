@@ -52,6 +52,9 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.store.DirectStoreDeleter;
+import com.ctrip.xpipe.redis.keeper.store.ReplicationStoreDeleter;
+import com.ctrip.xpipe.redis.keeper.store.TfsStoreDeleter;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcher;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
@@ -65,7 +68,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.internal.ConcurrentSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,10 +78,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.FULLSYNC_PROGRESS_NOT_SUPPORTED;
-import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
 
 /**
  * @author wenchao.meng
@@ -238,8 +238,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	protected ReplicationStoreManager createReplicationStoreManager(CKStore ckStore,NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor) {
+		// shared TFS store: destroy deletes it only when nobody can still be using it
+		ReplicationStoreDeleter storeDeleter = tfsMode ? new TfsStoreDeleter(asyncFileSystem, 0)
+				: new DirectStoreDeleter(asyncFileSystem);
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(this.ckStore, masterEventLoopGroup, keeperConfig, replId,
-				currentKeeperMeta.getId(), baseDir, keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem);
+				currentKeeperMeta.getId(), baseDir, keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem, storeDeleter);
 		if (pubSubParseHook != null) {
 			manager.setPubSubParseHook(pubSubParseHook);
 		}
@@ -500,7 +503,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		keeperMonitor.stop();
 		clearClients();
-		this.leaderElector.stop();
+		// IfPossible: a retry after a stop that failed past this point must not throw on the stopped elector
+		LifecycleHelper.stopIfPossible(leaderElector);
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		stopServer();
 		leavePrepareWatch();
@@ -522,23 +526,42 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		redisClients.clear();
 	}
 
+	/**
+	 * Best effort: each step on its own, so one failure never leaks the threads behind it.
+	 */
 	@Override
 	protected void doDispose() throws Exception {
-		try {
+		disposeQuietly("monitor", () -> keepersMonitorManager.remove(this));
+		disposeQuietly("master", () -> {
 			LifecycleHelper.disposeIfPossible(keeperRedisMaster);
-			this.ckStore.dispose();
-			this.leaderElector.dispose();
-			masterConfigEventLoopGroup.shutdownGracefully();
-			masterEventLoopGroup.shutdownGracefully();
-			rdbOnlyEventLoopGroup.shutdownGracefully();
-			bossGroup.shutdownGracefully();
-			workerGroup.shutdownGracefully();
-			replicationStoreManager.dispose();
-			this.scheduled.shutdownNow();
-			this.clientExecutors.shutdownNow();
-			super.doDispose();
-		} finally {
-			this.pubSubRegistry.close();
+		});
+		disposeQuietly("ckStore", () -> ckStore.dispose());
+		disposeQuietly("leaderElector", () -> {
+			LifecycleHelper.disposeIfPossible(leaderElector);
+		});
+		disposeQuietly("masterConfigEventLoopGroup", () -> masterConfigEventLoopGroup.shutdownGracefully());
+		disposeQuietly("masterEventLoopGroup", () -> masterEventLoopGroup.shutdownGracefully());
+		disposeQuietly("rdbOnlyEventLoopGroup", () -> rdbOnlyEventLoopGroup.shutdownGracefully());
+		disposeQuietly("bossGroup", () -> bossGroup.shutdownGracefully());
+		disposeQuietly("workerGroup", () -> workerGroup.shutdownGracefully());
+		disposeQuietly("replicationStoreManager", () -> {
+			LifecycleHelper.disposeIfPossible(replicationStoreManager);
+		});
+		disposeQuietly("scheduled", () -> scheduled.shutdownNow());
+		disposeQuietly("clientExecutors", () -> clientExecutors.shutdownNow());
+		disposeQuietly("pubSubRegistry", () -> pubSubRegistry.close());
+		super.doDispose();
+	}
+
+	private interface DisposeStep {
+		void run() throws Exception;
+	}
+
+	private void disposeQuietly(String name, DisposeStep step) {
+		try {
+			step.run();
+		} catch (Throwable th) {
+			logger.error("[doDispose][{}]{}", name, this, th);
 		}
 	}
 
@@ -843,15 +866,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			// existing slaves / store (avoids serving sync while closing).
 			stopAndDisposeMaster();
 			setRedisKeeperServerState(new RedisKeeperServerStatePrepare(this, masterAddress));
+			AtomicBoolean releaseFailed = new AtomicBoolean(false);
 			AsyncFileSystemHelper.runWithIoTimeout(AsyncFileSystemHelper.PREPARE_IO_TIMEOUT_MILLIS, () -> {
 				closeSlaves("prepare");
 				try {
-					if (replicationStoreManager.getLifecycleState().canStop()) {
-						replicationStoreManager.stop();
-					} else {
-						// Already stopped (or never started): still drop lease reference.
-						replicationStoreManager.releaseCurrentStore();
-					}
+					LifecycleHelper.stopIfPossible(replicationStoreManager);
+					// stop no longer frees the store: hand the lease back explicitly
+					releaseFailed.set(replicationStoreManager.release());
 				} catch (IOException e) {
 					throw e;
 				} catch (Exception e) {
@@ -859,7 +880,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				}
 			});
 			startPrepareWatchIfEnabled();
-			if (replicationStoreManager.takeStopReleaseFailed()) {
+			if (releaseFailed.get()) {
 				throw new XpipeRuntimeException("[doBecomePrepare] lease release incomplete");
 			}
 			logger.info("[doBecomePrepare][done]");
@@ -933,6 +954,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		try {
 			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			replicationStoreManager.release();
 		} catch (Throwable th) {
 			logger.error("[rollbackReenter][stop manager]{}", this, th);
 		}
@@ -986,11 +1008,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		stopPrepareCmdParser();
 		stopPrepareWatcher();
 		try {
-			if (replicationStoreManager.getLifecycleState().canStop()) {
-				replicationStoreManager.stop();
-			} else {
-				replicationStoreManager.releaseCurrentStore();
-			}
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			// before resetReadOnlyIfStopped: setReadOnly(false) requires currentStore == null
+			replicationStoreManager.release();
 		} catch (IOException e) {
 			throw e;
 		} catch (Exception e) {
@@ -1003,9 +1023,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		try {
 			stopPrepareCmdParser();
 			stopPrepareWatcher();
-			if (replicationStoreManager.getLifecycleState().canStop()) {
-				replicationStoreManager.stop();
-			}
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			replicationStoreManager.release();
 			resetReadOnlyIfStopped();
 		} catch (Throwable nested) {
 			logger.error("[rollbackPrepareWatch]{}", this, nested);
@@ -1266,8 +1285,34 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void destroy() throws Exception {
-		this.keepersMonitorManager.remove(this);
-		this.replicationStoreManager.destroy();
+		if(shouldDestroy()) {
+			this.replicationStoreManager.destroy();
+		}else {
+			release();
+		}
+	}
+
+	/**
+	 * A BM keeper's store is private, so it always destroys. A TFS keeper destroys only if it actually
+	 * held the shared store (ACTIVE/BACKUP); whether nobody else still uses it is checked inside
+	 * destroy by {@link TfsStoreDeleter}.
+	 */
+	private boolean shouldDestroy() {
+		if (!isTfsMode()) {
+			return true;
+		}
+		RedisKeeperServerState state = this.redisKeeperServerState;
+		KeeperState keeperState = state == null ? null : state.keeperState();
+		if (keeperState == null || !(keeperState.isActive() || keeperState.isBackup())) {
+			logger.info("[shouldDestroy][not active/backup, release instead]{}, state={}", this.getReplId(), keeperState);
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public void release() throws Exception {
+		this.replicationStoreManager.release();
 	}
 
 	@Override
@@ -1514,6 +1559,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@VisibleForTesting
+	@Override
 	public ReplicationStoreManager getReplicationStoreManager() {
 		return replicationStoreManager;
 	}

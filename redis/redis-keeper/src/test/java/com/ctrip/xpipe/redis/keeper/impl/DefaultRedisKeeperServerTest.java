@@ -86,8 +86,9 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.start();
 		Assert.assertNotNull(redisKeeperServer.getReplicationStore());
 
-		// Server.stop → Manager.stop: releaseCurrentStore + isPositivelyStopped refuse reopen
+		// Server.stop no longer frees the store; release (as container.stop does) + stopped lifecycle refuse reopen
 		redisKeeperServer.stop();
+		redisKeeperServer.release();
 		try {
 			redisKeeperServer.getOrCreateReplicationStore();
 			Assert.fail();
@@ -159,6 +160,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 			waitUntilStoreExpired(store);
 			Assert.assertFalse(store.isFresh());
 		} finally {
+			redisKeeperServer.release();
 			redisKeeperServer.dispose();
 		}
 
@@ -740,6 +742,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer));
 		redisKeeperServer.getOrCreateReplicationStore().getMetaStore().becomeActive();
+		redisKeeperServer.release();
 		redisKeeperServer.dispose();
 
 
@@ -749,6 +752,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer));
 		redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
+		redisKeeperServer.release();
 		redisKeeperServer.dispose();
 
 

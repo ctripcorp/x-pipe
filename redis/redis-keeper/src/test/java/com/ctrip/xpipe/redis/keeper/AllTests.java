@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.redis.keeper.applier.AllApplierTests;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperContainerConfigTest;
+import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceGcTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
 import com.ctrip.xpipe.redis.keeper.handler.applier.ApplierCommandHandlerTest;
@@ -104,12 +105,15 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisMasterNewRdbDumperTest.class,
         StateBackupDeadlockTest.class,
         KeeperContainerServiceTest.class,
+        KeeperContainerServiceGcTest.class,
         DefaultKeeperContainerConfigTest.class,
         DefaultReplicationStoreManagerTest.class,
         DefaultReplicationStoreManagerReadOnlyTest.class,
         DefaultRedisKeeperServerTest.class,
         DefaultRedisKeeperServerPrepareWatchTest.class,
         DefaultRedisKeeperServerStoreGetSemanticsTest.class,
+        DefaultRedisKeeperServerDestroyTest.class,
+        TfsStoreDeleterTest.class,
         DefaultReplicationStoreTest.class,
         DefaultReplicationStoreReadOnlyTest.class,
         DefaultReplicationStoreReadOnlyCmdOpenTest.class,

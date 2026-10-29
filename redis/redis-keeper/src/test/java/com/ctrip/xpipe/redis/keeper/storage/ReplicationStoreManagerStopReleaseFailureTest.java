@@ -59,6 +59,7 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
     public void tearDownManager() {
         try {
             LifecycleHelper.stopIfPossible(manager);
+            manager.release();
             LifecycleHelper.disposeIfPossible(manager);
         } catch (Exception e) {
             logger.info("[tearDown] stop / dispose", e);
@@ -93,12 +94,12 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
 
     private void stopAndAssertFailure(AbstractStorageFile deferred) throws Exception {
         LifecycleHelper.stopIfPossible(manager);
+        boolean releaseFailed = manager.release();
         assertTrue(manager.getLifecycleState().isPositivelyStopped());
         assertNull(manager.getOpenedStore());
         assertTrue(closer.isPending(deferred));
 
-        assertTrue(manager.takeStopReleaseFailed());
-        assertFalse("take clears the record", manager.takeStopReleaseFailed());
+        assertTrue(releaseFailed);
     }
 
     @Test
@@ -131,15 +132,16 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
         failTwiceThenClose(rdbWrite);
 
         LifecycleHelper.stopIfPossible(manager);
+        boolean releaseFailed = manager.release();
         assertTrue(manager.getLifecycleState().isPositivelyStopped());
         assertTrue(closer.isPending(rdbWrite));
-        assertFalse(manager.takeStopReleaseFailed());
+        assertFalse(releaseFailed);
     }
 
     @Test
     public void testDeferredReadOnlyManagerMetaHandleIsNotRecorded() throws Exception {
         LifecycleHelper.stopIfPossible(manager);
-        assertFalse(manager.takeStopReleaseFailed());
+        assertFalse(manager.release());
         manager.setReadOnly(true);
         LifecycleHelper.startIfPossible(manager);
         assertNotNull(manager.getCurrent());
@@ -148,17 +150,19 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
         failTwiceThenClose(managerMeta);
 
         LifecycleHelper.stopIfPossible(manager);
+        boolean releaseFailed = manager.release();
         assertTrue(closer.isPending(managerMeta));
-        assertFalse(manager.takeStopReleaseFailed());
+        assertFalse(releaseFailed);
     }
 
     @Test
     public void testFailureOfEarlierStopIsNotReportedByNextStop() throws Exception {
         failTwiceThenClose(cmdSegment());
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         LifecycleHelper.startIfPossible(manager);
         LifecycleHelper.stopIfPossible(manager);
-        assertFalse(manager.takeStopReleaseFailed());
+        assertFalse(manager.release());
     }
 
     @Test
@@ -169,7 +173,6 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
         assertFalse(manager.releaseCurrentStore(false));
         assertNull("reference dropped even when a handle is deferred", manager.getOpenedStore());
         assertTrue(closer.isPending(meta));
-        assertFalse(manager.takeStopReleaseFailed());
         assertTrue("already released", manager.releaseCurrentStore(false));
     }
 }

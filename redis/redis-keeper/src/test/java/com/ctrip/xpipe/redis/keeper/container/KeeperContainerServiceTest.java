@@ -25,6 +25,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -159,6 +160,88 @@ public class KeeperContainerServiceTest extends AbstractTest {
 
         assertFalse(fullStorePath.contains("replication_store_"));
         assertEquals(new File(storeDir.trim().replaceAll("/+$", ""), someReplId.toString()).getPath(), fullStorePath);
+    }
+
+    @Test
+    public void testRemoveKeeperDestroys() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+
+        keeperContainerService.remove(someReplId);
+
+        verify(componentRegistry, times(1)).remove(redisKeeperServer);
+        verify(redisKeeperServer, times(1)).destroy();
+        verify(redisKeeperServer, times(1)).release(); // finally always hands the store back; idempotent after destroy
+    }
+
+    @Test
+    public void testRemoveKeeperNotFoundIsNoop() throws Exception {
+        keeperContainerService.remove(someReplId);
+
+        verifyNoInteractions(redisKeeperServer);
+    }
+
+    @Test
+    public void testReleaseKeeperDoesNotDestroy() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+
+        keeperContainerService.release(someReplId);
+
+        verify(componentRegistry, times(1)).remove(redisKeeperServer);
+        verify(redisKeeperServer, times(1)).release();
+        verify(redisKeeperServer, never()).destroy();
+    }
+
+    /** stop/dispose failed: the store / lease is still handed back, the keeper stays cached for a retry. */
+    @Test
+    public void testReleaseKeeperStopFailsStillReleasesAndKeepsCache() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+        when(componentRegistry.remove(redisKeeperServer)).thenThrow(new IllegalStateException("stop failed"));
+
+        try {
+            keeperContainerService.release(someReplId);
+            org.junit.Assert.fail("release failure must reach metaserver");
+        } catch (RedisKeeperRuntimeException expected) {
+            // ignore
+        }
+        verify(redisKeeperServer, times(1)).release();
+        assertTrue(keeperContainerService.list().contains(redisKeeperServer));
+    }
+
+    /** remove whose stop/dispose failed never deletes the store, only hands it back; keeper stays cached. */
+    @Test
+    public void testRemoveKeeperStopFailsReleasesWithoutDestroy() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+        when(componentRegistry.remove(redisKeeperServer)).thenThrow(new IllegalStateException("stop failed"));
+
+        try {
+            keeperContainerService.remove(someReplId);
+            org.junit.Assert.fail("remove failure must reach metaserver");
+        } catch (RedisKeeperRuntimeException expected) {
+            // ignore
+        }
+        verify(redisKeeperServer, never()).destroy();
+        verify(redisKeeperServer, times(1)).release();
+        assertTrue(keeperContainerService.list().contains(redisKeeperServer));
+    }
+
+    @Test
+    public void testReleaseKeeperNotFoundIsNoop() throws Exception {
+        keeperContainerService.release(someReplId);
+
+        verifyNoInteractions(redisKeeperServer);
+    }
+
+    /** The destroy-vs-release decision lives in RedisKeeperServer.destroy (see DefaultRedisKeeperServerDestroyTest). */
+    @Test
+    public void testRemoveTfsDelegatesToDestroy() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+        when(redisKeeperServer.isTfsMode()).thenReturn(true);
+
+        keeperContainerService.remove(someReplId);
+
+        verify(componentRegistry, times(1)).remove(redisKeeperServer);
+        verify(redisKeeperServer, times(1)).destroy();
+        verify(redisKeeperServer, times(1)).release(); // finally always hands the store back; idempotent after destroy
     }
 
     @Test

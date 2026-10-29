@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.GapAllowedSyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
@@ -218,5 +219,16 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	long getLastElectionResetTime();
 
 	void releaseRdb() throws IOException;
+
+	/**
+	 * Free store resources only (close the replication store, never delete it); idempotent. Also used
+	 * after a manual stop, which may be followed by start again — so no offline cleanup here (the monitor
+	 * entry is dropped in dispose). Unlike {@link #destroy()}, safe for a shared TFS store that must outlive
+	 * this keeper instance.
+	 */
+	void release() throws Exception;
+
+	/** Container-level store manager, for callers that must verify liveness before a destructive op. */
+	ReplicationStoreManager getReplicationStoreManager();
 
 }
