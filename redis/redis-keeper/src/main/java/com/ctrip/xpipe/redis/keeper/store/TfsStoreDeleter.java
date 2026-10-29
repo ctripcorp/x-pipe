@@ -53,19 +53,56 @@ public final class TfsStoreDeleter implements ReplicationStoreDeleter {
                 return GcOrphanStoreResult.skip(replId.id(), "meta not usable: " + th.getMessage());
             }
 
-            AsyncFile held = meta;
-            try {
-                AsyncFileSystemHelper.await(() -> fs.delete(held), "delete store meta " + metaPath);
-            } catch (Throwable th) {
-                logger.error("[delete][delete meta failed, data untouched]{}", baseDir, th);
-                return GcOrphanStoreResult.fail(replId.id(), "delete meta failed: " + th.getMessage());
-            }
-            // Meta is gone, so the store is already dead; a leftover directory is retried via deleteWithoutMeta.
-            rmdir(baseDir);
-            return GcOrphanStoreResult.deleted(replId.id());
+            return deleteMetaThenDir(baseDir, replId, metaPath, meta);
         } finally {
             AsyncFileSystemHelper.closeHandle(fs, meta, replId, "delete store close meta " + metaPath);
         }
+    }
+
+    /**
+     * destroy with the manager's still-open meta write handle; never opens meta. With a handle: rewrite the
+     * current content through it to prove this process still owns the store, then delete meta and the
+     * directory. Without one: an existing meta may belong to a live writer, so leave it to the orphan GC.
+     */
+    @Override
+    public GcOrphanStoreResult delete(File baseDir, ReplId replId, AsyncFile heldMeta) {
+        String metaPath = new File(baseDir, META_FILE).getAbsolutePath();
+        if (heldMeta == null) {
+            try {
+                if (AsyncFileSystemHelper.await(() -> fs.exists(metaPath), "destroy meta exists " + metaPath)) {
+                    return GcOrphanStoreResult.skip(replId.id(), "no held meta handle, left to orphan gc");
+                }
+            } catch (Throwable th) {
+                logger.warn("[delete][meta exists check failed, skip]{}", baseDir, th);
+                return GcOrphanStoreResult.skip(replId.id(), "meta exists check failed: " + th.getMessage());
+            }
+            return deleteWithoutMeta(baseDir, replId);
+        }
+        try {
+            try {
+                long size = AsyncFileSystemHelper.await(() -> fs.size(heldMeta), "destroy stat meta " + metaPath);
+                byte[] data = size == 0 ? new byte[0]
+                        : AsyncFileSystemHelper.readAllBytes(fs, heldMeta, size, 0, "destroy read meta " + metaPath);
+                AsyncFileSystemHelper.writeAllBytes(fs, heldMeta, data, "destroy rewrite meta " + metaPath);
+            } catch (Throwable th) {
+                logger.warn("[delete][held meta not writable, skip]{}", baseDir, th);
+                return GcOrphanStoreResult.skip(replId.id(), "held meta not writable: " + th.getMessage());
+            }
+            return deleteMetaThenDir(baseDir, replId, metaPath, heldMeta);
+        } finally {
+            AsyncFileSystemHelper.closeHandle(fs, heldMeta, replId, "destroy close meta " + metaPath);
+        }
+    }
+
+    /** Deletes meta first, then the directory; meta gone means the store is dead even if rmdir fails. */
+    private GcOrphanStoreResult deleteMetaThenDir(File baseDir, ReplId replId, String metaPath, AsyncFile meta) {
+        try {
+            AsyncFileSystemHelper.await(() -> fs.delete(meta), "delete store meta " + metaPath);
+        } catch (Throwable th) {
+            logger.error("[delete][delete meta failed, data untouched]{}", baseDir, th);
+            return GcOrphanStoreResult.fail(replId.id(), "delete meta failed: " + th.getMessage());
+        }
+        return deleteWithoutMeta(baseDir,replId);
     }
 
     /**

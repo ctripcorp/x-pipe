@@ -69,6 +69,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
     public void tearDownFs() throws Exception {
         if (manager != null) {
             LifecycleHelper.stopIfPossible(manager);
+            manager.release();
             LifecycleHelper.disposeIfPossible(manager);
         }
         fs.shutdown();
@@ -131,6 +132,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         verify(first, timeout(1000).atLeastOnce()).flushMeta();
 
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         assertTrue(firstFuture.isCancelled());
         assertNull(metaFlushFuture());
 
@@ -143,6 +145,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         verify(reopened, timeout(1000).atLeastOnce()).flushMeta();
 
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         LifecycleHelper.disposeIfPossible(manager);
         assertTrue(secondFuture.isCancelled());
         assertNull(metaFlushFuture());
@@ -206,6 +209,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         manager.flushMetaPeriodically();
         assertEquals(dir, readViaHandle());
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         assertEquals(dir, readFromFreshFs());
     }
 
@@ -295,6 +299,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         Thread stopper = new Thread(() -> {
             try {
                 LifecycleHelper.stopIfPossible(manager);
+                manager.release();
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
@@ -362,6 +367,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
             tick.start();
             waitConditionUntilTimeOut(() -> tick.getState() == Thread.State.BLOCKED, 2000);
             LifecycleHelper.stopIfPossible(manager);
+            manager.release();
             manager.setReadOnly(true);
             LifecycleHelper.startIfPossible(manager);
             assertNotNull("read-only store and meta handle opened", manager.getCurrent());

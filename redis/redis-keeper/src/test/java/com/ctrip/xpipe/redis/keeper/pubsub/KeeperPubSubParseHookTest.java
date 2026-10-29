@@ -87,6 +87,7 @@ public class KeeperPubSubParseHookTest extends AbstractRedisKeeperTest {
 		Assert.assertEquals(Collections.singletonList("ch:from-manager"), received);
 
 		LifecycleHelper.stopIfPossible(manager);
+		manager.release();
 		manager.setReadOnly(true);
 		LifecycleHelper.startIfPossible(manager);
 		DefaultReplicationStore readOnly = (DefaultReplicationStore) manager.getCurrent();
@@ -245,6 +246,7 @@ public class KeeperPubSubParseHookTest extends AbstractRedisKeeperTest {
 		}
 		try {
 			LifecycleHelper.stopIfPossible(toStop);
+			toStop.release();
 		} catch (Throwable ignore) {
 		}
 		try {

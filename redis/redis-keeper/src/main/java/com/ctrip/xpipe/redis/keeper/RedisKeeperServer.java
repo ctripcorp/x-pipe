@@ -221,8 +221,10 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	void releaseRdb() throws IOException;
 
 	/**
-	 * Close the replication store without deleting it. Unlike {@link #destroy()}, safe to call when
-	 * {@code baseDir} is a shared TFS store that must outlive this keeper instance.
+	 * Free store resources only (close the replication store, never delete it); idempotent. Also used
+	 * after a manual stop, which may be followed by start again — so no offline cleanup here (the monitor
+	 * entry is dropped in dispose). Unlike {@link #destroy()}, safe for a shared TFS store that must outlive
+	 * this keeper instance.
 	 */
 	void release() throws Exception;
 

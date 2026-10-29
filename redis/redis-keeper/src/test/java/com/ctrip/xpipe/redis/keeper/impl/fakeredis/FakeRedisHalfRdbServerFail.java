@@ -63,6 +63,7 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 
 		redisKeeperServer.stop();
 		redisKeeperServer.dispose();
+		redisKeeperServer.release();
 
 		redisKeeperServer.initialize();
 		redisKeeperServer.start();
