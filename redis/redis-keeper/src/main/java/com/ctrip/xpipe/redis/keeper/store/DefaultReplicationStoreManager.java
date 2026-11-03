@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
@@ -7,6 +8,7 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubParseHook;
@@ -24,8 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
@@ -657,6 +661,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         logger.info("[destroy]{}", this);
         if (!getLifecycleState().isDisposed()) {
             logger.warn("[destroy][not disposed, skip]{}", this);
+            EventMonitor.DEFAULT.logError(RedisKeeperServer.EVENT_TYPE_DESTROY, RedisKeeperServer.EVENT_FAIL, eventData());
             return;
         }
         AsyncFile heldMeta = readOnly ? null : managerMetaAsyncFile;
@@ -665,9 +670,20 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }
         release();
         GcOrphanStoreResult result = storeDeleter.delete(baseDir, replId, heldMeta);
-        if (result.status != GcOrphanStoreResult.Status.DELETED && result.status != GcOrphanStoreResult.Status.NOT_FOUND) {
-            logger.warn("[destroy][left to orphan gc]{} {}", baseDir, result);
+        if (result.status == GcOrphanStoreResult.Status.DELETED || result.status == GcOrphanStoreResult.Status.NOT_FOUND) {
+            EventMonitor.DEFAULT.logEvent(RedisKeeperServer.EVENT_TYPE_DESTROY, RedisKeeperServer.EVENT_SUCCESS, eventData());
+            return;
         }
+        logger.warn("[destroy][left to orphan gc]{} {}", baseDir, result);
+        if (result.status == GcOrphanStoreResult.Status.SKIPPED) {
+            EventMonitor.DEFAULT.logEvent(RedisKeeperServer.EVENT_TYPE_DESTROY, RedisKeeperServer.EVENT_SKIP, eventData());
+        } else {
+            EventMonitor.DEFAULT.logError(RedisKeeperServer.EVENT_TYPE_DESTROY, RedisKeeperServer.EVENT_FAIL, eventData());
+        }
+    }
+
+    private Map<String, String> eventData() {
+        return Collections.singletonMap("replId", String.valueOf(replId));
     }
 
     @Override

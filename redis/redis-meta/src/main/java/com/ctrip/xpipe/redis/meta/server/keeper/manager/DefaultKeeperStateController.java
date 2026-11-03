@@ -5,17 +5,21 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperRemoveMetric;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.tfs.KeeperMediumResolver;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +38,9 @@ import static com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.C
 public class DefaultKeeperStateController extends AbstractLifecycle implements KeeperStateController, TopElement{
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
-	
+
+	private KeeperRemoveMetric removeMetric = new KeeperRemoveMetric(MetricProxy.DEFAULT);
+
 	private int addKeeperSuccessTimeoutMilli =    10000;
 	private int removeKeeperSuccessTimeoutMilli = 10000;
 		
@@ -84,8 +90,11 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 		logger.info("[removeKeeper]{}, purge={}", keeperTransMeta, purge);
 
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
-		shardExecutor.execute(new Pair<>(keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId()),
-				createRemoveKeeperCommand(keeperContainerService, keeperTransMeta, purge, scheduled, removeKeeperSuccessTimeoutMilli));
+		boolean bm = isBm(keeperTransMeta);
+		Command<?> command = createRemoveKeeperCommand(keeperContainerService, keeperTransMeta, purge, bm,
+				scheduled, removeKeeperSuccessTimeoutMilli);
+		trackRemoveKeeper(command, keeperTransMeta, bm, isRelease(purge, bm));
+		shardExecutor.execute(new Pair<>(keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId()), command);
 	}
 
 	/**
@@ -93,12 +102,33 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 	 * keeper always deletes its private store; otherwise (TFS, non-purge: migration, dead-keeper
 	 * cleanup) release only — the shared store must outlive this keeper instance.
 	 */
+	private boolean isRelease(boolean purge, boolean bm) {
+		return !purge && !bm;
+	}
+
 	protected Command<?> createRemoveKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
-			boolean purge, ScheduledExecutorService scheduled, int removeKeeperSuccessTimeoutMilli) {
-		if (purge || isBm(keeperTransMeta)) {
-			return createDeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli);
+			boolean purge, boolean bm, ScheduledExecutorService scheduled, int removeKeeperSuccessTimeoutMilli) {
+		if (isRelease(purge, bm)) {
+			return createReleaseKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli);
 		}
-		return createReleaseKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli);
+		return createDeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli);
+	}
+
+	/** tfsId is resolved now: by completion the keeper may already be gone from meta. */
+	private void trackRemoveKeeper(Command<?> command, KeeperTransMeta keeperTransMeta, boolean bm, boolean release) {
+		try {
+			KeeperMeta keeperMeta = keeperTransMeta.getKeeperMeta();
+			String tfsId = bm ? null : getTfsFsId(keeperMeta);
+			command.future().addListener(commandFuture ->
+					removeMetric.trackRemoveKeeper(keeperMeta, bm, release, tfsId, commandFuture.isSuccess()));
+		} catch (Throwable th) {
+			logger.debug("[trackRemoveKeeper] fail", th);
+		}
+	}
+
+	protected String getTfsFsId(KeeperMeta keeperMeta) {
+		KeeperContainerMeta keeperContainer = dcMetaCache.getKeeperContainer(keeperMeta);
+		return keeperContainer == null ? null : keeperContainer.getTfsFsId();
 	}
 
 	protected boolean isBm(KeeperTransMeta keeperTransMeta) {
@@ -126,6 +156,11 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 
 	public void setExecutors(ExecutorService executors) {
 		this.executors = executors;
+	}
+
+	@VisibleForTesting
+	protected void setMetricProxy(MetricProxy metricProxy) {
+		this.removeMetric = new KeeperRemoveMetric(metricProxy);
 	}
 
 	@Override
