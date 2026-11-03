@@ -10,12 +10,12 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperRemoveMetric;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.redis.meta.server.tfs.KeeperMediumResolver;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -132,7 +132,7 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 	}
 
 	protected boolean isBm(KeeperTransMeta keeperTransMeta) {
-		return KeeperMediumResolver.isBm(dcMetaCache.getKeeperContainer(keeperTransMeta.getKeeperMeta()));
+		return KeeperDiskTypeUtils.isBm(dcMetaCache.getKeeperContainer(keeperTransMeta.getKeeperMeta()));
 	}
 
 	protected Command<?> createDeleteKeeperCommand(KeeperContainerService keeperContainerService,
