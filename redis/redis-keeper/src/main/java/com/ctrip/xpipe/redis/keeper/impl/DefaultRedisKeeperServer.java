@@ -1288,7 +1288,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		if(shouldDestroy()) {
 			this.replicationStoreManager.destroy();
 		}else {
-			release();
+			boolean failed = release();
+			if(failed) {
+				EventMonitor.DEFAULT.logEvent(EVENT_TYPE_RELEASE, EVENT_FAIL,
+						Collections.singletonMap("replId", String.valueOf(getReplId())));
+			}else {
+				EventMonitor.DEFAULT.logEvent(EVENT_TYPE_RELEASE, EVENT_SUCCESS,
+						Collections.singletonMap("replId", String.valueOf(getReplId())));
+			}
 		}
 	}
 
@@ -1311,8 +1318,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void release() throws Exception {
-		this.replicationStoreManager.release();
+	public boolean release() throws Exception {
+		return this.replicationStoreManager.release();
 	}
 
 	@Override

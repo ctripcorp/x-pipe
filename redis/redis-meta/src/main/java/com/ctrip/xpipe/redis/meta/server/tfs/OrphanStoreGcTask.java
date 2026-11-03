@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.tfs;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
@@ -11,6 +12,7 @@ import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaServerLeaderAware;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperRemoveMetric;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
@@ -62,6 +64,8 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
     private static final Logger logger = LoggerFactory.getLogger(OrphanStoreGcTask.class);
 
     private static final String REPL_DIR_PREFIX = "repl_";
+
+    private KeeperRemoveMetric removeMetric = new KeeperRemoveMetric(MetricProxy.DEFAULT);
 
     @Autowired
     private MetaServerConfig config;
@@ -281,10 +285,12 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
             List<GcOrphanStoreResult> results = service.gcOrphanStores(replIds);
             logger.info("[doGcGroup][fsId={}] batch gc {} candidate(s) via {} -> {}",
                     fsId, replIds.size(), representative, results);
+            removeMetric.trackOrphanGc(fsId, replIds, results);
             return true;
         } catch (Throwable th) {
             logger.warn("[doGcGroup][fsId={}] batch gc call failed via {}, replIds={}",
                     fsId, representative, replIds, th);
+            removeMetric.trackOrphanGcCallFail(fsId, replIds, th);
             return false;
         }
     }
@@ -409,5 +415,10 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
     @VisibleForTesting
     protected void setGroupExecutor(ExecutorService groupExecutor) {
         this.groupExecutor = groupExecutor;
+    }
+
+    @VisibleForTesting
+    protected void setMetricProxy(MetricProxy metricProxy) {
+        this.removeMetric = new KeeperRemoveMetric(metricProxy);
     }
 }
