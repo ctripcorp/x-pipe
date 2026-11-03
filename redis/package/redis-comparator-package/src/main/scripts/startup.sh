@@ -33,10 +33,9 @@ function getTotalMem() {
 }
 
 function getSafeXmx() {
-    # Heap: 50% of machine memory, cap 8G (on-heap RingBuffer, spec Q17 / §4.10)
     total=`getTotalMem`
-    SAFE_PERCENT=50
-    MAX_MEM=8
+    SAFE_PERCENT=75
+    MAX_MEM=14
     result=`expr $total \* $SAFE_PERCENT / 100`
     if [ "$result" -lt 1 ]; then
         result=1
