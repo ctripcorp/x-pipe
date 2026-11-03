@@ -29,6 +29,8 @@ import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ctrip.xpipe.redis.keeper.storage.health.IoTask;
+
 class StorageUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(StorageUtil.class);
@@ -87,7 +89,7 @@ class StorageUtil {
     static <T> T awaitIoCachePrep(ExecutorService executor, AbstractStorageFile file, String registerKey,
             long timeoutMs, BiConsumer<String, CompletableFuture<?>> register,
             Supplier<T> task, Consumer<T> clean) {
-        CompletableFuture<T> future = supply(executor, () -> {
+        CompletableFuture<T> future = supply(executor, file, () -> {
             requireOpen(file);
             return task.get();
         });
@@ -152,6 +154,55 @@ class StorageUtil {
         } catch (RejectedExecutionException e) {
             return CompletableFuture.failedFuture(e);
         }
+    }
+
+    // ---- IO health instrumentation ----
+    // submitNanos is taken before execute(); the task object itself is what sits in the queue.
+
+    static <T> CompletableFuture<T> supply(ExecutorService executor, AbstractStorageFile file,
+            java.util.function.Supplier<T> task) {
+        return supply(executor, file == null ? null : file.tenant, file == null ? null : file.path, task);
+    }
+
+    static <T> CompletableFuture<T> supply(ExecutorService executor, AbstractStorageFile file,
+            java.util.function.Supplier<T> task, ByteBuf data) {
+        return submit(executor, file == null ? null : file.tenant, file == null ? null : file.path,
+                task, data);
+    }
+
+    static CompletableFuture<Void> run(ExecutorService executor, AbstractStorageFile file,
+            Runnable task) {
+        return run(executor, file == null ? null : file.tenant, file == null ? null : file.path, task);
+    }
+
+    static <T> CompletableFuture<T> supply(ExecutorService executor, String tenant, String path,
+            java.util.function.Supplier<T> task) {
+        return submit(executor, tenant, path, task, null);
+    }
+
+    static CompletableFuture<Void> run(ExecutorService executor, String tenant, String path,
+            Runnable task) {
+        Runnable wrapped = wrapRunnable(task);
+        java.util.function.Supplier<Void> body = () -> {
+            wrapped.run();
+            return null;
+        };
+        return submit(executor, tenant, path, body, null);
+    }
+
+    private static <T> CompletableFuture<T> submit(ExecutorService executor, String tenant,
+            String path, java.util.function.Supplier<T> task, ByteBuf data) {
+        IoTask<T> ioTask = new IoTask<>(tenant, path, System.nanoTime(), wrapSupplier(task));
+        try {
+            executor.execute(ioTask);
+        } catch (Throwable e) {
+            // never queued: the telemetry has not seen it, nothing to undo
+            if (data != null) {
+                data.release();
+            }
+            return CompletableFuture.failedFuture(e);
+        }
+        return ioTask.future();
     }
 
     private static <T> java.util.function.Supplier<T> wrapSupplier(java.util.function.Supplier<T> task) {

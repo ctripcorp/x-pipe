@@ -23,12 +23,22 @@ public class AsyncFile extends AbstractStorageFile {
     final boolean lenient;
 
     AsyncFile(String path, ReplaceMode replaceMode, OpenMode openMode, String key, String ioKey, boolean lenient) {
-        this(path, replaceMode, openMode, true, key, ioKey, lenient);
+        this(path, replaceMode, openMode, true, key, ioKey, lenient, null);
+    }
+
+    AsyncFile(String path, ReplaceMode replaceMode, OpenMode openMode, String key, String ioKey, boolean lenient,
+            String tenant) {
+        this(path, replaceMode, openMode, true, key, ioKey, lenient, tenant);
     }
 
     AsyncFile(String path, ReplaceMode replaceMode, OpenMode openMode, boolean canCloseByUser,
             String key, String ioKey, boolean lenient) {
-        super(openMode, replaceMode, key, ioKey, path, Paths.get(path).getParent().toString());
+        this(path, replaceMode, openMode, canCloseByUser, key, ioKey, lenient, null);
+    }
+
+    AsyncFile(String path, ReplaceMode replaceMode, OpenMode openMode, boolean canCloseByUser,
+            String key, String ioKey, boolean lenient, String tenant) {
+        super(openMode, replaceMode, key, ioKey, path, Paths.get(path).getParent().toString(), tenant);
         this.canCloseByUser = canCloseByUser;
         this.lenient = lenient;
     }

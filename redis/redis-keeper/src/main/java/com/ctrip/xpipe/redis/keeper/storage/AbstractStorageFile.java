@@ -61,6 +61,10 @@ public abstract class AbstractStorageFile {
     final String path;
     final String dirPath;
 
+    // Owner of the file, as passed to open (the keeper's replId). Null for container-level IO.
+    // IO health attributes every file operation to this tenant.
+    final String tenant;
+
     // IO key for inFlight serialization.
     final String ioKey;
 
@@ -110,12 +114,13 @@ public abstract class AbstractStorageFile {
     }
 
     AbstractStorageFile(OpenMode openMode, ReplaceMode replaceMode, String key, String ioKey,
-            String path, String dirPath) {
+            String path, String dirPath, String tenant) {
         this.openMode = openMode;
         this.replaceMode = replaceMode;
         this.key = key;
         this.ioKey = ioKey;
         this.path = path;
         this.dirPath = dirPath;
+        this.tenant = tenant;
     }
 }
