@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
@@ -298,7 +299,7 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
     /**
      * TFS containers in the current dc's meta, grouped by {@code tfsFsId} — a 1:1 proxy for
      * {@code logicalBuId} (one shared TFS mount). BM containers, and any container missing a
-     * {@code tfsFsId}, never enter a group: {@link KeeperMediumResolver#isBm} fails closed toward
+     * {@code tfsFsId}, never enter a group: {@link KeeperDiskTypeUtils#isBm} fails closed toward
      * "treat as TFS" on ambiguity, which is exactly backwards for deciding who to list a destructive
      * candidate set from, so this filters the other way — only a container clearly identified as TFS
      * (not BM) with a concrete fsId joins a group.
@@ -307,7 +308,7 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
     protected Map<String, List<KeeperContainerMeta>> groupTfsContainersByFsId(List<KeeperContainerMeta> allContainers) {
         Map<String, List<KeeperContainerMeta>> result = new HashMap<>();
         for (KeeperContainerMeta container : allContainers) {
-            if (KeeperMediumResolver.isBm(container) || StringUtil.isEmpty(container.getTfsFsId())) {
+            if (KeeperDiskTypeUtils.isBm(container) || StringUtil.isEmpty(container.getTfsFsId())) {
                 continue;
             }
             result.computeIfAbsent(container.getTfsFsId(), k -> new ArrayList<>()).add(container);
@@ -355,7 +356,7 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
                 }
                 for (KeeperMeta keeper : shard.getKeepers()) {
                     KeeperContainerMeta container = containersById.get(keeper.getKeeperContainerId());
-                    if (container == null || KeeperMediumResolver.isBm(container) || StringUtil.isEmpty(container.getTfsFsId())) {
+                    if (container == null || KeeperDiskTypeUtils.isBm(container) || StringUtil.isEmpty(container.getTfsFsId())) {
                         continue;
                     }
                     result.computeIfAbsent(container.getTfsFsId(), k -> new HashSet<>()).add(shard.getDbId());
