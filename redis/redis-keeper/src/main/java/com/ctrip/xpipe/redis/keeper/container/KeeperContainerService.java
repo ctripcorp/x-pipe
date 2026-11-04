@@ -15,7 +15,6 @@ import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.ReplId;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -345,8 +344,6 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
             keeperServer.destroy();
 
         } catch (Throwable ex) {
-            EventMonitor.DEFAULT.logError(RedisKeeperServer.EVENT_TYPE_DESTROY, RedisKeeperServer.EVENT_FAIL,
-                    Collections.singletonMap("replId", keeperServerKey));
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
                             String.format("Remove keeper failed for %s", replId)), ex);
@@ -357,14 +354,12 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
     /**
      * Stop the manager (its gc may still run after a failed server stop) and free the store; never throws.
-     * @return true if freeing failed
      */
-    private boolean releaseQuietly(RedisKeeperServer keeperServer) {
+    private void releaseQuietly(RedisKeeperServer keeperServer) {
         try {
-            return keeperServer.release();
+            keeperServer.release();
         } catch (Throwable th) {
             logger.error("[releaseQuietly]{}", keeperServer, th);
-            return true;
         }
     }
 
@@ -382,27 +377,19 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
             return;
         }
 
-        boolean failed = true;
         try {
             // 1. stop and dispose keeper server
             deRegister(keeperServer);
 
             // 2. remove keeper
             removeKeeperCache(keeperServerKey);
-            failed = false;
         } catch (Throwable ex) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
                             String.format("Release keeper failed for %s", replId)), ex);
         } finally {
             // 3. close external resources without deleting them, even if stop/dispose failed
-            failed |= releaseQuietly(keeperServer);
-            Map<String, String> data = Collections.singletonMap("replId", keeperServerKey);
-            if (failed) {
-                EventMonitor.DEFAULT.logError(RedisKeeperServer.EVENT_TYPE_RELEASE, RedisKeeperServer.EVENT_FAIL, data);
-            } else {
-                EventMonitor.DEFAULT.logEvent(RedisKeeperServer.EVENT_TYPE_RELEASE, RedisKeeperServer.EVENT_SUCCESS, data);
-            }
+            releaseQuietly(keeperServer);
         }
     }
 

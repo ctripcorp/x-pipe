@@ -872,7 +872,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				try {
 					LifecycleHelper.stopIfPossible(replicationStoreManager);
 					// stop no longer frees the store: hand the lease back explicitly
-					releaseFailed.set(replicationStoreManager.release());
+					releaseFailed.set(!replicationStoreManager.release());
 				} catch (IOException e) {
 					throw e;
 				} catch (Exception e) {
@@ -1288,14 +1288,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		if(shouldDestroy()) {
 			this.replicationStoreManager.destroy();
 		}else {
-			boolean failed = release();
-			if(failed) {
-				EventMonitor.DEFAULT.logEvent(EVENT_TYPE_RELEASE, EVENT_FAIL,
-						Collections.singletonMap("replId", String.valueOf(getReplId())));
-			}else {
-				EventMonitor.DEFAULT.logEvent(EVENT_TYPE_RELEASE, EVENT_SUCCESS,
-						Collections.singletonMap("replId", String.valueOf(getReplId())));
-			}
+			release();
 		}
 	}
 

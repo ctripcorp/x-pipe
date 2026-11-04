@@ -48,6 +48,14 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DefaultReplicationStoreManager extends AbstractLifecycleObservable implements ReplicationStoreManager {
 
+    /** CAT events for a keeper released / destroyed by the metaserver; name is the outcome, fail via logError. */
+    String EVENT_TYPE_RELEASE = "KeeperRelease";
+    String EVENT_TYPE_DESTROY = "KeeperDestroy";
+    String EVENT_SUCCESS = "success";
+    String EVENT_FAIL = "fail";
+    /** destroy left the store alone: not the holder, or the deleter deferred it to the orphan gc */
+    String EVENT_SKIP = "skip";
+
     private final static String META_FILE = "store_manager_meta.properties";
 
     private static final String LATEST_STORE_DIR = "latest.store.dir";
@@ -634,20 +642,34 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     /**
      * The only place store resources are freed: close the current store and the manager-meta handle.
      * Call after stop(); reopen is refused by the stopped lifecycle, not permanently. Idempotent.
+     * @return true when both the store and the manager-meta handle were released; false when either
+     * one could not be closed (deferred close / left to GC)
      */
     @Override
     public synchronized boolean release() throws Exception {
         logger.info("[release]{}", this);
         boolean storeReleased = false;
+        boolean metaClosed = false;
         try {
             // Drain in-flight atomic replace (TMP_REP_*) before closing.
             storeReleased = releaseCurrentStore(false);
         } catch (Exception e) {
             logger.warn("[release][releaseCurrentStore]", e);
         } finally {
-            boolean metaClosed = closeManagerMetaFile();
-            return !storeReleased || !metaClosed;
+            // Not a return: the meta handle must still be closed when the store close escapes with an Error.
+            metaClosed = closeManagerMetaFile();
         }
+        boolean released = storeReleased && metaClosed;
+
+        if(released) {
+            EventMonitor.DEFAULT.logEvent(EVENT_TYPE_RELEASE, EVENT_SUCCESS,
+                    Collections.singletonMap("replId", String.valueOf(getReplId())));
+        }else {
+            EventMonitor.DEFAULT.logEvent(EVENT_TYPE_RELEASE, EVENT_FAIL,
+                    Collections.singletonMap("replId", String.valueOf(getReplId())));
+        }
+
+        return released;
     }
 
     /**
@@ -661,7 +683,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         logger.info("[destroy]{}", this);
         if (!getLifecycleState().isDisposed()) {
             logger.warn("[destroy][not disposed, skip]{}", this);
-            EventMonitor.DEFAULT.logError(RedisKeeperServer.EVENT_TYPE_DESTROY, RedisKeeperServer.EVENT_FAIL, eventData());
+            EventMonitor.DEFAULT.logError(EVENT_TYPE_DESTROY, EVENT_FAIL, eventData());
             return;
         }
         AsyncFile heldMeta = readOnly ? null : managerMetaAsyncFile;
@@ -671,14 +693,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         release();
         GcOrphanStoreResult result = storeDeleter.delete(baseDir, replId, heldMeta);
         if (result.status == GcOrphanStoreResult.Status.DELETED || result.status == GcOrphanStoreResult.Status.NOT_FOUND) {
-            EventMonitor.DEFAULT.logEvent(RedisKeeperServer.EVENT_TYPE_DESTROY, RedisKeeperServer.EVENT_SUCCESS, eventData());
+            EventMonitor.DEFAULT.logEvent(EVENT_TYPE_DESTROY, EVENT_SUCCESS, eventData());
             return;
         }
         logger.warn("[destroy][left to orphan gc]{} {}", baseDir, result);
         if (result.status == GcOrphanStoreResult.Status.SKIPPED) {
-            EventMonitor.DEFAULT.logEvent(RedisKeeperServer.EVENT_TYPE_DESTROY, RedisKeeperServer.EVENT_SKIP, eventData());
+            EventMonitor.DEFAULT.logEvent(EVENT_TYPE_DESTROY, EVENT_SKIP, eventData());
         } else {
-            EventMonitor.DEFAULT.logError(RedisKeeperServer.EVENT_TYPE_DESTROY, RedisKeeperServer.EVENT_FAIL, eventData());
+            EventMonitor.DEFAULT.logError(EVENT_TYPE_DESTROY, EVENT_FAIL, eventData());
         }
     }
 
