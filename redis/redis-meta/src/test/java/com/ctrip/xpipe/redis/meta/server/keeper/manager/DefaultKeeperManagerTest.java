@@ -109,7 +109,7 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
         verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, metaKeeper));
-        verify(keeperStateController, times(0)).removeKeeper(any());
+        verify(keeperStateController, times(0)).removeKeeper(any(), anyBoolean());
     }
 
     @Test
@@ -122,7 +122,7 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
         verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, metaKeeper));
-        verify(keeperStateController, times(0)).removeKeeper(any());
+        verify(keeperStateController, times(0)).removeKeeper(any(), anyBoolean());
     }
 
     @Test
@@ -136,7 +136,8 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
         verify(keeperStateController, times(0)).addKeeper(any());
-        verify(keeperStateController, times(1)).removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, surviveKeeper));
+        // dead-keeper cleanup never purges
+        verify(keeperStateController, times(1)).removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, surviveKeeper), false);
     }
 
     @Test
@@ -832,7 +833,39 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
         });
         // allow redundant addAndStart keeper/applier job since the job is idempotent
         verify(keeperStateController, times(6)).addKeeper(any());
-        verify(keeperStateController, never()).removeKeeper(any());
+        verify(keeperStateController, never()).removeKeeper(any(), anyBoolean());
+    }
+
+    /** All keepers of a shard removed: nothing is left afterwards, so every removal is a purge. */
+    @Test
+    public void testRemoveAllKeepersOfShardPurges() {
+        DcMeta current = getDcMeta("jq");
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
+        future.getClusters().get("cluster1").getShards().get("shard1").getKeepers().clear();
+
+        handleClustersModified(current, future);
+
+        verify(keeperStateController, times(2)).removeKeeper(any(), eq(true));
+        verify(keeperStateController, never()).removeKeeper(any(), eq(false));
+    }
+
+    /** Some keepers left in the shard: the removed one is only released. */
+    @Test
+    public void testRemoveSomeKeepersOfShardReleases() {
+        DcMeta current = getDcMeta("jq");
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
+        future.getClusters().get("cluster1").getShards().get("shard1").getKeepers().remove(0);
+
+        handleClustersModified(current, future);
+
+        verify(keeperStateController, times(1)).removeKeeper(any(), eq(false));
+        verify(keeperStateController, never()).removeKeeper(any(), eq(true));
+    }
+
+    private void handleClustersModified(DcMeta current, DcMeta future) {
+        DcMetaComparator comparator = new DcMetaComparator(current, future);
+        comparator.compare();
+        comparator.getMofified().forEach(c -> manager.handleClusterModified((ClusterMetaComparator) c));
     }
 
 }

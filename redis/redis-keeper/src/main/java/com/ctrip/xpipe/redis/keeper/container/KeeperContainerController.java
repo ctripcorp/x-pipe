@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
@@ -130,6 +131,34 @@ public class KeeperContainerController extends AbstractController {
 
         logger.info("[remove]{},{},{}", clusterName, shardName, keeperTransMeta);
         keeperContainerService.remove(ReplId.from(keeperTransMeta.getReplId()));
+    }
+
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/release", method = RequestMethod.PUT)
+    public void release(@PathVariable String clusterName, @PathVariable String shardName, @RequestBody KeeperTransMeta keeperTransMeta) {
+
+        logger.info("[release]{},{},{}", clusterName, shardName, keeperTransMeta);
+        keeperContainerService.release(ReplId.from(keeperTransMeta.getReplId()));
+    }
+
+    /** keeper-tfs-m7: raw TFS store-root directory listing for the metaserver's orphan GC round. */
+    @GetMapping(value = "/gc/dirs")
+    public List<String> listGcDirs() {
+        logger.info("[listGcDirs]");
+        return keeperContainerService.listStoreDirNames();
+    }
+
+    /** keeper-tfs-m7: fallback delete of a TFS store this container has no live keeper for. */
+    @RequestMapping(value = "/gc/{repl_id}", method = RequestMethod.PUT)
+    public GcOrphanStoreResult gc(@PathVariable("repl_id") long replId) {
+        logger.info("[gc]{}", replId);
+        return keeperContainerService.gcOrphanStore(replId);
+    }
+
+    /** keeper-tfs-m7: batch form of {@link #gc} — one request for a GC-round candidate chunk. */
+    @RequestMapping(value = "/gc", method = RequestMethod.PUT)
+    public List<GcOrphanStoreResult> gcBatch(@RequestBody List<Long> replIds) {
+        logger.info("[gcBatch]{}", replIds);
+        return keeperContainerService.gcOrphanStores(replIds);
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/start", method = RequestMethod.PUT)

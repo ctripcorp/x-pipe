@@ -37,6 +37,11 @@ public interface DcMetaCache extends Observable {
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
+	/** All keeper containers known to the current dc's meta — for the orphan-store GC round's
+	 * logicalBu/tfsFsId grouping, which needs the full container population, not just the one a
+	 * given keeper happens to sit on. */
+	List<KeeperContainerMeta> getKeeperContainers();
+
 	ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta);
 
 	boolean isCurrentDcPrimary(Long clusterDbId, Long shardDbId);
@@ -80,5 +85,14 @@ public interface DcMetaCache extends Observable {
 	void clusterDeleted(Long clusterDbId);
 	
 	void primaryDcChanged(Long clusterDbId, Long shardDbId, String newPrimaryDc);
+
+	/**
+	 * Wall-clock time of the last {@code loadMetaFromConsole()} call that returned without throwing,
+	 * regardless of whether it actually changed anything — distinct from "last time the meta actually
+	 * changed", which can go arbitrarily long on a healthy, stable dc. The orphan-store GC round uses
+	 * this (not meta-change time) to detect "console/qconfig has been failing to refresh for a while",
+	 * which is the actual danger signal for a destructive decision.
+	 */
+	long getLastSuccessfulLoadMilli();
 
 }

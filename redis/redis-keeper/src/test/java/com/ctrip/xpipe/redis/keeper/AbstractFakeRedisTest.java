@@ -272,6 +272,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 
 		LifecycleHelper.stopIfPossible(keeperServer);
 		LifecycleHelper.disposeIfPossible(keeperServer);
+		keeperServer.release();
 
 		KeeperConfig keeperConfig = newTestKeeperConfig();
 		((TestKeeperConfig)keeperConfig).setReplKeepSecondsAfterDown(replKeepSecondsAfterDown);

@@ -347,6 +347,7 @@ public class MetaWriteFailureRestoreTest extends AbstractRedisKeeperTest {
 
         public void close() throws Exception {
             LifecycleHelper.stopIfPossible(manager);
+            manager.release();
             LifecycleHelper.disposeIfPossible(manager);
         }
 

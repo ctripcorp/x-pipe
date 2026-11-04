@@ -49,6 +49,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 			Assert.assertFalse(manager.isReadOnly());
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 		}
 	}
@@ -85,6 +86,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 
 			currentMetaRef(manager).set(staleLatest(oldDir.getName()));
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			manager.setReadOnly(true);
 			Assert.assertNull("currentMeta must be cleared", currentMetaRef(manager).get());
 			manager.setReadOnly(false);
@@ -93,6 +95,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 			Assert.assertEquals(newDir, storeBaseDir(manager.getCurrent()));
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			fs.shutdown();
 		}
@@ -108,6 +111,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 			DefaultReplicationStore store = (DefaultReplicationStore) manager.create();
 			Assert.assertTrue(store.getBaseDir().exists());
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			manager.setReadOnly(true);
 			LifecycleHelper.startIfPossible(manager);
 			Assert.assertTrue(manager.isReadOnly());
@@ -116,11 +120,14 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 			assertReadOnlyStore(() -> manager.recordLatestStore("poison"));
 			assertReadOnlyStore(manager::gc);
 
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
 			manager.destroy();
 			Assert.assertFalse(store.getBaseDir().exists());
 		} finally {
 			try {
 				LifecycleHelper.stopIfPossible(manager);
+				manager.release();
 			} catch (Throwable ignore) {
 			}
 			try {
@@ -159,6 +166,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 					eq(AbstractStorageFile.OpenMode.READ), eq(AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP), eq(true), any());
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			fs.shutdown();
 		}
@@ -179,6 +187,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 			verify(fs, never()).open(anyString(), any(), any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			Assert.assertNull(manager.getOpenedStore());
 
 			manager.setReadOnly(true);
@@ -187,6 +196,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 			Assert.assertEquals(0, manager.getGcCount());
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 			LifecycleHelper.disposeIfPossible(manager);
 			fs.shutdown();
 		}
