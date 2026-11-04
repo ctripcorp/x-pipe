@@ -37,6 +37,9 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	 * file. Call after stop(); reopen is refused by the stopped lifecycle, not permanently.
 	 * Unlike {@link #destroy()}, never deletes {@link #getBaseDir()} — for a shared TFS store, the
 	 * directory outlives this keeper instance. {@code destroy()} is {@code release()} followed by rmdir.
+	 *
+	 * @return true when the store and the manager-meta handle were both released; false when a handle
+	 * could not be closed
 	 */
 	boolean release() throws Exception;
 

@@ -94,12 +94,12 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
 
     private void stopAndAssertFailure(AbstractStorageFile deferred) throws Exception {
         LifecycleHelper.stopIfPossible(manager);
-        boolean releaseFailed = manager.release();
+        boolean released = manager.release();
         assertTrue(manager.getLifecycleState().isPositivelyStopped());
         assertNull(manager.getOpenedStore());
         assertTrue(closer.isPending(deferred));
 
-        assertTrue(releaseFailed);
+        assertFalse(released);
     }
 
     @Test
@@ -132,16 +132,16 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
         failTwiceThenClose(rdbWrite);
 
         LifecycleHelper.stopIfPossible(manager);
-        boolean releaseFailed = manager.release();
+        boolean released = manager.release();
         assertTrue(manager.getLifecycleState().isPositivelyStopped());
         assertTrue(closer.isPending(rdbWrite));
-        assertFalse(releaseFailed);
+        assertTrue(released);
     }
 
     @Test
     public void testDeferredReadOnlyManagerMetaHandleIsNotRecorded() throws Exception {
         LifecycleHelper.stopIfPossible(manager);
-        assertFalse(manager.release());
+        assertTrue(manager.release());
         manager.setReadOnly(true);
         LifecycleHelper.startIfPossible(manager);
         assertNotNull(manager.getCurrent());
@@ -150,9 +150,9 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
         failTwiceThenClose(managerMeta);
 
         LifecycleHelper.stopIfPossible(manager);
-        boolean releaseFailed = manager.release();
+        boolean released = manager.release();
         assertTrue(closer.isPending(managerMeta));
-        assertFalse(releaseFailed);
+        assertTrue(released);
     }
 
     @Test
@@ -162,7 +162,7 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
         manager.release();
         LifecycleHelper.startIfPossible(manager);
         LifecycleHelper.stopIfPossible(manager);
-        assertFalse(manager.release());
+        assertTrue(manager.release());
     }
 
     @Test

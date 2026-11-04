@@ -779,11 +779,11 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		doThrow(new IOException("injected releaseCurrentStore fail")).when(manager).releaseCurrentStore(false);
 		clearInvocations(fileSystem);
 		LifecycleHelper.stopIfPossible(manager);
-		boolean releaseFailed = manager.release();
+		boolean released = manager.release();
 		Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
 		// releaseCurrentStore is stubbed: the only close in release's finally is manager-meta.
 		verify(fileSystem, atLeastOnce()).close(any(AsyncFile.class));
-		Assert.assertTrue(releaseFailed);
+		Assert.assertFalse("store close failed, so release must report failure", released);
 		try {
 			LifecycleHelper.disposeIfPossible(manager);
 		} catch (Throwable ignore) {

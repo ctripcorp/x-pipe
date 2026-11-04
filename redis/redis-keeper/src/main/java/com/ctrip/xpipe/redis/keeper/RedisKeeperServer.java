@@ -34,14 +34,6 @@ import java.util.Set;
  * 2016年3月29日 下午3:09:23
  */
 public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, Destroyable{
-
-	/** CAT events for a keeper released / destroyed by the metaserver; name is the outcome, fail via logError. */
-	String EVENT_TYPE_RELEASE = "KeeperRelease";
-	String EVENT_TYPE_DESTROY = "KeeperDestroy";
-	String EVENT_SUCCESS = "success";
-	String EVENT_FAIL = "fail";
-	/** destroy left the store alone: not the holder, or the deleter deferred it to the orphan gc */
-	String EVENT_SKIP = "skip";
 	
 	int getListeningPort();
 
@@ -233,7 +225,7 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	 * after a manual stop, which may be followed by start again — so no offline cleanup here (the monitor
 	 * entry is dropped in dispose). Unlike {@link #destroy()}, safe for a shared TFS store that must outlive
 	 * this keeper instance.
-	 * @return true if freeing failed (same as {@link ReplicationStoreManager#release()})
+	 * @return true if freeing succeeded (same as {@link ReplicationStoreManager#release()})
 	 */
 	boolean release() throws Exception;
 
