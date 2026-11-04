@@ -157,7 +157,7 @@ public class CrossRegionFsyncCoordinator {
             RedisSlave s = live.get(k);
             if (s != null && s.isOpen()) {
                 // 在线：若已进入增量且 grace 过期 → 释放租约
-                if (s.getSlaveState() == REDIS_REPL_ONLINE && now - s.getGraceStart() >= graceMillis) {
+                if (s.getSlaveState() == REDIS_REPL_ONLINE && s.getGraceStart()>0 && now - s.getGraceStart() >= graceMillis) {
                     admitOrder.add(key(s));                // 记录同步完成顺序
                     it.remove();
                 }

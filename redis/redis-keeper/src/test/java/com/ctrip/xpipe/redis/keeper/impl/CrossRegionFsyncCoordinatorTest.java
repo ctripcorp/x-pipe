@@ -171,8 +171,7 @@ public class CrossRegionFsyncCoordinatorTest {
         clock.set(SETTLE_MILLIS);
         coordinator.tick(slaveSet(a, b, c), this::admit);   // 满窗口，放行 a（ip:port 最小）
         assertEquals(1, released.size());
-        assertSame(a, released.get(0));
-        assertEquals(Collections.singletonList("10.0.0.2:6379"), coordinator.admitOrder4Test());
+        assertSame(a, released.get(0));                      // released 已按 ip:port 顺序记录放行
     }
 
     @Test
@@ -206,6 +205,23 @@ public class CrossRegionFsyncCoordinatorTest {
 
         clock.set(SETTLE_MILLIS + GRACE_MILLIS);             // 满 grace
         assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));
+        // admitOrder 记录的是同步完成（grace 过期释放租约）顺序
+        assertEquals(Collections.singletonList("10.0.0.2:6379"), coordinator.admitOrder4Test());
+    }
+
+    @Test
+    public void testOnlineWithoutGraceStartKeepsLease() {
+        RedisSlave a = slave("10.0.0.2", 6379);
+        release(a);                                          // 放行 a（授予租约）
+        when(a.getSlaveState()).thenReturn(REDIS_REPL_ONLINE);
+        when(a.getAck()).thenReturn(100L);
+        when(a.getGraceStart()).thenReturn(0L);              // graceStart 未赋值（默认 0）
+
+        clock.set(SETTLE_MILLIS + GRACE_MILLIS * 10);        // 已经远超 grace
+        assertEquals(1, coordinator.occupiedCount4Test(slaveSet(a)));   // 未赋值不能当作「grace 已过期」而释放租约
+
+        when(a.getGraceStart()).thenReturn(5L);              // 后续 ack putOnline 补上 graceStart
+        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));   // 正常按 grace 过期释放
     }
 
     @Test
