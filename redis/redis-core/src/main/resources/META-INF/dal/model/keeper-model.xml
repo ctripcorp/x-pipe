@@ -90,6 +90,9 @@
 		<!-- 所在 keepercontainer 的 pod hostname；物理机为空串。不承担 IP 传递，
 		     仅用于消费方经 ZK 反查实时 IP，以及 console 按 hostname + keeperContainerId 定位 DB 行 -->
 		<attribute name="hostname" value-type="String" />
+		<!-- Keeper IO 健康状态（HEALTHY/SICK/DOWN/RECOVERED_PENDING），随 leader-latch 节点数据发布；
+		     老节点没有该字段，按 HEALTHY 处理 -->
+		<attribute name="healthState" value-type="String" />
 		<snippet>
 			public boolean isMaster(){
 			return m_master == null || m_master.trim().length() == 0;
