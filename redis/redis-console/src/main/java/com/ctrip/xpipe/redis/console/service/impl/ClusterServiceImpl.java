@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
@@ -24,14 +25,9 @@ import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
 import com.ctrip.xpipe.redis.console.entity.ShardEntity;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterDcGroupModel;
-import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
-import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
-import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
-import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
@@ -560,13 +556,31 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 					shardDTO.addRedis(new InstanceInfo(redis.getIp(), redis.getPort(), dcMeta.getId()));
 				});
 				shardMeta.getKeepers().forEach(keeper -> {
-					shardDTO.addKeeper(new InstanceInfo(keeper.getIp(), keeper.getPort(), dcMeta.getId()));
+					shardDTO.addKeeper(new InstanceInfo(resolveKeeperIp(keeper), keeper.getPort(), dcMeta.getId()));
 				});
 			}
 		}
 
 		cluster.setShards(Sets.newHashSet(shardId2Shard.values()));
 		return cluster;
+	}
+
+	/**
+	 * 容器 Keeper（hostname 非空）的 ip 是占位值，按 keepercontainer_id 从 MetaCache 取所属容器的实时 IP；
+	 * 物理机 Keeper 或反查不到时保留原 ip
+	 */
+	@VisibleForTesting
+	String resolveKeeperIp(KeeperMeta keeper) {
+		if (StringUtil.isEmpty(keeper.getHostname())) {
+			return keeper.getIp();
+		}
+		String containerIp = metaCache.getKeeperContainerIp(keeper);
+		if (StringUtil.isEmpty(containerIp) || XPipeConsoleConstant.DEFAULT_IP.equals(containerIp)) {
+			logger.warn("[getOneWayClusterAll] unresolved container keeper {}:{}, container {}",
+					keeper.getHostname(), keeper.getPort(), keeper.getKeeperContainerId());
+			return keeper.getIp();
+		}
+		return containerIp;
 	}
 
 	boolean hasOneWayAzGroupCluster(ClusterDTO cluster) {

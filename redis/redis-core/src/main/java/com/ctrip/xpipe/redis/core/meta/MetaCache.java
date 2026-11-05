@@ -82,6 +82,14 @@ public interface MetaCache {
     String getKeeperDiskType(KeeperMeta keeperMeta);
 
     /**
+     * Keeper 所属 KeeperContainer 在缓存中的 IP。按 {@code keepercontainer_id} 查询，无需 dc 参数。
+     * 容器形态下 Console 加载缓存时已把实时 IP 写入 {@code KeeperContainerMeta.ip}，未解析时仍为占位值。
+     *
+     * @return 未命中 keeper 或其 container 时返回 null
+     */
+    String getKeeperContainerIp(KeeperMeta keeperMeta);
+
+    /**
      * 按分片取 Keeper 列表，<b>返回缓存中的对象引用，不拷贝</b>。
      *
      * <p>调用方只读，不得修改返回的列表及其中的 {@link KeeperMeta}。需要可改副本时用
