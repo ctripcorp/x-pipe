@@ -6,7 +6,9 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
+import com.ctrip.xpipe.redis.core.meta.HealthState;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.health.job.DiskReadWriteCheckJob;
 import com.ctrip.xpipe.redis.keeper.health.job.DiskSpaceUsageCheckJob;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -28,6 +30,8 @@ public class DiskHealthChecker extends AbstractLifecycleObservable implements To
 
     KeeperContainerConfig keeperContainerConfig;
 
+    private final ContainerResourceManager containerResourceManager;
+
     private ScheduledExecutorService scheduled;
 
     private DynamicDelayPeriodTask checkTask;
@@ -40,8 +44,10 @@ public class DiskHealthChecker extends AbstractLifecycleObservable implements To
 
     private static final int checkTimeoutSeconds = Integer.parseInt(System.getProperty("keeper.disk.check.timeout.sec", "10"));
 
-    public DiskHealthChecker(KeeperContainerConfig keeperContainerConfig) {
+    public DiskHealthChecker(KeeperContainerConfig keeperContainerConfig,
+            ContainerResourceManager containerResourceManager) {
         this.keeperContainerConfig = keeperContainerConfig;
+        this.containerResourceManager = containerResourceManager;
         this.result = new AtomicReference<>(new KeeperDiskInfo());
         this.state = new AtomicReference<>(HealthState.HEALTHY);
         this.rounds = new AtomicInteger(0);
@@ -78,7 +84,8 @@ public class DiskHealthChecker extends AbstractLifecycleObservable implements To
             String storePath = keeperContainerConfig.getReplicationStoreDir();
             logger.debug("[check][start] {}", storePath);
             KeeperDiskInfo diskInfo = new KeeperDiskInfo();
-            DiskReadWriteCheckJob diskReadWriteCheckJob = new DiskReadWriteCheckJob(storePath,
+            DiskReadWriteCheckJob diskReadWriteCheckJob = new DiskReadWriteCheckJob(
+                    containerResourceManager.getAsyncFileSystem(), storePath,
                     FoundationService.DEFAULT.getHostName());
             DiskSpaceUsageCheckJob diskSpaceUsageCheckJob = new DiskSpaceUsageCheckJob(storePath);
 
@@ -112,7 +119,11 @@ public class DiskHealthChecker extends AbstractLifecycleObservable implements To
             }
         }
 
-        notifyObservers(this.state.get());
+        // TFS containers: TfsHealthChecker owns resetElection based on real IO. This probe still feeds
+        // /keepers/disk (console capacity/availability), but must not trigger a second reset path.
+        if (!keeperContainerConfig.isTfsMode()) {
+            notifyObservers(this.state.get());
+        }
     }
 
     public KeeperDiskInfo getResult() {

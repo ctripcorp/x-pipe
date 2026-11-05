@@ -162,7 +162,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private KeeperConfig keeperConfig; 
 	
 	private KeeperMeta currentKeeperMeta;
-	private LeaderElector leaderElector;
+	// written by the lifecycle thread, read by the health notify thread
+	private volatile LeaderElector leaderElector;
 
 	private LeaderElectorManager leaderElectorManager;
 
@@ -249,28 +250,31 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return manager;
 	}
 
+	// the context is read on every (re)start, so the latch carries the current KeeperMeta
 	private LeaderElector createLeaderElector(){
-		
 		String leaderElectionZKPath = MetaZkConfig.getKeeperLeaderLatchPath(replId);
-		String leaderElectionID = MetaZkConfig.getKeeperLeaderElectionId(currentKeeperMeta);
-		ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
-		return leaderElectorManager.createLeaderElector(ctx);
+		return leaderElectorManager.createLeaderElector(
+				() -> new ElectContext(leaderElectionZKPath, MetaZkConfig.getKeeperLeaderElectionId(currentKeeperMeta)));
 	}
 
+	/** Stop/start the same elector so it re-creates the latch with the current meta. Best effort, no lock. */
 	@Override
-	public void resetElection() {
+	public boolean resetElection() {
 		try {
 			LifecycleHelper.stopIfPossible(leaderElector);
 			LifecycleHelper.startIfPossible(leaderElector);
 			this.lastResetElectionTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+			return true;
 		} catch (Throwable th) {
 			logger.info("[resetElection][fail][{}]", replId, th);
+			return false;
 		}
 	}
 
 	@Override
 	public boolean isLeader() {
-		return getLifecycleState().isStarted() && leaderElector.hasLeaderShip();
+		LeaderElector elector = this.leaderElector;
+		return getLifecycleState().isStarted() && elector != null && elector.hasLeaderShip();
 	}
 
 	@Override

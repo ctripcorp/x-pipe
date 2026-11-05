@@ -7,6 +7,8 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.zk.ZkClient;
 
+import java.util.function.Supplier;
+
 /**
  * @author marsqing
  *
@@ -23,8 +25,8 @@ public class DefaultLeaderElectorManager extends AbstractLifecycle implements Le
 	}
 	
 	@Override
-	public LeaderElector createLeaderElector(ElectContext ctx) {
-		return new DefaultLeaderElector(ctx, zkClient.get());
+	public LeaderElector createLeaderElector(Supplier<ElectContext> ctxSupplier) {
+		return new DefaultLeaderElector(ctxSupplier, zkClient.get());
 	}
 
 	@Override

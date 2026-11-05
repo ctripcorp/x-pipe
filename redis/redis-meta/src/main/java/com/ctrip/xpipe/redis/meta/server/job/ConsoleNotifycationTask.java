@@ -79,6 +79,10 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	@Override
 	public void keeperActiveElected(final Long clusterDbId, final Long shardDbId, final KeeperMeta activeKeeper) {
 		logger.info("[keeperActiveElected][called]cluster_{},shard_{},{}",clusterDbId,shardDbId,activeKeeper);
+		if (activeKeeper == null) {
+			// no electable keeper: nothing to report to console yet
+			return;
+		}
 		Command<Void> command = new AbstractCommand<Void>() {
 
 			@Override

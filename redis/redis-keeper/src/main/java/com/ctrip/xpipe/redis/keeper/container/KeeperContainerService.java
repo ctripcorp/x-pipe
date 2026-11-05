@@ -12,6 +12,7 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
+import com.ctrip.xpipe.redis.core.meta.HealthState;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.ReplId;
@@ -23,7 +24,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.health.DiskHealthChecker;
-import com.ctrip.xpipe.redis.keeper.health.HealthState;
+import com.ctrip.xpipe.redis.keeper.health.TfsHealthChecker;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
@@ -78,6 +79,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     @Autowired
     private DiskHealthChecker diskHealthChecker;
     @Autowired
+    private TfsHealthChecker tfsHealthChecker;
+    @Autowired
     private SyncRateManager syncRateManager;
     @Autowired
     private ReplDelayConfigCache replDelayConfigCache;
@@ -93,6 +96,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     @Override
     protected void doInitialize() throws Exception {
         this.diskHealthChecker.addObserver(this);
+        this.tfsHealthChecker.bindKeepers(this::list);
+        this.tfsHealthChecker.addObserver(this);
         this.searcherExecutor = new ThreadPoolExecutor(1, 5, 1L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(128), XpipeThreadFactory.create("keeper-searcher"));
         int gcParallelism = Math.max(1, keeperConfig.getOrphanStoreGcParallelism());
@@ -115,24 +120,41 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     }
 
     @Override
-    public void update(Object args, Observable observable) {
-        if (args instanceof HealthState && !((HealthState) args).isUp()) {
-            long currentTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-            // reset leader
-            for (RedisKeeperServer keeper: redisKeeperServers.values()) {
-                if (keeper.isLeader()) {
-                    long lastResetTime = keeper.getLastElectionResetTime();
-                    if (lastResetTime <= currentTime
-                            && currentTime - lastResetTime < keeperContainerConfig.keeperLeaderResetMinInterval()) {
-                        logger.debug("[container_unhealthy][{}] last reset at: {}, skip", keeper.getReplId(), lastResetTime);
-                        continue;
-                    }
-
-                    logger.info("[container_unhealthy][{}] reset leader", keeper.getReplId());
-                    keeper.resetElection();
+    public void update(Object args, Observable source) {
+        if (source instanceof TfsHealthChecker) {
+            // payload is the replId; every keeper publishes its own latch node, not just the leader
+            RedisKeeperServer keeper = redisKeeperServers.get((String) args);
+            if (keeper == null || resetThrottled(keeper)) {
+                return;
+            }
+            logger.info("[tfs_health][{}] reset election, healthState={}",
+                    args, keeper.getCurrentKeeperMeta() == null
+                            ? null : keeper.getCurrentKeeperMeta().getHealthState());
+            // success tells the checker the state reached zk; a throttled/failed round is retried next tick
+            if (keeper.resetElection()) {
+                tfsHealthChecker.onElectionReset((String) args);
+            }
+        } else if (args instanceof HealthState && !((HealthState) args).isUp()) {
+            // container-wide fault: only the leading keepers have to step down
+            for (RedisKeeperServer keeper : redisKeeperServers.values()) {
+                if (!keeper.isLeader() || resetThrottled(keeper)) {
+                    continue;
                 }
+                logger.info("[container_unhealthy][{}] reset leader", keeper.getReplId());
+                keeper.resetElection();
             }
         }
+    }
+
+    private boolean resetThrottled(RedisKeeperServer keeper) {
+        long currentTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        long lastResetTime = keeper.getLastElectionResetTime();
+        if (lastResetTime <= currentTime
+                && currentTime - lastResetTime < keeperContainerConfig.keeperLeaderResetMinInterval()) {
+            logger.debug("[health][{}] last reset at: {}, skip", keeper.getReplId(), lastResetTime);
+            return true;
+        }
+        return false;
     }
 
     public RedisKeeperServer add(KeeperTransMeta keeperTransMeta) {

@@ -227,7 +227,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         String leaderElectionZKPath = MetaZkConfig.getApplierLeaderLatchPath(clusterId, shardId);
         String leaderElectionID = MetaZkConfig.getApplierLeaderElectionId(applierMeta);
         ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
-        return leaderElectorManager.createLeaderElector(ctx);
+        return leaderElectorManager.createLeaderElector(() -> ctx);
     }
 
     @Override

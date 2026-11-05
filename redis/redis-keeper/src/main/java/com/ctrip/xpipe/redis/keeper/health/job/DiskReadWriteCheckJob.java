@@ -1,66 +1,67 @@
 package com.ctrip.xpipe.redis.keeper.health.job;
 
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.utils.StringUtil;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
 
-/**
- * @author lishanglin
- * date 2023/11/10
- */
+/** Write a timestamp through the filesystem, read it back, compare. */
 public class DiskReadWriteCheckJob extends AbstractCommand<Boolean> {
-
-    private String storePath;
-
-    private String hostname;
 
     private static final String DISK_CHECK_DIR = "disk_check";
 
-    public DiskReadWriteCheckJob(String storePath, String hostname) {
+    private final AsyncFileSystem asyncFileSystem;
+    private final String storePath;
+    private final String hostname;
+
+    public DiskReadWriteCheckJob(AsyncFileSystem asyncFileSystem, String storePath, String hostname) {
+        this.asyncFileSystem = asyncFileSystem;
         this.storePath = storePath;
         this.hostname = hostname;
     }
 
     @Override
-    protected void doExecute() throws Throwable {
-        File dir = new File(storePath, DISK_CHECK_DIR);
-        File file = new File(dir, hostname);
-        String data = String.valueOf(System.currentTimeMillis() / 1000);
-        BufferedReader bufferedReader = null;
-        FileOutputStream outputStream = null;
+    protected void doExecute() {
+        String dir = new File(storePath, DISK_CHECK_DIR).getPath();
+        String path = new File(dir, hostname).getPath();
+        byte[] data = String.valueOf(System.currentTimeMillis() / 1000).getBytes(StandardCharsets.UTF_8);
 
+        AsyncFile writeHandle = null;
+        AsyncFile readHandle = null;
         try {
-            if (!dir.exists()) dir.mkdirs();
+            AsyncFileSystemHelper.await(() -> asyncFileSystem.mkdir(dir, true), "disk check mkdir " + dir);
 
-            // check writable
-            outputStream = new FileOutputStream(file);
-            outputStream.write(data.getBytes());
+            writeHandle = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
+                    () -> asyncFileSystem.open(path, AbstractStorageFile.OpenMode.WRITE,
+                            AbstractStorageFile.ReplaceMode.NORMAL, true, null),
+                    "disk check open write " + path);
+            final AsyncFile write = writeHandle;
+            AsyncFileSystemHelper.await(() -> asyncFileSystem.truncate(write, 0), "disk check truncate " + path);
+            AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, write, data, "disk check write " + path);
+            AsyncFileSystemHelper.await(() -> asyncFileSystem.fsync(write), "disk check fsync " + path);
+            AsyncFileSystemHelper.closeHandle(asyncFileSystem, write, null, "disk check close write " + path);
+            writeHandle = null;
 
-            // check readable
-            bufferedReader = new BufferedReader(new FileReader(file), 16);
-            String result = bufferedReader.readLine();
-            future().setSuccess(StringUtil.trimEquals(data, result));
+            readHandle = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
+                    () -> asyncFileSystem.open(path, AbstractStorageFile.OpenMode.READ,
+                            AbstractStorageFile.ReplaceMode.NORMAL, true, null),
+                    "disk check open read " + path);
+            final AsyncFile read = readHandle;
+            long size = AsyncFileSystemHelper.await(() -> asyncFileSystem.size(read), "disk check size " + path);
+            String result = AsyncFileSystemHelper.readAllUtf8(asyncFileSystem, read, size, 0,
+                    "disk check read " + path);
+            future().setSuccess(StringUtil.trimEquals(new String(data, StandardCharsets.UTF_8), result));
         } catch (Throwable th) {
+            getLogger().warn("[disk check read/write fail] {}", path, th);
             future().setSuccess(false);
         } finally {
-            if (null != bufferedReader) {
-                try {
-                    bufferedReader.close();
-                } catch (Throwable th) {
-                    getLogger().warn("[reader close fail]", th);
-                }
-            }
-            if (null != outputStream) {
-                try {
-                    outputStream.close();
-                } catch (Throwable th) {
-                    getLogger().warn("[outputStream close fail]", th);
-                }
-            }
+            AsyncFileSystemHelper.closeHandle(asyncFileSystem, writeHandle, null, "disk check close write " + path);
+            AsyncFileSystemHelper.closeReadHandle(asyncFileSystem, readHandle, null, "disk check close read " + path);
         }
     }
 

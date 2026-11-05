@@ -6,6 +6,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 
+import java.util.function.Supplier;
+
 /**
  * @author marsqing
  *
@@ -15,12 +17,17 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 
 	private LeaderLatch latch;
 
-	private ElectContext ctx;
+	/** Read on every start, so a stop/start round picks up a changed election id. */
+	private Supplier<ElectContext> ctxSupplier;
 
 	private CuratorFramework zkClient;
 
 	public DefaultLeaderElector(ElectContext ctx, CuratorFramework zkClient) {
-		this.ctx = ctx;
+		this(() -> ctx, zkClient);
+	}
+
+	public DefaultLeaderElector(Supplier<ElectContext> ctxSupplier, CuratorFramework zkClient) {
+		this.ctxSupplier = ctxSupplier;
 		this.zkClient = zkClient;
 	}
 
@@ -28,12 +35,13 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 	protected void doStart() throws Exception {
 		elect();
 	}
-	
+
 	@Override
 	public void elect() throws Exception {
-		
+
+		ElectContext ctx = ctxSupplier.get();
 		zkClient.createContainers(ctx.getLeaderElectionZKPath());
-		
+
 		latch = new LeaderLatch(zkClient, ctx.getLeaderElectionZKPath(), ctx.getLeaderElectionID());
 		latch.addListener(new LeaderLatchListener() {
 
