@@ -667,6 +667,15 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public String getKeeperContainerIp(KeeperMeta keeperMeta) {
+        if (null == keeperMeta || null == keeperMeta.getKeeperContainerId()) {
+            return null;
+        }
+        KeeperContainerMeta containerMeta = keeperContainerById.get(keeperMeta.getKeeperContainerId());
+        return null == containerMeta ? null : containerMeta.getIp();
+    }
+
+    @Override
     public Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard) {
         Map<KeeperMeta, String> keepers = new HashMap<>();
         XpipeMetaManager xpipeMetaManager = meta.getValue();

@@ -199,6 +199,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public String getKeeperContainerIp(KeeperMeta keeperMeta) {
+        return null;
+    }
+
+    @Override
     public List<KeeperMeta> getKeeperOfDcClusterShardRef(String dc, String cluster, String shard) {
         return Collections.emptyList();
     }
