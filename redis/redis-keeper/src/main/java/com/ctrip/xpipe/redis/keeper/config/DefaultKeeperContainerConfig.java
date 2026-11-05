@@ -67,6 +67,107 @@ public class DefaultKeeperContainerConfig implements KeeperContainerConfig {
         return Integer.parseInt(config.get(ELECTION_RESET_INTERVAL, "600"));
     }
 
+    @Override
+    public long ioHealthCheckIntervalMill() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_CHECK_INTERVAL_MILL,
+                String.valueOf(DEFAULT_IO_HEALTH_CHECK_INTERVAL_MILL)));
+    }
+
+    @Override
+    public long ioHealthWarmupMill() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_WARMUP_MILL,
+                String.valueOf(DEFAULT_IO_HEALTH_WARMUP_MILL)));
+    }
+
+    @Override
+    public int ioHealthMinRecords() {
+        return Integer.parseInt(config.get(KEY_IO_HEALTH_MIN_RECORDS,
+                String.valueOf(DEFAULT_IO_HEALTH_MIN_RECORDS)));
+    }
+
+    @Override
+    public long ioHealthMetricIntervalMill() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_METRIC_INTERVAL_MILL,
+                String.valueOf(DEFAULT_IO_HEALTH_METRIC_INTERVAL_MILL)));
+    }
+
+    @Override
+    public int ioHealthFailRatioPercent() {
+        return Integer.parseInt(config.get(KEY_IO_HEALTH_FAIL_RATIO_PERCENT,
+                String.valueOf(DEFAULT_IO_HEALTH_FAIL_RATIO_PERCENT)));
+    }
+
+    @Override
+    public int ioHealthSlowRatioPercent() {
+        return Integer.parseInt(config.get(KEY_IO_HEALTH_SLOW_RATIO_PERCENT,
+                String.valueOf(DEFAULT_IO_HEALTH_SLOW_RATIO_PERCENT)));
+    }
+
+    @Override
+    public int ioHealthTenantAbnormalPercent() {
+        return Integer.parseInt(config.get(KEY_IO_HEALTH_TENANT_ABNORMAL_PERCENT,
+                String.valueOf(DEFAULT_IO_HEALTH_TENANT_ABNORMAL_PERCENT)));
+    }
+
+    @Override
+    public int ioHealthTenantAbnormalFloor() {
+        return Integer.parseInt(config.get(KEY_IO_HEALTH_TENANT_ABNORMAL_FLOOR,
+                String.valueOf(DEFAULT_IO_HEALTH_TENANT_ABNORMAL_FLOOR)));
+    }
+
+    @Override
+    public int ioHealthFileConsecutiveFails() {
+        return Integer.parseInt(config.get(KEY_IO_HEALTH_FILE_CONSECUTIVE_FAILS,
+                String.valueOf(DEFAULT_IO_HEALTH_FILE_CONSECUTIVE_FAILS)));
+    }
+
+    @Override
+    public int ioHealthFileFailsInWindow() {
+        return Integer.parseInt(config.get(KEY_IO_HEALTH_FILE_FAILS_IN_WINDOW,
+                String.valueOf(DEFAULT_IO_HEALTH_FILE_FAILS_IN_WINDOW)));
+    }
+
+    @Override
+    public long ioHealthHangMillis() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_HANG_MILL,
+                String.valueOf(DEFAULT_IO_HEALTH_HANG_MILL)));
+    }
+
+    @Override
+    public long ioHealthMinWindowRecords() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_MIN_WINDOW_RECORDS,
+                String.valueOf(DEFAULT_IO_HEALTH_MIN_WINDOW_RECORDS)));
+    }
+
+    @Override
+    public long ioHealthSlowMillis() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_SLOW_MILL,
+                String.valueOf(DEFAULT_IO_HEALTH_SLOW_MILL)));
+    }
+
+    @Override
+    public long ioHealthWindowSeconds() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_WINDOW_SEC,
+                String.valueOf(DEFAULT_IO_HEALTH_WINDOW_SEC)));
+    }
+
+    @Override
+    public long ioHealthFileWindowSeconds() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_FILE_WINDOW_SEC,
+                String.valueOf(DEFAULT_IO_HEALTH_FILE_WINDOW_SEC)));
+    }
+
+    @Override
+    public long ioHealthStateIdleSeconds() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_STATE_IDLE_SEC,
+                String.valueOf(DEFAULT_IO_HEALTH_STATE_IDLE_SEC)));
+    }
+
+    @Override
+    public String ioHealthDisabledRules() {
+        return config.get(KEY_IO_HEALTH_DISABLED_RULES, "");
+    }
+
     private String getDefaultRdsDir() {
         return System.getProperty("user.dir");
     }
