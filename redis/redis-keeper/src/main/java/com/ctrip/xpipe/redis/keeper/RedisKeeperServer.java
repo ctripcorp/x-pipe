@@ -220,7 +220,8 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 
 	PsyncObserver createPsyncObserverForRdbOnlyRepl();
 
-	void resetElection();
+	/** @return true when the latch was re-created (and the current KeeperMeta re-published). */
+	boolean resetElection();
 
 	boolean isLeader();
 

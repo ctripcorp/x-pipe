@@ -4,8 +4,12 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
+import com.ctrip.xpipe.redis.core.meta.HealthState;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,14 +32,26 @@ public class DiskHealthCheckerTest extends AbstractRedisKeeperTest {
     @Mock
     private KeeperContainerConfig keeperContainerConfig;
 
+    @Mock
+    private ContainerResourceManager containerResourceManager;
+
+    private AsyncFileSystem asyncFileSystem;
+
     private DiskHealthChecker checker;
 
     private int checkRound = 2;
 
     @Before
     public void setupDiskHealthCheckerTest() {
-        this.checker = new DiskHealthChecker(keeperContainerConfig);
+        asyncFileSystem = ContainerResourceManager.createAsyncFileSystem(2, 1024 * 1024);
+        Mockito.lenient().when(containerResourceManager.getAsyncFileSystem()).thenReturn(asyncFileSystem);
+        this.checker = new DiskHealthChecker(keeperContainerConfig, containerResourceManager);
         Mockito.lenient().when(keeperContainerConfig.checkRoundBeforeMarkDown()).thenReturn(checkRound);
+    }
+
+    @After
+    public void tearDownDiskHealthCheckerTest() {
+        asyncFileSystem.shutdown();
     }
 
     @Test
@@ -67,6 +83,27 @@ public class DiskHealthCheckerTest extends AbstractRedisKeeperTest {
         expect.add(HealthState.DOWN);
 
         Assert.assertEquals(expect, checkResult);
+    }
+
+    @Test
+    public void testTfsModeKeepsStateButDoesNotNotify() {
+        // TFS containers: TfsHealthChecker owns resetElection; this probe only feeds /keepers/disk
+        Mockito.when(keeperContainerConfig.isTfsMode()).thenReturn(true);
+        List<HealthState> notified = new ArrayList<>();
+        checker.addObserver((args, observable) -> notified.add((HealthState) args));
+
+        KeeperDiskInfo diskInfo = new KeeperDiskInfo();
+        diskInfo.available = false;
+        IntStream.range(0, checkRound).forEach(i -> checker.setResult(diskInfo));
+
+        Assert.assertEquals(HealthState.DOWN, checker.getState());
+        Assert.assertFalse(checker.getResult().available);
+        Assert.assertTrue(notified.isEmpty());
+
+        diskInfo.available = true;
+        checker.setResult(diskInfo);
+        Assert.assertEquals(HealthState.HEALTHY, checker.getState());
+        Assert.assertTrue(notified.isEmpty());
     }
 
     @Test
