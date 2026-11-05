@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.meta.HealthState;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import org.junit.Assert;
@@ -135,6 +136,50 @@ public class KeeperRoleAssignerTest {
         Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm, Arrays.asList(bm, unknown), dcMetaCache);
         Assert.assertEquals(KeeperState.ACTIVE, roles.get(bm));
         Assert.assertEquals(KeeperState.BACKUP, roles.get(unknown));
+    }
+
+    @Test
+    public void testBmActiveSlotSkipsDownTfs() {
+        KeeperMeta bm = keeper(6000, 1L, 1);
+        KeeperMeta downTfs = keeper(6001, 2L, 10);
+        KeeperMeta healthyTfs = keeper(6002, 3L, 10);
+        downTfs.setHealthState(HealthState.DOWN.name());
+        bm.setActive(true);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm,
+                Arrays.asList(bm, downTfs, healthyTfs), dcMetaCache);
+        Assert.assertEquals(KeeperState.ACTIVE, roles.get(bm));
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(healthyTfs));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(downTfs));
+    }
+
+    @Test
+    public void testBmActiveSlotSkipsUnconfirmedTfs() {
+        KeeperMeta bm = keeper(6000, 1L, 1);
+        KeeperMeta pendingTfs = keeper(6001, 2L, 10);
+        KeeperMeta healthyTfs = keeper(6002, 3L, 1);
+        pendingTfs.setHealthState(HealthState.RECOVERED_PENDING.name());
+        bm.setActive(true);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm,
+                Arrays.asList(bm, pendingTfs, healthyTfs), dcMetaCache);
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(healthyTfs));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(pendingTfs));
+    }
+
+    @Test
+    public void testBmActiveSlotFallsBackToPriorityWhenNoTfsHealthy() {
+        KeeperMeta bm = keeper(6000, 1L, 1);
+        KeeperMeta highTfs = keeper(6001, 2L, 5);
+        KeeperMeta lowTfs = keeper(6002, 3L, 1);
+        highTfs.setHealthState(HealthState.DOWN.name());
+        lowTfs.setHealthState(HealthState.DOWN.name());
+        bm.setActive(true);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm,
+                Arrays.asList(bm, highTfs, lowTfs), dcMetaCache);
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(highTfs));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(lowTfs));
     }
 
     private KeeperMeta keeper(int port, long keeperContainerId, Integer priority) {

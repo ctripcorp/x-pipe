@@ -1,9 +1,11 @@
 /**
- * 
+ *
  */
 package com.ctrip.xpipe.api.cluster;
 
 import com.ctrip.xpipe.cluster.ElectContext;
+
+import java.util.function.Supplier;
 
 /**
  * @author marsqing
@@ -12,6 +14,7 @@ import com.ctrip.xpipe.cluster.ElectContext;
  */
 public interface LeaderElectorManager {
 
-	LeaderElector createLeaderElector(ElectContext ctx);
+	/** The context is read on every (re)start, so a stop/start round re-creates the latch data. */
+	LeaderElector createLeaderElector(Supplier<ElectContext> ctxSupplier);
 
 }

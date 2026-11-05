@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.meta.HealthState;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
@@ -13,8 +14,8 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.health.TfsHealthChecker;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
-import com.ctrip.xpipe.redis.keeper.health.HealthState;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import org.junit.Before;
 import org.junit.Test;
@@ -266,6 +267,30 @@ public class KeeperContainerServiceTest extends AbstractTest {
         when(redisKeeperServer.getLastElectionResetTime()).thenReturn(0L);
         keeperContainerService.update(HealthState.DOWN, null);
         verify(redisKeeperServer, times(1)).resetElection();
+    }
+
+    /** A backup keeper must publish its own health state too, or the metaserver could promote it. */
+    @Test
+    public void testTfsHealthResetsNonLeaderKeeper() {
+        keeperContainerService.setRedisKeeperServers(Collections.singletonMap("repl_1", redisKeeperServer));
+        when(redisKeeperServer.isLeader()).thenReturn(false);
+        when(redisKeeperServer.getLastElectionResetTime()).thenReturn(0L);
+
+        keeperContainerService.update("repl_1", mock(TfsHealthChecker.class));
+
+        verify(redisKeeperServer, times(1)).resetElection();
+    }
+
+    @Test
+    public void testTfsHealthSkipsUnknownKeeperAndThrottledReset() {
+        keeperContainerService.setRedisKeeperServers(Collections.singletonMap("repl_1", redisKeeperServer));
+        keeperContainerService.update("repl_2", mock(TfsHealthChecker.class));
+        verify(redisKeeperServer, never()).resetElection();
+
+        when(redisKeeperServer.isLeader()).thenReturn(false);
+        when(redisKeeperServer.getLastElectionResetTime()).thenReturn(System.currentTimeMillis() / 1000);
+        keeperContainerService.update("repl_1", mock(TfsHealthChecker.class));
+        verify(redisKeeperServer, never()).resetElection();
     }
 
 }

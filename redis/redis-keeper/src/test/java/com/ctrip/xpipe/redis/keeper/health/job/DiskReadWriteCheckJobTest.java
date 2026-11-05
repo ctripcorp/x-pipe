@@ -1,7 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.health.job;
 
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -20,6 +24,18 @@ public class DiskReadWriteCheckJobTest extends AbstractRedisKeeperTest {
 
     private static final String DISK_CHECK_DIR = "disk_check";
 
+    private AsyncFileSystem asyncFileSystem;
+
+    @Before
+    public void setupDiskReadWriteCheckJobTest() {
+        asyncFileSystem = ContainerResourceManager.createAsyncFileSystem(2, 1024 * 1024);
+    }
+
+    @After
+    public void tearDownDiskReadWriteCheckJobTest() {
+        asyncFileSystem.shutdown();
+    }
+
     @Test
     public void concurrentDifferentHostnamesWriteOwnFiles() throws Exception {
         String storePath = getTestFileDir();
@@ -34,7 +50,8 @@ public class DiskReadWriteCheckJobTest extends AbstractRedisKeeperTest {
         executors.execute(() -> {
             try {
                 start.await(5, TimeUnit.SECONDS);
-                resultA.set(new DiskReadWriteCheckJob(storePath, hostA).execute().get(5, TimeUnit.SECONDS));
+                resultA.set(new DiskReadWriteCheckJob(asyncFileSystem, storePath, hostA)
+                        .execute().get(5, TimeUnit.SECONDS));
             } catch (Throwable th) {
                 error.compareAndSet(null, th);
             } finally {
@@ -44,7 +61,8 @@ public class DiskReadWriteCheckJobTest extends AbstractRedisKeeperTest {
         executors.execute(() -> {
             try {
                 start.await(5, TimeUnit.SECONDS);
-                resultB.set(new DiskReadWriteCheckJob(storePath, hostB).execute().get(5, TimeUnit.SECONDS));
+                resultB.set(new DiskReadWriteCheckJob(asyncFileSystem, storePath, hostB)
+                        .execute().get(5, TimeUnit.SECONDS));
             } catch (Throwable th) {
                 error.compareAndSet(null, th);
             } finally {
@@ -68,7 +86,8 @@ public class DiskReadWriteCheckJobTest extends AbstractRedisKeeperTest {
         Assert.assertFalse(contentA.isEmpty());
         Assert.assertFalse(contentB.isEmpty());
 
-        Assert.assertTrue(new DiskReadWriteCheckJob(storePath, hostA).execute().get(5, TimeUnit.SECONDS));
+        Assert.assertTrue(new DiskReadWriteCheckJob(asyncFileSystem, storePath, hostA)
+                .execute().get(5, TimeUnit.SECONDS));
         Assert.assertEquals(contentB, readContent(fileB));
 
         Assert.assertFalse(new File(storePath, "foo").exists());
@@ -77,7 +96,8 @@ public class DiskReadWriteCheckJobTest extends AbstractRedisKeeperTest {
     @Test
     public void localPathStillAvailable() throws Exception {
         String storePath = getTestFileDir();
-        Assert.assertTrue(new DiskReadWriteCheckJob(storePath, "local-host").execute().get(5, TimeUnit.SECONDS));
+        Assert.assertTrue(new DiskReadWriteCheckJob(asyncFileSystem, storePath, "local-host")
+                .execute().get(5, TimeUnit.SECONDS));
         Assert.assertTrue(probeFile(storePath, "local-host").isFile());
         Assert.assertFalse(new File(storePath, "foo").exists());
     }
