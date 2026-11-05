@@ -184,7 +184,8 @@ public class KeeperUpdateController extends AbstractConsoleController {
     }
   }
 
-  @RequestMapping(value = "/keepercontainer/{keepercontaierIp}/{keepercontainerPort}/{keepercontainerHostName}", method = RequestMethod.DELETE)
+  @RequestMapping(value = {"/keepercontainer/{keepercontaierIp}/{keepercontainerPort}",
+          "/keepercontainer/{keepercontaierIp}/{keepercontainerPort}/{keepercontainerHostName}"}, method = RequestMethod.DELETE)
   public RetMessage deleteKeepercontainer(@PathVariable String keepercontaierIp, @PathVariable Integer keepercontainerPort, @PathVariable(required = false) String keepercontainerHostName) {
     try {
       if (StringUtil.isEmpty(keepercontainerHostName))
