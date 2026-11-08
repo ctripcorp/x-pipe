@@ -48,7 +48,7 @@ public class StrategyAwareKeeperActiveElectAlgorithmTest {
     @Test
     public void testAutoSelectHigherPriority() {
         KeeperMeta lowPriority = keeper(6002, 1L, 1);
-        KeeperMeta highPriority = keeper(6003, 2L, 5);
+        KeeperMeta highPriority = keeper(6003, 4L, 5);
 
         Assert.assertEquals(highPriority,
                 auto().select(1L, 1L, Arrays.asList(lowPriority, highPriority)));
@@ -57,7 +57,7 @@ public class StrategyAwareKeeperActiveElectAlgorithmTest {
     @Test
     public void testAutoSkipsPriorityZero() {
         KeeperMeta zeroPriority = keeper(6002, 1L, 0);
-        KeeperMeta valid = keeper(6003, 2L, 1);
+        KeeperMeta valid = keeper(6003, 4L, 1);
 
         Assert.assertEquals(valid, auto().select(1L, 1L, Arrays.asList(zeroPriority, valid)));
     }
@@ -195,10 +195,10 @@ public class StrategyAwareKeeperActiveElectAlgorithmTest {
     }
 
     @Test
-    public void testMixedMissingTfsDoesNotCountAsUnhealthy() {
+    public void testMixedSingleHealthyTfsSelectsBm() {
         TfsShard shard = new TfsShard();
 
-        Assert.assertEquals(shard.c,
+        Assert.assertEquals(shard.b,
                 shard.algorithm().select(1L, 1L, Arrays.asList(shard.c, shard.b)));
     }
 

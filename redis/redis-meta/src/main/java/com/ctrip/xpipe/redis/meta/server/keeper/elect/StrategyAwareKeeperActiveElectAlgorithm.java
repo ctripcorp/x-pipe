@@ -55,10 +55,10 @@ public class StrategyAwareKeeperActiveElectAlgorithm extends AbstractActiveElect
      * <ul>
      *     <li>All BM: return the original list.</li>
      *     <li>All TFS: return healthy TFS keepers; if all are unhealthy, return the original list.</li>
-     *     <li>Mixed: if any surviving TFS keeper is unhealthy, return BM keepers only;
-     *     otherwise return the original list.</li>
+     *     <li>Mixed: return BM keepers when fewer than two healthy TFS keepers survive, or when
+     *     any surviving TFS keeper is unhealthy; otherwise return the original list.</li>
      * </ul>
-     * A configured TFS keeper absent from the current ZK view is not considered unhealthy here.
+     * A mixed shard therefore requires at least two healthy surviving TFS keepers before TFS can be active.
      */
     private List<KeeperMeta> filterHealthy(Long clusterDbId, Long shardDbId, List<KeeperMeta> keepers) {
         List<KeeperMeta> bmKeepers = new ArrayList<>();
@@ -90,8 +90,8 @@ public class StrategyAwareKeeperActiveElectAlgorithm extends AbstractActiveElect
             return healthyTfsKeepers;
         }
 
-        if (healthyTfsKeepers.size() < tfsCount) {
-            logger.info("[filterHealthy][unhealthy TFS in mixed shard, BM only]cluster_{},shard_{},keepers={}",
+        if (healthyTfsKeepers.size() <= 1 || healthyTfsKeepers.size() < tfsCount) {
+            logger.info("[filterHealthy][insufficient healthy TFS in mixed shard, BM only]cluster_{},shard_{},keepers={}",
                     clusterDbId, shardDbId, keepers);
             return bmKeepers;
         }
