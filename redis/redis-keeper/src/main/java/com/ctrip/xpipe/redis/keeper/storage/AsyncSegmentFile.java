@@ -83,20 +83,8 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             }
             return logicalOffset;
         } finally {
-            closeChannelQuietly(newChannel, "abandoned segment channel candidate");
-            closeChannelQuietly(oldChannel, "replaced segment channel");
-        }
-    }
-
-    private void closeChannelQuietly(FileChannel channel, String reason) {
-        if (channel == null) {
-            return;
-        }
-        try {
-            channel.close();
-        } catch (IOException e) {
-            logger.error("failed to close {} for {} at offset {}", reason, path,
-                    openedSegmentStartOffset, e);
+            StorageUtil.closeChannelQuietly(newChannel);
+            StorageUtil.closeChannelQuietly(oldChannel);
         }
     }
 
@@ -540,6 +528,16 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         openCurrentChannel();
     }
 
+    boolean consumeStaleChannel() {
+        if (!staleChannel) {
+            return false;
+        }
+        staleChannel = false;
+        StorageUtil.closeChannelQuietly(currentSegmentChannel);
+        currentSegmentChannel = null;
+        return true;
+    }
+
     Pair<Long, Map<String, AsyncIndexFile>> getCurrentIndexFiles(List<String> requestedPrefixes, boolean noFs) {
         Map<String, AsyncIndexFile> result = new HashMap<>();
         for (String indexPrefix : requestedPrefixes) {
@@ -558,6 +556,12 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             return truncateInRange(offset, entry, noFs, pending);
         } else {
             return reset(offset, entry, noFs, pending);
+        }
+    }
+
+    private void invalidateReaderChannels(FileEntry entry) {
+        for (AbstractStorageFile reader : entry.readers) {
+            reader.staleChannel = true;
         }
     }
 
@@ -586,6 +590,9 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         }
         entry.state = new SegmentDirState(nextArr);
         maybeBindWriterIndexLease();
+        if (!reuseCurrent) {
+            invalidateReaderChannels(entry);
+        }
         return dropped;
     }
 
@@ -598,6 +605,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         }
         entry.state = SegmentDirState.EMPTY;
         createNewSegmentMetadata(offset, entry, noFs);
+        invalidateReaderChannels(entry);
         return dropped;
     }
 

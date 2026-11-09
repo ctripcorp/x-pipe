@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -28,6 +29,12 @@ import java.util.function.BiConsumer;
 import com.ctrip.xpipe.tuple.Pair;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class AsyncTFSBasedFileSystemTest {
 
@@ -1031,6 +1038,223 @@ public class AsyncTFSBasedFileSystemTest {
         assertEquals(3, n);
         assertArrayEquals(new byte[]{20, 30, 40}, target.toByteArray());
         StorageUtil.closeChannels(fs.closeSync(segR));
+    }
+
+    @Test
+    public void testSegmentTransferToSyncDropsChannelWhenOpenedFileIsDeleted() throws Exception {
+        String dir = path("segdir16");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile segW = openSeg(dir, true);
+        writeSeg(segW, bufOf(new byte[]{10, 20, 30}));
+        StorageUtil.closeChannels(fs.closeSync(segW));
+
+        AsyncSegmentFile segR = openSeg(dir, false);
+        StorageUtil.closeChannels(Collections.singletonList(segR.currentSegmentChannel));
+        FileChannel deleted = mock(FileChannel.class);
+        segR.currentSegmentChannel = deleted;
+        ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
+        doThrow(new NoSuchFileException(Paths.get(dir, SEG_PREFIX + "0").toString()))
+                .when(deleted).transferTo(anyLong(), anyLong(), same(target));
+
+        assertEquals(0L, fs.transferToSync(segR, 0, 3, target));
+        assertNull(segR.currentSegmentChannel);
+        verify(deleted).close();
+        StorageUtil.closeChannels(fs.closeSync(segR));
+    }
+
+    @Test
+    public void testSegmentTransferToSyncReturnsNWhenSwitchFails() throws Exception {
+        AsyncTFSBasedFileSystem throwingFs = new AsyncTFSBasedFileSystem(
+                ioExecutor, Long.MAX_VALUE / 2, Long.MAX_VALUE / 2_000_000L, channelFactory()) {
+            @Override
+            void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead, long offset)
+                    throws IOException {
+                throw new IOException("switch failed");
+            }
+        };
+        String dir = path("segdir16c");
+        Files.createDirectories(Paths.get(dir));
+        String key = StorageUtil.segmentKey(dir, SEG_PREFIX);
+        AsyncSegmentFile writer = throwingFs.openSync(dir, SEG_PREFIX, key, key, INDEX_PREFIXES, true, null, false);
+        throwingFs.openWithFileEntry(writer, false, NO_REGISTER, CLOSE_CHANNELS,
+                RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+        throwingFs.writeSync(writer, bufOf(new byte[]{10, 20, 30}));
+        StorageUtil.closeChannels(throwingFs.closeSync(writer));
+
+        AsyncSegmentFile reader = throwingFs.openSync(dir, SEG_PREFIX, key, key, INDEX_PREFIXES, false, null, false);
+        throwingFs.openWithFileEntry(reader, false, NO_REGISTER, CLOSE_CHANNELS,
+                RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+        ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
+        assertEquals(3L, throwingFs.transferToSync(reader, 0, 3, target));
+        assertArrayEquals(new byte[]{10, 20, 30}, target.toByteArray());
+        StorageUtil.closeChannels(throwingFs.closeSync(reader));
+    }
+
+    @Test
+    public void testSegmentTransferToSyncReturnsNAndDropsChannelWhenSwitchHitsNoSuch() throws Exception {
+        AsyncTFSBasedFileSystem throwingFs = new AsyncTFSBasedFileSystem(
+                ioExecutor, Long.MAX_VALUE / 2, Long.MAX_VALUE / 2_000_000L, channelFactory()) {
+            @Override
+            void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead, long offset)
+                    throws IOException {
+                throw new NoSuchFileException(file.path);
+            }
+        };
+        String dir = path("segdir16d");
+        Files.createDirectories(Paths.get(dir));
+        String key = StorageUtil.segmentKey(dir, SEG_PREFIX);
+        AsyncSegmentFile writer = throwingFs.openSync(dir, SEG_PREFIX, key, key, INDEX_PREFIXES, true, null, false);
+        throwingFs.openWithFileEntry(writer, false, NO_REGISTER, CLOSE_CHANNELS,
+                RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+        throwingFs.writeSync(writer, bufOf(new byte[]{10, 20, 30}));
+        StorageUtil.closeChannels(throwingFs.closeSync(writer));
+
+        AsyncSegmentFile reader = throwingFs.openSync(dir, SEG_PREFIX, key, key, INDEX_PREFIXES, false, null, false);
+        throwingFs.openWithFileEntry(reader, false, NO_REGISTER, CLOSE_CHANNELS,
+                RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+        assertNotNull(reader.currentSegmentChannel);
+        ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
+        assertEquals(3L, throwingFs.transferToSync(reader, 0, 3, target));
+        assertArrayEquals(new byte[]{10, 20, 30}, target.toByteArray());
+        assertNull(reader.currentSegmentChannel);
+        StorageUtil.closeChannels(throwingFs.closeSync(reader));
+    }
+
+    @Test
+    public void testSegmentReadSyncDropsChannelWhenOpenedFileIsDeleted() throws Exception {
+        String dir = path("segdir16b");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile segW = openSeg(dir, true);
+        writeSeg(segW, bufOf(new byte[]{10, 20, 30}));
+        StorageUtil.closeChannels(fs.closeSync(segW));
+
+        AsyncSegmentFile segR = openSeg(dir, false);
+        StorageUtil.closeChannels(Collections.singletonList(segR.currentSegmentChannel));
+        FileChannel deleted = mock(FileChannel.class);
+        segR.currentSegmentChannel = deleted;
+        doThrow(new NoSuchFileException(Paths.get(dir, SEG_PREFIX + "0").toString()))
+                .when(deleted).read(any(ByteBuffer.class), anyLong());
+
+        ByteBuf buf = fs.readSync(segR, 3, 0);
+        try {
+            assertEquals(0, buf.readableBytes());
+            assertNull(segR.currentSegmentChannel);
+            verify(deleted).close();
+        } finally {
+            buf.release();
+            StorageUtil.closeChannels(fs.closeSync(segR));
+        }
+    }
+
+    @Test
+    public void testTruncateToPreviousSegmentDropsReaderChannel() throws Exception {
+        String dir = path("segdir17");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = openSeg(dir, true);
+        writeSeg(writer, bufOf(new byte[10]));
+        rollSeg(writer);
+        writeSeg(writer, bufOf(new byte[20]));
+
+        AsyncSegmentFile reader = openSeg(dir, false);
+        positionSeg(reader, 10);
+        ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
+        assertEquals(20, fs.transferToSync(reader, 10, 20, target));
+        assertNotNull(reader.currentSegmentChannel);
+        assertFalse(reader.staleChannel);
+        assertFalse(writer.staleChannel);
+
+        truncSeg(writer, 5);
+        assertTrue(reader.staleChannel);
+        assertFalse(writer.staleChannel);
+
+        target = new ByteArrayOutputStreamChannel();
+        assertEquals(0L, fs.transferToSync(reader, 10, 20, target));
+        assertNull(reader.currentSegmentChannel);
+        assertFalse(reader.staleChannel);
+        StorageUtil.closeChannels(fs.closeSync(reader));
+        StorageUtil.closeChannels(fs.closeSync(writer));
+    }
+
+    @Test
+    public void testTruncateInCurrentSegmentDoesNotMarkReaders() throws Exception {
+        String dir = path("segdir17b");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = openSeg(dir, true);
+        writeSeg(writer, bufOf(new byte[10]));
+        rollSeg(writer);
+        writeSeg(writer, bufOf(new byte[20]));
+
+        AsyncSegmentFile reader = openSeg(dir, false);
+        positionSeg(reader, 10);
+        ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
+        assertEquals(20, fs.transferToSync(reader, 10, 20, target));
+
+        truncSeg(writer, 15);
+        assertFalse(reader.staleChannel);
+        assertNotNull(reader.currentSegmentChannel);
+        StorageUtil.closeChannels(fs.closeSync(reader));
+        StorageUtil.closeChannels(fs.closeSync(writer));
+    }
+
+    @Test
+    public void testTruncateToPreviousSegmentDropsReaderReadSync() throws Exception {
+        String dir = path("segdir17c");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = openSeg(dir, true);
+        writeSeg(writer, bufOf(new byte[10]));
+        rollSeg(writer);
+        writeSeg(writer, bufOf(new byte[20]));
+
+        AsyncSegmentFile reader = openSeg(dir, false);
+        positionSeg(reader, 10);
+        ByteBuf buf = fs.readSync(reader, 20, 10);
+        try {
+            assertEquals(20, buf.readableBytes());
+        } finally {
+            buf.release();
+        }
+
+        truncSeg(writer, 5);
+        assertTrue(reader.staleChannel);
+
+        buf = fs.readSync(reader, 20, 10);
+        try {
+            assertEquals(0, buf.readableBytes());
+            assertNull(reader.currentSegmentChannel);
+            assertFalse(reader.staleChannel);
+        } finally {
+            buf.release();
+            StorageUtil.closeChannels(fs.closeSync(reader));
+            StorageUtil.closeChannels(fs.closeSync(writer));
+        }
+    }
+
+    @Test
+    public void testResetMarksReaderStaleChannel() throws Exception {
+        String dir = path("segdir17d");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = openSeg(dir, true);
+        writeSeg(writer, bufOf(new byte[10]));
+        rollSeg(writer);
+        writeSeg(writer, bufOf(new byte[20]));
+
+        AsyncSegmentFile reader = openSeg(dir, false);
+        positionSeg(reader, 10);
+        ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
+        assertEquals(20, fs.transferToSync(reader, 10, 20, target));
+        assertNotNull(reader.currentSegmentChannel);
+        assertFalse(reader.staleChannel);
+
+        truncSeg(writer, -100);
+        assertTrue(reader.staleChannel);
+        assertFalse(writer.staleChannel);
+
+        target = new ByteArrayOutputStreamChannel();
+        assertEquals(0L, fs.transferToSync(reader, 10, 20, target));
+        assertNull(reader.currentSegmentChannel);
+        assertFalse(reader.staleChannel);
+        StorageUtil.closeChannels(fs.closeSync(reader));
+        StorageUtil.closeChannels(fs.closeSync(writer));
     }
 
     // =========================================================================

@@ -113,20 +113,24 @@ class StorageUtil {
         }
     }
 
+    static void closeChannelQuietly(FileChannel channel) {
+        if (channel == null) {
+            return;
+        }
+        try {
+            channel.close();
+        } catch (IOException e) {
+            logger.error("failed to close channel", e);
+        }
+    }
+
     // Close detached channels, logging failures. Never throws.
     static void closeChannels(List<FileChannel> channels) {
         if (channels == null || channels.isEmpty()) {
             return;
         }
         for (FileChannel ch : channels) {
-            if (ch == null) {
-                continue;
-            }
-            try {
-                ch.close();
-            } catch (IOException e) {
-                logger.error("failed to close channel", e);
-            }
+            closeChannelQuietly(ch);
         }
     }
 

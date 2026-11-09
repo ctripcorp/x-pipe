@@ -1187,6 +1187,57 @@ public class TailCacheFileSystemTest {
         }
     }
 
+    /**
+     * Truncate back into the previous segment, then roll at the dropped offset again.
+     * The preopened reader still holds the old inode for that offset; the next disk
+     * {@code transferTo} must drop it (return 0) so the retry opens the new generation.
+     */
+    @Test
+    public void testReaderReopensAfterTruncateThenRollReusesOffset() throws Exception {
+        TailCacheFileSystemConfig config = baseConfig();
+        config.setTransferPreferCache(false);
+        TailCacheFileSystem tcfDisk = newTcf(config);
+
+        String dir = path("seg_truncate_reuse_offset");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcfDisk.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcfDisk.write(writer, bufOf(new byte[64])).get(5, TimeUnit.SECONDS);
+        tcfDisk.roll(writer).get(5, TimeUnit.SECONDS);
+        tcfDisk.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcfDisk.fsync(writer).get(5, TimeUnit.SECONDS);
+
+        AsyncSegmentFile reader = tcfDisk.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel first =
+                new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
+        assertEquals(10, (long) tcfDisk.transferTo(reader, 64, 10, first).get(5, TimeUnit.SECONDS));
+        assertNotNull(reader.currentSegmentChannel);
+        assertEquals(64L, reader.openedSegmentStartOffset);
+
+        tcfDisk.truncate(writer, 32).get(5, TimeUnit.SECONDS);
+        tcfDisk.write(writer, bufOf(new byte[32])).get(5, TimeUnit.SECONDS);
+        tcfDisk.roll(writer).get(5, TimeUnit.SECONDS);
+        tcfDisk.write(writer, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+        tcfDisk.fsync(writer).get(5, TimeUnit.SECONDS);
+
+        AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel second =
+                new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
+        long firstCall = tcfDisk.transferTo(reader, 64, 20, second).get(5, TimeUnit.SECONDS);
+        assertEquals("stale fd must be dropped before rereading the reused offset", 0L, firstCall);
+        assertNull(reader.currentSegmentChannel);
+        assertFalse(reader.staleChannel);
+
+        long secondCall = tcfDisk.transferTo(reader, 64, 20, second).get(5, TimeUnit.SECONDS);
+        try {
+            assertEquals(20L, secondCall);
+            assertEquals(20, second.toByteArray().length);
+            assertEquals(64L, reader.openedSegmentStartOffset);
+            assertEquals(Long.MAX_VALUE, reader.openedSegmentEndOffset);
+        } finally {
+            tcfDisk.close(reader).get(5, TimeUnit.SECONDS);
+            tcfDisk.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
     @Test
     public void testSegmentDeleteAllClearsCache() throws Exception {
         String dir = path("segdir8");

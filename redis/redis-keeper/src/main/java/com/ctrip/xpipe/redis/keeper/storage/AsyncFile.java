@@ -11,12 +11,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class AsyncFile extends AbstractStorageFile {
-
-    private static final Logger logger = LoggerFactory.getLogger(AsyncFile.class);
 
     FileChannel channel;
     final boolean canCloseByUser;
@@ -76,8 +71,8 @@ public class AsyncFile extends AbstractStorageFile {
             }
             return offset;
         } finally {
-            closeChannelQuietly(newChannel, "abandoned channel candidate");
-            closeChannelQuietly(oldChannel, "replaced channel");
+            StorageUtil.closeChannelQuietly(newChannel);
+            StorageUtil.closeChannelQuietly(oldChannel);
         }
     }
 
@@ -89,16 +84,5 @@ public class AsyncFile extends AbstractStorageFile {
         FileChannel detached = channel;
         channel = null;
         return Collections.singletonList(detached);
-    }
-
-    private void closeChannelQuietly(FileChannel channel, String reason) {
-        if (channel == null) {
-            return;
-        }
-        try {
-            channel.close();
-        } catch (IOException e) {
-            logger.error("failed to close {} for {}", reason, path, e);
-        }
     }
 }

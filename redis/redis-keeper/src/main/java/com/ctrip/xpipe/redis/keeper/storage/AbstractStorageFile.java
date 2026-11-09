@@ -53,6 +53,7 @@ public abstract class AbstractStorageFile {
     volatile Runnable onCacheClose = () -> {};
     volatile boolean closed = false;
     volatile boolean needPrepare = false;
+    volatile boolean staleChannel = false;
     volatile IOException noSpaceFailure;
     long position = 0;
 

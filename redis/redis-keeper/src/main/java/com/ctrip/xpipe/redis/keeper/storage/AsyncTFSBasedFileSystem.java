@@ -282,12 +282,16 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
     }
 
-    private void releaseFileEntry(String key, boolean write) {
-        synchronized (lockFor(key)) {
-            FileEntry entry = fileEntries.get(key);
+    private void releaseFileEntry(AbstractStorageFile file) {
+        synchronized (lockFor(file.key)) {
+            FileEntry entry = fileEntries.get(file.key);
             if (entry == null) return;
-            if (write) entry.writerOpen = false;
-            if (--entry.refCount == 0) fileEntries.remove(key);
+            if (file.canWrite()) {
+                entry.writerOpen = false;
+            } else {
+                entry.readers.remove(file);
+            }
+            if (--entry.refCount == 0) fileEntries.remove(file.key);
         }
     }
 
@@ -319,12 +323,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 entry.initDone.await();
             } catch (InterruptedException e) {
-                releaseFileEntry(key, write);
+                releaseFileEntry(file);
                 throw new OperationNotExecutedException(path, e);
             }
         }
         if (entry.initError != null) {
-            releaseFileEntry(key, write);
+            releaseFileEntry(file);
             if (entry.initError instanceof OperationNotExecutedException) {
                 throw (OperationNotExecutedException) entry.initError;
             }
@@ -333,6 +337,9 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
         boolean success = false;
         try {
+            if (!write) {
+                entry.readers.add(file);
+            }
             openAction.accept(file, entry, iAmInitializer);
             success = true;
             return entry.initialized;
@@ -562,7 +569,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             file.closed = true;
             detached = file.detachCurrentChannels();
         }
-        releaseFileEntry(file.key, file.canWrite());
+        releaseFileEntry(file);
         return detached;
     }
 
@@ -659,28 +666,21 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return written;
     }
 
-    private void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead, long offset) {
+    void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead, long offset)
+            throws IOException {
         long nextOffset = offset;
         long physicalOffset = nextOffset - file.openedSegmentStartOffset;
         boolean atSegmentBoundary = nextOffset >= file.openedSegmentEndOffset;
-        try {
-            boolean staleTailEof = bytesRead == 0
-                    && file.openedSegmentStartOffset != s.lastOffset
-                    && file.currentSegmentChannel.size() <= physicalOffset;
-            if (!atSegmentBoundary && !staleTailEof) {
-                return;
-            }
-            // Null the channel so the next read's will re-switch first.
-            if (file.currentSegmentChannel != null) {
-                try {
-                    file.currentSegmentChannel.close();
-                } finally {
-                    file.currentSegmentChannel = null;
-                }
-            }
-        } catch (IOException e) {
-            logger.error("maybeSwitchSegment failed for {} at position {}, will retry on next read",
-                    file.path, nextOffset, e);
+        boolean staleTailEof = bytesRead == 0
+                && file.openedSegmentStartOffset != s.lastOffset
+                && file.currentSegmentChannel.size() <= physicalOffset;
+        if (!atSegmentBoundary && !staleTailEof) {
+            return;
+        }
+        // Null the channel so the next read's will re-switch first.
+        if (file.currentSegmentChannel != null) {
+            StorageUtil.closeChannelQuietly(file.currentSegmentChannel);
+            file.currentSegmentChannel = null;
         }
     }
 
@@ -795,16 +795,33 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     @Override
     public ByteBuf readSync(AsyncSegmentFile file, long length, long offset) {
         StorageUtil.requireOpen(file);
+        if (file.consumeStaleChannel()) {
+            return Unpooled.buffer(0);
+        }
+        SegmentDirState s = entryOrThrow(file).state;
         try {
             // Open channel if needed (switch already done).
             file.openSegmentChannelForRead();
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        }
+        ByteBuf buf = null;
+        try {
             // Read.
             long physicalOffset = offset - file.openedSegmentStartOffset;
-            ByteBuf buf = readFully(file.currentSegmentChannel, length, physicalOffset, 0);
+            buf = readFully(file.currentSegmentChannel, length, physicalOffset, 0);
             long n = buf.readableBytes();
-            maybeSwitchSegment(file, entryOrThrow(file).state, n, offset + n);
+            maybeSwitchSegment(file, s, n, offset + n);
             return buf;
         } catch (IOException e) {
+            if (buf != null) {
+                buf.release();
+            }
+            if (e instanceof NoSuchFileException) {
+                StorageUtil.closeChannelQuietly(file.currentSegmentChannel);
+                file.currentSegmentChannel = null;
+                return Unpooled.buffer(0);
+            }
             throw StorageUtil.wrapIOException(e);
         }
     }
@@ -1067,14 +1084,32 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     @Override
     public long transferToSync(AsyncSegmentFile file, long offset, long count, WritableByteChannel target) {
         StorageUtil.requireOpen(file);
+        if (file.consumeStaleChannel()) {
+            return 0L;
+        }
+        SegmentDirState s = entryOrThrow(file).state;
         try {
-            SegmentDirState s = entryOrThrow(file).state;
             file.openSegmentChannelForRead();
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e, target);
+        }
+        long n = 0;
+        try {
             long physicalOffset = offset - file.openedSegmentStartOffset;
-            long n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
+            n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
             maybeSwitchSegment(file, s, n, offset + n);
             return n;
         } catch (IOException e) {
+            if (e instanceof NoSuchFileException) {
+                StorageUtil.closeChannelQuietly(file.currentSegmentChannel);
+                file.currentSegmentChannel = null;
+                return n;
+            }
+            if (n > 0) {
+                logger.error("failed after transferring {} bytes for {} at offset {}, returning n",
+                        n, file.path, offset, e);
+                return n;
+            }
             throw StorageUtil.wrapIOException(e, target);
         }
     }
