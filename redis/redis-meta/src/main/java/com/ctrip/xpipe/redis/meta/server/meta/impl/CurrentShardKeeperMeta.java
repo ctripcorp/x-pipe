@@ -47,16 +47,9 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
     public void setSurviveKeepers(List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
 
         if (surviveKeepers.size() > 0) {
-            // A shard with no electable keeper is a legitimate state: keep the survivors so the
-            // shard is visible as "no active", instead of throwing and leaving the stale active
-            // in place. Only an active that is not among the survivors is a programming error.
-            if (activeKeeper != null && !checkIn(surviveKeepers, activeKeeper)) {
+            if (!checkIn(surviveKeepers, activeKeeper)) {
                 throw new IllegalArgumentException(
                         "active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
-            }
-            if (activeKeeper == null) {
-                logger.warn("[setSurviveKeepers][no electable keeper, all inactive]cluster_{},shard_{},{}",
-                        clusterDbId, shardDbId, surviveKeepers);
             }
             previousActiveKeeper = getActiveKeeper();
             this.surviveKeepers = MetaCloneFacade.INSTANCE.cloneList(surviveKeepers);
