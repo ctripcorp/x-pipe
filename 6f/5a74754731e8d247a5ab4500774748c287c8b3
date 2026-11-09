@@ -1,0 +1,23 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystemTest.java
+  s_36ada9b0b5f503::t_de0ae87454acc3 1128-1129
+  s_36ada9b0b5f503::t_c74f342707183a 1904-1999
+  s_36ada9b0b5f503::t_68e505a90870c9 12,14-15
+  s_36ada9b0b5f503::t_dcd8d5b17fbaa4 1136
+  s_36ada9b0b5f503::t_67937156f3febf 1050-1051,1057
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "6f5a74754731e8d247a5ab4500774748c287c8b3",
+  "prompts": {},
+  "sessions": {
+    "s_36ada9b0b5f503": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6b22dd71-affa-47c5-b9cc-30bd3759ae20",
+        "model": "grok-4.6"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
