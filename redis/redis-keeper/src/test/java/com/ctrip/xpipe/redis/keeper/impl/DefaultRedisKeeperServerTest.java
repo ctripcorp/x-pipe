@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.api.cluster.LeaderElector;
+import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.lifecycle.LifecycleState;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.ByteBufUtils;
@@ -39,7 +42,9 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
 import static org.junit.Assert.*;
@@ -107,6 +112,59 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 			logger.info("{}", e);
 		}
 		Assert.assertNull(redisKeeperServer.getReplicationStore());
+	}
+
+	@Test
+	public void testResetDuringStopDoesNotRestartElection() throws Exception {
+		LeaderElector elector = mock(LeaderElector.class);
+		LifecycleState electorState = mock(LifecycleState.class);
+		when(elector.getLifecycleState()).thenReturn(electorState);
+		when(electorState.canStop()).thenReturn(true);
+
+		CountDownLatch stopClosingElection = new CountDownLatch(1);
+		CountDownLatch allowStopToContinue = new CountDownLatch(1);
+		doAnswer(invocation -> {
+			stopClosingElection.countDown();
+			Assert.assertTrue(allowStopToContinue.await(5, TimeUnit.SECONDS));
+			return null;
+		}).when(elector).stop();
+
+		LeaderElectorManager electorManager = mock(LeaderElectorManager.class);
+		when(electorManager.createLeaderElector(any())).thenReturn(elector);
+		KeeperMeta keeperMeta = createKeeperMeta();
+		DefaultRedisKeeperServer server = (DefaultRedisKeeperServer) createRedisKeeperServer(
+				getReplId().id(), keeperMeta, getKeeperConfig(), getReplicationStoreManagerBaseDir(keeperMeta),
+				electorManager);
+		server.initialize();
+		server.start();
+
+		AtomicReference<Throwable> stopFailure = new AtomicReference<>();
+		Thread stopThread = new Thread(() -> {
+			try {
+				server.stop();
+			} catch (Throwable th) {
+				stopFailure.set(th);
+			}
+		});
+
+		try {
+			stopThread.start();
+			Assert.assertTrue(stopClosingElection.await(5, TimeUnit.SECONDS));
+			Assert.assertFalse(server.resetElection());
+			verify(elector, times(1)).start();
+
+			allowStopToContinue.countDown();
+			stopThread.join(5_000);
+			Assert.assertFalse(stopThread.isAlive());
+			Assert.assertNull(stopFailure.get());
+			Assert.assertTrue(server.getLifecycleState().isStopped());
+		} finally {
+			allowStopToContinue.countDown();
+			if (!server.getLifecycleState().isStopped()) {
+				server.stop();
+			}
+			server.dispose();
+		}
 	}
 
 	/**
