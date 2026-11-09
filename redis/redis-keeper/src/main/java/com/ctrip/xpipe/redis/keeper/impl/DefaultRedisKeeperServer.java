@@ -78,6 +78,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.FULLSYNC_PROGRESS_NOT_SUPPORTED;
 
@@ -164,6 +165,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private KeeperMeta currentKeeperMeta;
 	// written by the lifecycle thread, read by the health notify thread
 	private volatile LeaderElector leaderElector;
+	private final ReentrantLock electionLifecycleLock = new ReentrantLock();
 
 	private LeaderElectorManager leaderElectorManager;
 
@@ -257,10 +259,18 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				() -> new ElectContext(leaderElectionZKPath, MetaZkConfig.getKeeperLeaderElectionId(currentKeeperMeta)));
 	}
 
-	/** Stop/start the same elector so it re-creates the latch with the current meta. Best effort, no lock. */
+	/** Stop/start the same elector so it re-creates the latch with the current meta. */
 	@Override
 	public boolean resetElection() {
+		if (!electionLifecycleLock.tryLock()) {
+			logger.info("[resetElection][skip, keeper lifecycle changing][{}]", replId);
+			return false;
+		}
 		try {
+			if (!getLifecycleState().isStarted()) {
+				logger.info("[resetElection][skip, keeper not started][{}]", replId);
+				return false;
+			}
 			LifecycleHelper.stopIfPossible(leaderElector);
 			LifecycleHelper.startIfPossible(leaderElector);
 			this.lastResetElectionTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
@@ -268,6 +278,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		} catch (Throwable th) {
 			logger.info("[resetElection][fail][{}]", replId, th);
 			return false;
+		} finally {
+			electionLifecycleLock.unlock();
 		}
 	}
 
@@ -500,6 +512,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 	}
 	
+	@Override
+	public void stop() throws Exception {
+		electionLifecycleLock.lock();
+		try {
+			super.stop();
+		} finally {
+			electionLifecycleLock.unlock();
+		}
+	}
+
 	@Override
 	protected void doStop() throws Exception {
 		if (null != fsyncSeqScheduledFuture) {
