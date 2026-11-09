@@ -9,7 +9,10 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -29,12 +32,6 @@ import java.util.function.BiConsumer;
 import com.ctrip.xpipe.tuple.Pair;
 
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 public class AsyncTFSBasedFileSystemTest {
 
@@ -1050,15 +1047,14 @@ public class AsyncTFSBasedFileSystemTest {
 
         AsyncSegmentFile segR = openSeg(dir, false);
         StorageUtil.closeChannels(Collections.singletonList(segR.currentSegmentChannel));
-        FileChannel deleted = mock(FileChannel.class);
+        FailingFileChannel deleted = new FailingFileChannel(
+                new NoSuchFileException(Paths.get(dir, SEG_PREFIX + "0").toString()));
         segR.currentSegmentChannel = deleted;
         ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
-        doThrow(new NoSuchFileException(Paths.get(dir, SEG_PREFIX + "0").toString()))
-                .when(deleted).transferTo(anyLong(), anyLong(), same(target));
 
         assertEquals(0L, fs.transferToSync(segR, 0, 3, target));
         assertNull(segR.currentSegmentChannel);
-        verify(deleted).close();
+        assertTrue(deleted.closed);
         StorageUtil.closeChannels(fs.closeSync(segR));
     }
 
@@ -1112,7 +1108,6 @@ public class AsyncTFSBasedFileSystemTest {
         AsyncSegmentFile reader = throwingFs.openSync(dir, SEG_PREFIX, key, key, INDEX_PREFIXES, false, null, false);
         throwingFs.openWithFileEntry(reader, false, NO_REGISTER, CLOSE_CHANNELS,
                 RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
-        assertNotNull(reader.currentSegmentChannel);
         ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
         assertEquals(3L, throwingFs.transferToSync(reader, 0, 3, target));
         assertArrayEquals(new byte[]{10, 20, 30}, target.toByteArray());
@@ -1130,16 +1125,15 @@ public class AsyncTFSBasedFileSystemTest {
 
         AsyncSegmentFile segR = openSeg(dir, false);
         StorageUtil.closeChannels(Collections.singletonList(segR.currentSegmentChannel));
-        FileChannel deleted = mock(FileChannel.class);
+        FailingFileChannel deleted = new FailingFileChannel(
+                new NoSuchFileException(Paths.get(dir, SEG_PREFIX + "0").toString()));
         segR.currentSegmentChannel = deleted;
-        doThrow(new NoSuchFileException(Paths.get(dir, SEG_PREFIX + "0").toString()))
-                .when(deleted).read(any(ByteBuffer.class), anyLong());
 
         ByteBuf buf = fs.readSync(segR, 3, 0);
         try {
             assertEquals(0, buf.readableBytes());
             assertNull(segR.currentSegmentChannel);
-            verify(deleted).close();
+            assertTrue(deleted.closed);
         } finally {
             buf.release();
             StorageUtil.closeChannels(fs.closeSync(segR));
@@ -1905,6 +1899,102 @@ public class AsyncTFSBasedFileSystemTest {
 
         public byte[] toByteArray() {
             return baos.toByteArray();
+        }
+    }
+
+    /**
+     * Real FileChannel subclass so {@code close()} has a working closeLock, unlike a Mockito mock.
+     */
+    static final class FailingFileChannel extends FileChannel {
+        final IOException fail;
+        volatile boolean closed;
+
+        FailingFileChannel(IOException fail) {
+            this.fail = fail;
+        }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+            throw fail;
+        }
+
+        @Override
+        public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
+            throw fail;
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            throw fail;
+        }
+
+        @Override
+        public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
+            throw fail;
+        }
+
+        @Override
+        public long position() {
+            return 0;
+        }
+
+        @Override
+        public FileChannel position(long newPosition) {
+            return this;
+        }
+
+        @Override
+        public long size() {
+            return 0;
+        }
+
+        @Override
+        public FileChannel truncate(long size) {
+            return this;
+        }
+
+        @Override
+        public void force(boolean metaData) {
+        }
+
+        @Override
+        public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
+            throw fail;
+        }
+
+        @Override
+        public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
+            throw fail;
+        }
+
+        @Override
+        public int read(ByteBuffer dst, long position) throws IOException {
+            throw fail;
+        }
+
+        @Override
+        public int write(ByteBuffer src, long position) throws IOException {
+            throw fail;
+        }
+
+        @Override
+        public MappedByteBuffer map(MapMode mode, long position, long size) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FileLock lock(long position, long size, boolean shared) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FileLock tryLock(long position, long size, boolean shared) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        protected void implCloseChannel() {
+            closed = true;
         }
     }
 }
