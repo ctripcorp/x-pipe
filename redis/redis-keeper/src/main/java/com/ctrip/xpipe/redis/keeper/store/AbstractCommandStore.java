@@ -265,7 +265,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         long offset = cmdWriter.totalLength() - 1;
 
-        commandStoreDelay.endWrite(offset);
+        commandStoreDelay.endWrite(offset + 1);
 
         offsetNotifyCoalescer.onWritten(wrote, offset);
 
@@ -292,7 +292,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         indexStore.write(byteBuf);
         long offset = cmdWriter.totalLength() - 1;
 
-        indexStoreDelay.endWrite(offset);
+        indexStoreDelay.endWrite(offset + 1);
 
         int writer = (int)(offset - beginOffset);
         return writer;
