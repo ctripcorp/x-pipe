@@ -168,6 +168,30 @@ public class DefaultKeeperContainerConfig implements KeeperContainerConfig {
         return config.get(KEY_IO_HEALTH_DISABLED_RULES, "");
     }
 
+    @Override
+    public long ioHealthProbeIntervalMill() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_PROBE_INTERVAL_MILL,
+                String.valueOf(DEFAULT_IO_HEALTH_PROBE_INTERVAL_MILL)));
+    }
+
+    @Override
+    public int ioHealthProbeSlowMinRecords() {
+        return Integer.parseInt(config.get(KEY_IO_HEALTH_PROBE_SLOW_MIN_RECORDS,
+                String.valueOf(DEFAULT_IO_HEALTH_PROBE_SLOW_MIN_RECORDS)));
+    }
+
+    @Override
+    public int ioHealthProbeSlowRatioPercent() {
+        return Integer.parseInt(config.get(KEY_IO_HEALTH_PROBE_SLOW_RATIO_PERCENT,
+                String.valueOf(DEFAULT_IO_HEALTH_PROBE_SLOW_RATIO_PERCENT)));
+    }
+
+    @Override
+    public long ioHealthProbeWindowSeconds() {
+        return Long.parseLong(config.get(KEY_IO_HEALTH_PROBE_WINDOW_SEC,
+                String.valueOf(DEFAULT_IO_HEALTH_PROBE_WINDOW_SEC)));
+    }
+
     private String getDefaultRdsDir() {
         return System.getProperty("user.dir");
     }

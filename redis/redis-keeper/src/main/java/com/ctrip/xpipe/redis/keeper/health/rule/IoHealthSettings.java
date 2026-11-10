@@ -18,15 +18,17 @@ public final class IoHealthSettings implements IoTelemetrySettings {
     private final long windowNanos;
     private final long fileWindowNanos;
     private final long stateIdleNanos;
+    private final long probeWindowNanos;
     private final RuleConfig rules;
 
     private IoHealthSettings(boolean enabled, long slowNanos, long windowNanos, long fileWindowNanos,
-            long stateIdleNanos, RuleConfig rules) {
+            long stateIdleNanos, long probeWindowNanos, RuleConfig rules) {
         this.enabled = enabled;
         this.slowNanos = slowNanos;
         this.windowNanos = windowNanos;
         this.fileWindowNanos = fileWindowNanos;
         this.stateIdleNanos = stateIdleNanos;
+        this.probeWindowNanos = probeWindowNanos;
         this.rules = rules;
     }
 
@@ -37,6 +39,7 @@ public final class IoHealthSettings implements IoTelemetrySettings {
                 .windowSeconds(config.ioHealthWindowSeconds())
                 .fileWindowSeconds(config.ioHealthFileWindowSeconds())
                 .stateIdleSeconds(config.ioHealthStateIdleSeconds())
+                .probeWindowSeconds(config.ioHealthProbeWindowSeconds())
                 .rules(RuleConfig.from(config))
                 .build();
     }
@@ -70,6 +73,11 @@ public final class IoHealthSettings implements IoTelemetrySettings {
         return stateIdleNanos;
     }
 
+    @Override
+    public long probeWindowNanos() {
+        return probeWindowNanos;
+    }
+
     public RuleConfig rules() {
         return rules;
     }
@@ -84,6 +92,7 @@ public final class IoHealthSettings implements IoTelemetrySettings {
         private long windowSeconds = 30L;
         private long fileWindowSeconds = 10L;
         private long stateIdleSeconds = 60L;
+        private long probeWindowSeconds = 15L;
         private RuleConfig rules = RuleConfig.builder().build();
 
         public Builder enabled(boolean v) { this.enabled = v; return this; }
@@ -91,6 +100,7 @@ public final class IoHealthSettings implements IoTelemetrySettings {
         public Builder windowSeconds(long v) { this.windowSeconds = v; return this; }
         public Builder fileWindowSeconds(long v) { this.fileWindowSeconds = v; return this; }
         public Builder stateIdleSeconds(long v) { this.stateIdleSeconds = v; return this; }
+        public Builder probeWindowSeconds(long v) { this.probeWindowSeconds = v; return this; }
         public Builder rules(RuleConfig v) { this.rules = v == null ? RuleConfig.builder().build() : v; return this; }
 
         public IoHealthSettings build() {
@@ -107,6 +117,7 @@ public final class IoHealthSettings implements IoTelemetrySettings {
                     window,
                     TimeUnit.SECONDS.toNanos(Math.max(1L, fileWindowSeconds)),
                     TimeUnit.SECONDS.toNanos(Math.max(1L, stateIdleSeconds)),
+                    TimeUnit.SECONDS.toNanos(Math.max(1L, probeWindowSeconds)),
                     rules);
         }
     }

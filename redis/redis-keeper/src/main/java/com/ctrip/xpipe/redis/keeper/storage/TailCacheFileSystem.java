@@ -1107,6 +1107,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return open(path, openMode, replaceMode, lenient, tenant, null);
     }
 
+    @Override
     public CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode,
             AbstractStorageFile.ReplaceMode replaceMode, boolean lenient, String tenant, CacheMode cacheMode) {
         String key = StorageUtil.asyncFileKey(path);

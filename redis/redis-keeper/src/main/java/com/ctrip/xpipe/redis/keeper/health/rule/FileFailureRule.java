@@ -25,5 +25,12 @@ public final class FileFailureRule implements IoHealthRule {
                 }
             }
         }
+        for (IoHealthSnapshot.FileStat file : ctx.snapshot().probe().files().values()) {
+            if (file.consecutiveFails() >= ctx.config().fileConsecutiveFails()
+                    || file.fails10() >= ctx.config().fileFailsInWindow()) {
+                result.markContainer(this);
+                break;
+            }
+        }
     }
 }

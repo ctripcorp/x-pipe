@@ -20,33 +20,26 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.LongSupplier;
 
-/**
- * Counts every task submitted to the container IO executor, per container / tenant / file, over a
- * fixed 30s window. One instance per process.
- */
+/** Counts instrumented business and probe IO separately over a fixed sliding window. */
 public final class IoTelemetry {
 
     private static final Logger logger = LoggerFactory.getLogger(IoTelemetry.class);
 
     public static final IoTelemetry INSTANCE = new IoTelemetry();
-
-    /** The ring is one second per bucket, so a window wider than this cannot be served. */
     public static final long MAX_WINDOW_NANOS = TimeUnit.SECONDS.toNanos(30);
-
     static final int BUCKETS = 32;
     static final long BUCKET_NANOS = TimeUnit.SECONDS.toNanos(1);
-    /** Latest failure timestamps kept per file; enough for any "N in the window" threshold. */
     static final int FILE_FAIL_RING = 16;
 
-    private final AtomicReferenceArray<Bucket> containerWindows = new AtomicReferenceArray<>(BUCKETS);
+    private final AtomicReferenceArray<Bucket> businessWindows = new AtomicReferenceArray<>(BUCKETS);
+    private final AtomicReferenceArray<Bucket> probeWindows = new AtomicReferenceArray<>(BUCKETS);
     private final ConcurrentHashMap<String, TenantHealth> tenantHealth = new ConcurrentHashMap<>();
-    /** Tasks currently inside {@code run()}: bounded by the pool size, never by the queue depth. */
+    private final ConcurrentHashMap<String, FileState> probeFiles = new ConcurrentHashMap<>();
     private final Set<IoTask<?>> executing = ConcurrentHashMap.newKeySet();
     private final AtomicLong recordedCount = new AtomicLong();
     private volatile long startedNanos = System.nanoTime();
     private volatile IoTelemetrySettings settings = IoTelemetrySettings.DEFAULTS;
 
-    /** Tests drive the windows with a fake clock. */
     @VisibleForTesting
     public LongSupplier clock = System::nanoTime;
 
@@ -54,14 +47,12 @@ public final class IoTelemetry {
     public IoTelemetry() {
     }
 
-    /** Refreshed by the health checker each tick; defaults until then. */
     public void applySettings(IoTelemetrySettings settings) {
         if (settings != null) {
             this.settings = settings;
         }
     }
 
-    /** Marks the task as actually running, ending its queue wait. */
     public void taskStarted(IoTask<?> task) {
         if (!settings.enabled()) {
             return;
@@ -74,16 +65,35 @@ public final class IoTelemetry {
         if (!settings.enabled()) {
             return;
         }
-        // before record(): a throwing recorder must not leave the entry behind for good
         executing.remove(task);
         long endNanos = clock.getAsLong();
         long startNanos = task.startNanos == 0 ? endNanos : task.startNanos;
         boolean failed = isFailure(error);
-        record(endNanos, task.tenant, task.path, endNanos - startNanos, endNanos - task.submitNanos, failed);
-        recordedCount.incrementAndGet();
-        if (failed) {
-            logger.debug("[taskCompleted][fail]{}, {}", task.tenant, task.path, error);
+        record(endNanos, task.source(), task.tenant, task.path,
+                endNanos - startNanos, endNanos - task.submitNanos, failed);
+        if (task.source() == IoSource.BUSINESS) {
+            recordedCount.incrementAndGet();
         }
+        if (failed) {
+            logger.debug("[taskCompleted][{}][fail]{}, {}", task.source(), task.tenant, task.path, error);
+        }
+    }
+
+    /** Records one logical probe round. Internal probe tasks are intentionally not used for R5. */
+    public void recordProbeRound(String path, long durationNanos, boolean success) {
+        if (!settings.enabled()) {
+            return;
+        }
+        long now = clock.getAsLong();
+        Bucket bucket = bucketFor(probeWindows, now);
+        if (bucket != null) {
+            bucket.probeRounds.increment();
+            if (durationNanos > settings.slowNanos()) {
+                bucket.probeSlowRounds.increment();
+            }
+        }
+        probeFiles.computeIfAbsent(path, p -> new FileState(null, p))
+                .record(now, success);
     }
 
     public long recordedCount() {
@@ -94,32 +104,44 @@ public final class IoTelemetry {
         return startedNanos;
     }
 
-    /** Number of tasks currently running; bounded by the pool size, never by the queue depth. */
     public int executingCount() {
         return executing.size();
     }
 
     public IoHealthSnapshot snapshot(long nowNanos) {
-        IoTelemetrySettings settings = this.settings;
-        // buckets before executing: a task finishing in between is missed for one tick at worst
-        WindowAgg container = scanWindow(containerWindows, nowNanos, settings.windowNanos());
-        Map<String, IoHealthSnapshot.TenantStat> tenants = tenantStats(nowNanos, settings);
+        IoTelemetrySettings current = settings;
+        WindowAgg business = scanWindow(businessWindows, nowNanos, current.windowNanos());
+        WindowAgg probe = scanWindow(probeWindows, nowNanos, current.probeWindowNanos());
+        Map<String, IoHealthSnapshot.TenantStat> tenants = tenantStats(nowNanos, current);
+        Map<String, IoHealthSnapshot.FileStat> probeFileStats = probeFileStats(nowNanos, current);
 
-        // exec time is measured from startNanos, so queue wait is not counted
-        long inFlight = 0;
-        long slowInFlight = 0;
-        long maxInFlightNanos = 0;
+        long businessInFlight = 0;
+        long businessSlowInFlight = 0;
+        long businessMaxInFlight = 0;
+        long probeInFlight = 0;
+        long probeSlowInFlight = 0;
+        long probeMaxInFlight = 0;
+
         for (IoTask<?> task : executing) {
             long execNanos = nowNanos - task.startNanos;
-            boolean slow = execNanos > settings.slowNanos();
-            inFlight++;
-            if (slow) {
-                slowInFlight++;
+            boolean slow = execNanos > current.slowNanos();
+            if (task.source() == IoSource.PROBE) {
+                probeInFlight++;
+                if (slow) {
+                    probeSlowInFlight++;
+                }
+                probeMaxInFlight = Math.max(probeMaxInFlight, execNanos);
+                continue;
             }
-            maxInFlightNanos = Math.max(maxInFlightNanos, execNanos);
+
+            businessInFlight++;
+            if (slow) {
+                businessSlowInFlight++;
+            }
+            businessMaxInFlight = Math.max(businessMaxInFlight, execNanos);
             if (task.tenant != null) {
                 IoHealthSnapshot.TenantStat stat =
-                        tenants.computeIfAbsent(task.tenant, t -> new IoHealthSnapshot.TenantStat());
+                        tenants.computeIfAbsent(task.tenant, t -> IoHealthSnapshot.TenantStat.of(0, 0, 0, 0));
                 stat.inFlight++;
                 if (slow) {
                     stat.slowInFlight++;
@@ -127,27 +149,35 @@ public final class IoTelemetry {
             }
         }
 
-        return new IoHealthSnapshot(nowNanos, container.total, container.failed, container.slow,
-                inFlight, slowInFlight, maxInFlightNanos, container.maxEndToEndNanos,
-                container.maxExecNanos, tenants);
+        IoHealthSnapshot.SourceSnapshot businessSnapshot = new IoHealthSnapshot.SourceSnapshot(
+                nowNanos, business.total, business.failed, business.slow,
+                businessInFlight, businessSlowInFlight, businessMaxInFlight,
+                business.maxEndToEndNanos, business.maxExecNanos);
+        IoHealthSnapshot.SourceSnapshot probeTaskSnapshot = new IoHealthSnapshot.SourceSnapshot(
+                nowNanos, probe.total, probe.failed, probe.slow,
+                probeInFlight, probeSlowInFlight, probeMaxInFlight,
+                probe.maxEndToEndNanos, probe.maxExecNanos);
+        IoHealthSnapshot.ProbeSnapshot probeSnapshot = new IoHealthSnapshot.ProbeSnapshot(
+                probeTaskSnapshot, probe.rounds, probe.slowRounds, probeFileStats);
+        return new IoHealthSnapshot(nowNanos, businessSnapshot, probeSnapshot, tenants);
     }
 
-    private Map<String, IoHealthSnapshot.TenantStat> tenantStats(long nowNanos, IoTelemetrySettings settings) {
+    private Map<String, IoHealthSnapshot.TenantStat> tenantStats(
+            long nowNanos, IoTelemetrySettings current) {
         Map<String, IoHealthSnapshot.TenantStat> stats = new HashMap<>();
-        long idleBefore = nowNanos - settings.stateIdleNanos();
-        long fileWindowStart = nowNanos - settings.fileWindowNanos();
+        long idleBefore = nowNanos - current.stateIdleNanos();
+        long fileWindowStart = nowNanos - current.fileWindowNanos();
         for (Map.Entry<String, TenantHealth> entry : tenantHealth.entrySet()) {
             TenantHealth health = entry.getValue();
-            WindowAgg agg = scanWindow(health.buckets, nowNanos, settings.windowNanos());
-            Map<String, IoHealthSnapshot.FileStat> files = fileStats(health.files, fileWindowStart, idleBefore);
+            WindowAgg agg = scanWindow(health.buckets, nowNanos, current.windowNanos());
+            Map<String, IoHealthSnapshot.FileStat> files =
+                    fileStats(health.files, fileWindowStart, idleBefore);
             if (agg.total > 0 || !files.isEmpty()) {
-                IoHealthSnapshot.TenantStat stat = new IoHealthSnapshot.TenantStat();
-                stat.total = agg.total;
-                stat.abnormal = agg.abnormal;
+                IoHealthSnapshot.TenantStat stat = IoHealthSnapshot.TenantStat.of(
+                        agg.total, agg.abnormal, 0, 0);
                 stat.files.putAll(files);
                 stats.put(entry.getKey(), stat);
             }
-            // idle eviction uses the newest write, not the rule window; files go with the tenant
             long newestWrite = newestWriteNanos(health.buckets);
             if (newestWrite == Long.MIN_VALUE || newestWrite < idleBefore) {
                 tenantHealth.remove(entry.getKey(), health);
@@ -156,8 +186,27 @@ public final class IoTelemetry {
         return stats;
     }
 
-    private Map<String, IoHealthSnapshot.FileStat> fileStats(Map<String, FileState> files,
-            long windowStart, long idleBefore) {
+    private Map<String, IoHealthSnapshot.FileStat> probeFileStats(
+            long nowNanos, IoTelemetrySettings current) {
+        Map<String, IoHealthSnapshot.FileStat> stats = new HashMap<>();
+        long windowStart = nowNanos - current.fileWindowNanos();
+        long idleBefore = nowNanos - current.stateIdleNanos();
+        for (Map.Entry<String, FileState> entry : probeFiles.entrySet()) {
+            FileState state = entry.getValue();
+            if (state.lastTouchedNanos() < idleBefore) {
+                probeFiles.remove(entry.getKey(), state);
+                continue;
+            }
+            IoHealthSnapshot.FileStat stat = state.snapshot(windowStart);
+            if (stat != null) {
+                stats.put(entry.getKey(), stat);
+            }
+        }
+        return stats;
+    }
+
+    private Map<String, IoHealthSnapshot.FileStat> fileStats(
+            Map<String, FileState> files, long windowStart, long idleBefore) {
         Map<String, IoHealthSnapshot.FileStat> stats = new HashMap<>();
         for (Map.Entry<String, FileState> entry : files.entrySet()) {
             FileState state = entry.getValue();
@@ -173,7 +222,8 @@ public final class IoTelemetry {
         return stats;
     }
 
-    private static WindowAgg scanWindow(AtomicReferenceArray<Bucket> buckets, long nowNanos, long windowNanos) {
+    private static WindowAgg scanWindow(
+            AtomicReferenceArray<Bucket> buckets, long nowNanos, long windowNanos) {
         WindowAgg agg = new WindowAgg();
         long windowStart = nowNanos - windowNanos;
         long newestId = Math.floorDiv(nowNanos, BUCKET_NANOS);
@@ -191,6 +241,8 @@ public final class IoTelemetry {
                 agg.failed += bucket.failed.sum();
                 agg.slow += bucket.slow.sum();
                 agg.abnormal += bucket.abnormal.sum();
+                agg.rounds += bucket.probeRounds.sum();
+                agg.slowRounds += bucket.probeSlowRounds.sum();
                 agg.maxExecNanos = Math.max(agg.maxExecNanos, bucket.maxExecNanos.get());
                 agg.maxEndToEndNanos = Math.max(agg.maxEndToEndNanos, bucket.maxEndToEndNanos.get());
             }
@@ -198,7 +250,6 @@ public final class IoTelemetry {
         return agg;
     }
 
-    /** Newest write in the ring, used for the 1-minute idle eviction. */
     private static long newestWriteNanos(AtomicReferenceArray<Bucket> buckets) {
         long newest = Long.MIN_VALUE;
         for (int i = 0; i < BUCKETS; i++) {
@@ -210,33 +261,35 @@ public final class IoTelemetry {
         return newest;
     }
 
-    /** One pass over a bucket ring's rule-window totals. */
     private static final class WindowAgg {
         long total;
         long failed;
         long slow;
         long abnormal;
+        long rounds;
+        long slowRounds;
         long maxExecNanos;
         long maxEndToEndNanos;
     }
 
-    private void record(long endNanos, String tenant, String path, long execNanos, long endToEndNanos,
-            boolean failed) {
-        IoTelemetrySettings settings = this.settings;
-        boolean slow = execNanos > settings.slowNanos();
-        add(bucketFor(containerWindows, endNanos), execNanos, endToEndNanos, failed, slow);
-        if (tenant == null) {
+    private void record(long endNanos, IoSource source, String tenant, String path,
+            long execNanos, long endToEndNanos, boolean failed) {
+        IoTelemetrySettings current = settings;
+        boolean slow = execNanos > current.slowNanos();
+        AtomicReferenceArray<Bucket> windows =
+                source == IoSource.PROBE ? probeWindows : businessWindows;
+        add(bucketFor(windows, endNanos), execNanos, endToEndNanos, failed, slow);
+        if (source != IoSource.BUSINESS || tenant == null) {
             return;
         }
         TenantHealth health = tenantHealth.computeIfAbsent(tenant, key -> new TenantHealth());
         add(bucketFor(health.buckets, endNanos), execNanos, endToEndNanos, failed, slow);
-        // the path already carries the keeper's store dir, so it identifies the file on its own
         health.files.computeIfAbsent(path, key -> new FileState(tenant, path))
                 .record(endNanos, failed);
     }
 
-    private static void add(Bucket bucket, long execNanos, long endToEndNanos, boolean failed,
-            boolean slow) {
+    private static void add(Bucket bucket, long execNanos, long endToEndNanos,
+            boolean failed, boolean slow) {
         if (bucket == null) {
             return;
         }
@@ -254,12 +307,6 @@ public final class IoTelemetry {
         accumulateMax(bucket.maxEndToEndNanos, endToEndNanos);
     }
 
-    /**
-     * The bucket covering {@code nowNanos}, rotating the slot to a fresh bucket once the second it
-     * held has passed. A writer that races with the rotation may land in the old bucket, which is
-     * about to leave the window: at most a handful of records around a second boundary are lost,
-     * which is well inside the one-second granularity of the window itself.
-     */
     private static Bucket bucketFor(AtomicReferenceArray<Bucket> buckets, long nowNanos) {
         long id = Math.floorDiv(nowNanos, BUCKET_NANOS);
         long start = id * BUCKET_NANOS;
@@ -285,11 +332,6 @@ public final class IoTelemetry {
         }
     }
 
-    /**
-     * Only EIO and StorageIOException mean the storage itself is unusable. A StorageIOException
-     * that merely wraps a ClosedChannelException is our own close (shutdown, roll) and does not
-     * count. Everything else is counted in total only.
-     */
     static boolean isFailure(Throwable error) {
         Throwable cause = unwrap(error);
         if (cause instanceof EIOException) {
@@ -316,29 +358,31 @@ public final class IoTelemetry {
         return current;
     }
 
-    /** Visible for tests: drop all history. */
+    @VisibleForTesting
     void reset() {
         for (int i = 0; i < BUCKETS; i++) {
-            containerWindows.set(i, null);
+            businessWindows.set(i, null);
+            probeWindows.set(i, null);
         }
         tenantHealth.clear();
+        probeFiles.clear();
         executing.clear();
         recordedCount.set(0);
     }
 
-    /** Visible for tests: pretend the process has been up for a while (skips the warm-up gate). */
+    @VisibleForTesting
     public void startAt(long startedNanos) {
         this.startedNanos = startedNanos;
     }
 
     static final class Bucket {
-
         final long startNanos;
         final LongAdder total = new LongAdder();
         final LongAdder failed = new LongAdder();
         final LongAdder slow = new LongAdder();
-        /** Failed or slow: the tenant rule counts both once per task. */
         final LongAdder abnormal = new LongAdder();
+        final LongAdder probeRounds = new LongAdder();
+        final LongAdder probeSlowRounds = new LongAdder();
         final AtomicLong maxExecNanos = new AtomicLong();
         final AtomicLong maxEndToEndNanos = new AtomicLong();
 
@@ -347,16 +391,12 @@ public final class IoTelemetry {
         }
     }
 
-    /** Per keeper: its window ring plus the files it has touched recently. */
     static final class TenantHealth {
-
         final AtomicReferenceArray<Bucket> buckets = new AtomicReferenceArray<>(BUCKETS);
         final ConcurrentHashMap<String, FileState> files = new ConcurrentHashMap<>();
     }
 
-    /** Trailing failure run plus the latest failure timestamps of one file. */
-    static final class FileState {
-
+    static class FileState {
         private final String tenant;
         private final String path;
         private final long[] failNanos = new long[FILE_FAIL_RING];
@@ -373,7 +413,6 @@ public final class IoTelemetry {
         synchronized void record(long nanos, boolean failed) {
             lastTouched = nanos;
             if (!failed) {
-                // only a success ends a run; the window does not, so a broken idle file stays visible
                 consecutiveFails = 0;
                 return;
             }
@@ -386,7 +425,6 @@ public final class IoTelemetry {
             return lastTouched;
         }
 
-        /** Null when the file has seen no IO inside the window, exactly like an absent record. */
         synchronized IoHealthSnapshot.FileStat snapshot(long windowStart) {
             if (lastTouched < windowStart) {
                 return null;
@@ -397,13 +435,8 @@ public final class IoTelemetry {
                     fails++;
                 }
             }
-            IoHealthSnapshot.FileStat stat = new IoHealthSnapshot.FileStat();
-            stat.tenant = tenant;
-            stat.path = path;
-            stat.lastEndNanos = lastTouched;
-            stat.consecutiveFails = consecutiveFails;
-            stat.fails10 = fails;
-            return stat;
+            return IoHealthSnapshot.FileStat.of(
+                    tenant, path, consecutiveFails, fails, lastTouched);
         }
     }
 }

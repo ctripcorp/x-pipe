@@ -58,7 +58,11 @@ public class DiskHealthChecker extends AbstractLifecycleObservable implements To
         super.doInitialize();
         String name = getClass().getSimpleName();
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create(name));
-        this.checkTask = new DynamicDelayPeriodTask(name, this::check, keeperContainerConfig::diskCheckInterval, scheduled);
+        this.checkTask = new DynamicDelayPeriodTask(name, this::check,
+                () -> keeperContainerConfig.isTfsMode()
+                        ? keeperContainerConfig.ioHealthProbeIntervalMill()
+                        : keeperContainerConfig.diskCheckInterval(),
+                scheduled);
     }
 
     @Override
