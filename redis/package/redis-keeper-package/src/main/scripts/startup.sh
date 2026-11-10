@@ -44,9 +44,9 @@ function getSafeXmx() {
 }
 
 function getSafeMaxDirect() {
-    # Off-heap (Direct): 45% of machine memory, cap 16G — TailCache uses Direct ByteBuf
+    # Off-heap (Direct): 50% of machine memory, cap 16G — TailCache uses Direct ByteBuf
     total=`getTotalMem`
-    SAFE_PERCENT=45
+    SAFE_PERCENT=50
     MAX_MEM=16
     result=`expr $total \* $SAFE_PERCENT / 100`
     if [ "$result" -lt 1 ]; then
@@ -58,12 +58,6 @@ function getSafeMaxDirect() {
     else
         echo "$result"
     fi
-}
-
-function getSafeXmn() {
-    xmx=$1
-    XMN_PERCENT=65
-    echo `expr $xmx \* $XMN_PERCENT / 100`
 }
 
 function getEnv(){
@@ -153,12 +147,11 @@ echo log:$LOG_DIR
 changeAndMakeLogDir $FULL_DIR $LOG_DIR
 changePort $FULL_DIR/../$SERVICE_NAME.conf $SERVER_PORT
 
-#get total memory — heap 30%/cap 10G, direct 45%/cap 16G (TailCache is off-heap)
+#get total memory — heap 30%/cap 10G, direct 50%/cap 16G (TailCache is off-heap)
 # overrides: PT (IDC=PTJQ|PTOY, mem>100G) → heap 30G / direct 48G; ROLE=REDIS → keep Keeper small
 ENV=`getEnv`
 echo "current env:"$ENV
 USED_MEM=`getSafeXmx`
-XMN=`getSafeXmn $USED_MEM`
 MAX_DIRECT=`getSafeMaxDirect`
 
 IDC=`getIdc`
@@ -166,7 +159,6 @@ total=`getTotalMem`
 echo "current idc:"$IDC", totalMem:"$total"g"
 if ([ "$IDC" = "PTJQ" ] || [ "$IDC" = "PTOY" ]) && [ "$total" -gt 100 ]; then
     USED_MEM=30
-    XMN=`getSafeXmn $USED_MEM`
     MAX_DIRECT=48
 fi
 
@@ -178,7 +170,6 @@ if [ $ENV != "PRO" ] && [ $ENV != "FWS" ] && [ $ENV != "FAT" ]; then
     then
         # 本机以 Redis 为主：Keeper 仅占少量内存，避免与 Redis 争抢
         USED_MEM=2
-        XMN=`getSafeXmn $USED_MEM`
         MAX_DIRECT=1
 
         DIR=`dirname $0`
@@ -188,9 +179,9 @@ if [ $ENV != "PRO" ] && [ $ENV != "FWS" ] && [ $ENV != "FAT" ]; then
         $CURRENT_SCRIPT_PATH/start_all.sh active
     fi
 fi
-echo "memory: heap=${USED_MEM}g (xmn=${XMN}g), maxDirect=${MAX_DIRECT}g"
-JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g -Xmn${XMN}g -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}g"
-export JAVA_OPTS="$JAVA_OPTS -Djdk.attach.allowAttachSelf=true --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.attach/com.sun.tools.attach=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED -Dio.netty.maxDirectMemory=0 -Dio.netty.allocator.useCacheForAllThreads=false -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:MaxTenuringThreshold=8 -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+ExplicitGCInvokesConcurrent -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:gc*:file=$LOG_DIR/heap_trace.txt:time,uptime,level,tags -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/ -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -Djava.security.egd=file:/dev/./urandom -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+echo "memory: heap=${USED_MEM}g, maxDirect=${MAX_DIRECT}g"
+JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}g"
+export JAVA_OPTS="$JAVA_OPTS -Djdk.attach.allowAttachSelf=true --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.attach/com.sun.tools.attach=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED -Dio.netty.maxDirectMemory=0 -Dio.netty.allocator.useCacheForAllThreads=false -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m -XX:+ExplicitGCInvokesConcurrent -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:gc*:file=$LOG_DIR/heap_trace.txt:time,uptime,level,tags -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/ -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -Djava.security.egd=file:/dev/./urandom -XX:+UseG1GC -XX:MaxGCPauseMillis=30"
 
 echo $JAVA_OPTS
 
