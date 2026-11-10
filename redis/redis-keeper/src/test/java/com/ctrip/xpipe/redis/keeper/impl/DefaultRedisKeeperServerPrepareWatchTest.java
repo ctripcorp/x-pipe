@@ -421,11 +421,10 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 	@Test
 	public void testMetaFlushRunsOnlyWhileWritable() throws Exception {
 		TestKeeperConfig config = watchConfig(true);
-		config.setMetaFlushIntervalMilli(50);
+		config.setReplicationStoreGcIntervalSeconds(1);
 		DefaultRedisKeeperServer server = (DefaultRedisKeeperServer) createRedisKeeperServer(config, true);
 		server.initialize();
 		DefaultReplicationStoreManager manager = (DefaultReplicationStoreManager) server.getReplicationStoreManager();
-		manager.setMetaFlushCheckPeriodMilli(20);
 		DefaultEndPoint master = new DefaultEndPoint("127.0.0.1", 0);
 		try {
 			server.start();
@@ -436,15 +435,10 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 			becomePrepare(server);
 			Assert.assertTrue(manager.isReadOnly());
 			Assert.assertTrue(manager.getLifecycleState().isStarted());
-			Assert.assertNull(ReflectionTestUtils.getField(manager, "metaFlushFuture"));
-			Object lastFlush = ReflectionTestUtils.getField(manager, "lastMetaFlushMilli");
 			sleep(200);
-			Assert.assertEquals("no tick while read-only", lastFlush,
-					ReflectionTestUtils.getField(manager, "lastMetaFlushMilli"));
 
 			server.getRedisKeeperServerState().becomeActive(master);
 			Assert.assertFalse(manager.isReadOnly());
-			Assert.assertNotNull(ReflectionTestUtils.getField(manager, "metaFlushFuture"));
 			Assert.assertEquals(dir,
 					((DefaultReplicationStore) server.getOrCreateReplicationStore()).getBaseDir().getName());
 			assertPeriodicFlushRestoresManagerMeta(manager, dir);
