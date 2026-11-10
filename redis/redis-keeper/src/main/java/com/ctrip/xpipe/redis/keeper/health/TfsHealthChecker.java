@@ -134,13 +134,14 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
                 continue;
             }
             HealthState current = states.computeIfAbsent(tenant, t -> seedState(keeper));
-            HealthState next = next(current, result.isAnomalous(tenant));
+            HealthState next = next(current, result.isAnomalous(tenant),
+                    config.ioHealthRecoveredPendingAutoRecover());
             if (next != current) {
                 states.put(tenant, next);
                 logger.info("[check][{}]{} -> {}, triggered={}", tenant, current, next, result.triggered());
             }
             // publish whenever zk lags the decided state, so a throttled/failed reset self-heals here
-            if (needsPublish(next) && next != publishedStates.get(tenant)) {
+            if (shouldPublish(next, current, publishedStates.get(tenant))) {
                 onChange(keeper, tenant, next);
             }
         }
@@ -148,9 +149,16 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
         publishedStates.keySet().retainAll(seen);
     }
 
-    /** DOWN and RECOVERED_PENDING are the states the metaserver must see; HEALTHY/SICK are not published. */
-    private static boolean needsPublish(HealthState state) {
-        return state == HealthState.DOWN || state == HealthState.RECOVERED_PENDING;
+    private static boolean shouldPublish(HealthState next, HealthState current,
+            HealthState published) {
+        if (next != published && (next == HealthState.DOWN
+                || next == HealthState.RECOVERED_PENDING)) {
+            return true;
+        }
+        // Auto recovery must be retried until the healthy state reaches zk.
+        return next == HealthState.HEALTHY
+                && (current == HealthState.RECOVERED_PENDING
+                || published == HealthState.RECOVERED_PENDING);
     }
 
     /** Called by KeeperContainerService once a resetElection succeeded, so we stop retrying this state. */
@@ -178,6 +186,11 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
     }
 
     static HealthState next(HealthState current, boolean anomalous) {
+        return next(current, anomalous, false);
+    }
+
+    static HealthState next(HealthState current, boolean anomalous,
+            boolean autoRecoverRecoveredPending) {
         switch (current) {
             case HEALTHY:
                 return anomalous ? HealthState.SICK : HealthState.HEALTHY;
@@ -186,14 +199,15 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
             case DOWN:
                 return anomalous ? HealthState.DOWN : HealthState.RECOVERED_PENDING;
             default:
-                // RECOVERED_PENDING: only the API may bring it back into election
-                return HealthState.RECOVERED_PENDING;
+                return !anomalous && autoRecoverRecoveredPending
+                        ? HealthState.HEALTHY
+                        : HealthState.RECOVERED_PENDING;
         }
     }
 
     private void onChange(RedisKeeperServer keeper, String tenant, HealthState next) {
-        // only DOWN / RECOVERED_PENDING reach here (see needsPublish); SICK is metric-only and
-        // HEALTHY from SICK never touched zk, so neither is published
+        // DOWN, RECOVERED_PENDING and an enabled auto-recovery transition to HEALTHY are
+        // published. SICK and ordinary HEALTHY ticks are metric/state-machine only.
         KeeperMeta meta = keeper.getCurrentKeeperMeta();
         if (meta != null) {
             meta.setHealthState(next.name());
