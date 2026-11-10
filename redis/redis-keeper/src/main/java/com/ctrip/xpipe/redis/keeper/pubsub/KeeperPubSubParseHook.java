@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.pubsub;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -25,6 +26,8 @@ public class KeeperPubSubParseHook {
 	public static final String MONITOR_TYPE = "KeeperPubSubParse";
 
 	public static final String MONITOR_PARSE_FAIL = "parseFail";
+
+	private static final byte[] PUBLISH_BYTES = new byte[]{'P', 'U', 'B', 'L', 'I', 'S', 'H'};
 
 	private final RedisOpParser redisOpParser;
 
@@ -56,6 +59,14 @@ public class KeeperPubSubParseHook {
 
 	private void onParsedCommand(Object[] payload, ByteBuf commandBuf) {
 		try {
+			if (payload == null || payload.length == 0 || !(payload[0] instanceof DirectByteBufInOutPayload)) {
+				return;
+			}
+			DirectByteBufInOutPayload command = (DirectByteBufInOutPayload) payload[0];
+			if (!command.equalsIgnoreCaseAsciiExpectedUppercase(PUBLISH_BYTES)) {
+				return;
+			}
+
 			RedisOp redisOp = redisOpParser.parse(payload);
 			if (redisOp == null || !RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
 				return;
