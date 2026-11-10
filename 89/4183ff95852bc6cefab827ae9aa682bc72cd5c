@@ -1,0 +1,21 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/pubsub/KeeperPubSubParseHook.java
+  s_ef00a1ce55c50a::t_016655499f5d03 62-69
+  s_ef00a1ce55c50a::t_1aa624dd51d20f 4
+  s_ef00a1ce55c50a::t_3be6fd1792d2a1 30-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "894183ff95852bc6cefab827ae9aa682bc72cd5c",
+  "prompts": {},
+  "sessions": {
+    "s_ef00a1ce55c50a": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_e234aa28-7b1d-42c5-a340-d4d6a3031d03",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
