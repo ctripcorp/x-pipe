@@ -1,0 +1,87 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_1f8f951e2e1b3d::t_7ecb8cab4a21e2 306
+  s_1f8f951e2e1b3d::t_2f5faa92a6caf1 304-305,307
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/AsyncReferenceFileRegion.java
+  s_1f8f951e2e1b3d::t_6e8b3c50d1903b 17
+  s_1f8f951e2e1b3d::t_84e7e41a5e2424 46-49
+  s_1f8f951e2e1b3d::t_dbdb051110c47e 101-102,104,112
+  s_1f8f951e2e1b3d::t_69f0fa7560466e 35-36
+  s_1f8f951e2e1b3d::t_4713c61f04ee62 103,106-111,113-122,124-130
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_1f8f951e2e1b3d::t_75bba1afa2622b 205-209
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TransferToDelayAware.java
+  s_1f8f951e2e1b3d::t_6ef240ed8d2c2c 1-7
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_1f8f951e2e1b3d::t_acd354aaf97577 97-100
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TransferToDelayContext.java
+  s_1f8f951e2e1b3d::t_fbc6f7018d222e 104
+  s_1f8f951e2e1b3d::t_acf4e87e6954ac 6,95,97
+  s_1f8f951e2e1b3d::t_595a23c3557da3 59,72,85,87-93,99-100,103
+  s_1f8f951e2e1b3d::t_e8fffe4ad80f72 7
+  s_1f8f951e2e1b3d::t_2778591f35e05e 94,110,114-118
+  s_1f8f951e2e1b3d::t_13f944cf154270 22,26-29,44,46-47,49-50,52-54,58,60-61,63
+  s_1f8f951e2e1b3d::t_23c1b33b830db3 1-5,8-21,23-25,30-43,45,48,62,65-67,71,73-76,78-80,84,86,101-102,119-120
+  s_1f8f951e2e1b3d::t_01044dedfbea24 51,55-57,64,68-70,77,81-83
+  s_1f8f951e2e1b3d::t_51fce4feffa667 96,98,105-107,109,111-113
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AsyncRdbReferenceFileRegion.java
+  s_1f8f951e2e1b3d::t_f97351e140e196 110,113-118,120-129,131-137
+  s_1f8f951e2e1b3d::t_a610db07516253 108-109,111,119
+  s_1f8f951e2e1b3d::t_ad39bb6f4b273d 25,45
+  s_1f8f951e2e1b3d::t_a76d2fe54e88f5 56-59
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TransferToDelayHook.java
+  s_1f8f951e2e1b3d::t_05b218a08e4c24 18
+  s_1f8f951e2e1b3d::t_d79d1f1be58437 1-5,7,9,11-14,16-17,19-22
+  s_1f8f951e2e1b3d::t_11d2418c64a26f 6,8,10,15
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_1f8f951e2e1b3d::t_c30886f6c615ba 3156-3161,3165-3166
+  s_1f8f951e2e1b3d::t_3474a23f80a3c5 2381-2387,2389-2390,2393,2398-2399
+  s_1f8f951e2e1b3d::t_31b03d9dad9fce 2410,2415-2416,2423,2425-2433
+  s_1f8f951e2e1b3d::t_cf088cf2cfb9f3 2358-2363,2368-2369,2374
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisSlave.java
+  s_1f8f951e2e1b3d::t_081d076dba5fde 110-111,438
+  s_1f8f951e2e1b3d::t_d92c2b5851121b 117-119
+  s_1f8f951e2e1b3d::t_e8b39deee96250 245
+  s_1f8f951e2e1b3d::t_fa748ab22315f0 252-257
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/monitor/impl/DefaultTransferToDelayHookTest.java
+  s_1f8f951e2e1b3d::t_302e6a3eb83528 145
+  s_1f8f951e2e1b3d::t_fe9010d7ea6c12 59,76
+  s_1f8f951e2e1b3d::t_0723f387ab1c80 68,97
+  s_1f8f951e2e1b3d::t_58339d0eecb1f7 133-135
+  s_1f8f951e2e1b3d::t_8d95b7850eb538 87
+  s_1f8f951e2e1b3d::t_b0650c34ba164c 47,50,53-54
+  s_1f8f951e2e1b3d::t_c7ed9a9cbc5fd6 118,121
+  s_1f8f951e2e1b3d::t_2f11936713682f 1-27,29,31-46,48-49,51-52,55-58,60-67,69-75,77-86,88-96,98-117,119-120,122-132,136-144,146-159
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_1f8f951e2e1b3d::t_8be888887d7f7e 22,164
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/monitor/impl/DefaultTransferToDelayHook.java
+  s_1f8f951e2e1b3d::t_a21aeafbf1ebef 155,163-165
+  s_1f8f951e2e1b3d::t_11047c230be9a7 162
+  s_1f8f951e2e1b3d::t_da295d2941e989 63
+  s_1f8f951e2e1b3d::t_06a28157cd39d6 166
+  s_1f8f951e2e1b3d::t_5283b59cd7f12e 145,149
+  s_1f8f951e2e1b3d::t_21314035afb004 1-11,13-16,18-26,35-39,44,46,51-53,55-60,75,89-91,93,95-97,112-113,142,182-189,191,193-194,196-203,211-214,216-218
+  s_1f8f951e2e1b3d::t_50a3b183755c21 27-28
+  s_1f8f951e2e1b3d::t_410dee74fef833 12,29-30,43,47,49,62,64-68,94,104-107,110-111,115,118-122,127,132,135-138,140-141,143-144,146-147,152-154,157,173
+  s_1f8f951e2e1b3d::t_06d04a1ce0bcbe 17,100,114,126,128-129,131,133,148,158-159,167,172,190,192,195,205,210,215
+  s_1f8f951e2e1b3d::t_f598586ba0b5f2 31-33
+  s_1f8f951e2e1b3d::t_9a107abd0461e1 92,99,103,109
+  s_1f8f951e2e1b3d::t_7c6ad976e706a6 77-83
+  s_1f8f951e2e1b3d::t_24a49bc6c9e55d 34,40-42,48,50,54,61,69-74,76,84-88,98,101-102,108,116-117,123,134,139,150-151,156,170-171,174-181
+  s_1f8f951e2e1b3d::t_c5fea4779b88db 160-161,168-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "f679f739edd38be6f9672858303f960afe0f63b8",
+  "prompts": {},
+  "sessions": {
+    "s_1f8f951e2e1b3d": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_dd1a3eb1-8718-4be6-af61-f89e4d90639e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
