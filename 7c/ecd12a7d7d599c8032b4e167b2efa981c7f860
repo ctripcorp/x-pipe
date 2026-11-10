@@ -1,0 +1,22 @@
+redis/package/redis-keeper-package/src/main/scripts/startup.sh
+  s_ef00a1ce55c50a::t_5bbe1497f95231 182-183
+  s_ef00a1ce55c50a::t_b2c288c26da2b0 47,49
+  s_ef00a1ce55c50a::t_d157f8b25500e1 184
+  s_ef00a1ce55c50a::t_d277089b35565c 150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "7cecd12a7d7d599c8032b4e167b2efa981c7f860",
+  "prompts": {},
+  "sessions": {
+    "s_ef00a1ce55c50a": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_e234aa28-7b1d-42c5-a340-d4d6a3031d03",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
