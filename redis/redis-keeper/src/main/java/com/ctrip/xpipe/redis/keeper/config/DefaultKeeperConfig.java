@@ -202,6 +202,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 		return getIntProperty(KEY_DELAY_LOG_LIMIT_MICRO, 10000);
 	}
 
+	@Override
+	public int getTransferToDelayLogLimitMicro() {
+		return getIntProperty(KEY_TRANSFER_TO_DELAY_LOG_LIMIT_MICRO, 10000);
+	}
+
     @Override
     public long getTrafficReportIntervalMillis() {
         return getLongProperty(KEY_TRAFFIC_REPORT_INTERVAL, DEFAULT_TRAFFIC_REPORT_INTERVAL_MILLIS);

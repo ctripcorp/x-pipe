@@ -133,6 +133,10 @@ public interface AsyncFileSystem {
     default CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target) {
         throw new UnsupportedOperationException();
     }
+    default CompletableFuture<Long> transferTo(AsyncFile file, long position, long count,
+            WritableByteChannel target, TransferToDelayContext delayContext) {
+        throw new UnsupportedOperationException();
+    }
     default long transferToSync(AsyncFile file, long position, long count, WritableByteChannel target) {
         throw new UnsupportedOperationException();
     }
@@ -295,6 +299,10 @@ public interface AsyncFileSystem {
     }
     // If the FS op fails, some data may be transferred, but the position is not guaranteed to be updated.
     default CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target) {
+        throw new UnsupportedOperationException();
+    }
+    default CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count,
+            WritableByteChannel target, TransferToDelayContext delayContext) {
         throw new UnsupportedOperationException();
     }
     default long transferToSync(AsyncSegmentFile file, long offset, long count, WritableByteChannel target) {

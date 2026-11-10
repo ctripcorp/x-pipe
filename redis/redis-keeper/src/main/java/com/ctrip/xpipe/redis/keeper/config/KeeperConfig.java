@@ -19,6 +19,7 @@ public interface KeeperConfig extends CoreConfig{
 	String KEY_ASYNC_FSYNC_INTERVAL_BYTES = "keeper.async.fsync.interval.bytes";
 	String KEY_ASYNC_FSYNC_INTERVAL_MILLIS = "keeper.async.fsync.interval.millis";
 	String KEY_ASYNC_IO_THREADS = "keeper.async.io.threads";
+	String KEY_TRANSFER_TO_DELAY_LOG_LIMIT_MICRO = "monitor.transfer.to.delay.log.limit.micro";
 	/**
 	 * TailCache global memory cap (Direct ByteBuf). When unset, defaults to
 	 * {@link #DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_RATIO} of JVM MaxDirectMemory
@@ -92,6 +93,10 @@ public interface KeeperConfig extends CoreConfig{
 	int getRdbDumpMinIntervalMilli();
 	
 	int getDelayLogLimitMicro();
+
+	default int getTransferToDelayLogLimitMicro() {
+		return 10000;
+	}
 
     long getTrafficReportIntervalMillis();
 

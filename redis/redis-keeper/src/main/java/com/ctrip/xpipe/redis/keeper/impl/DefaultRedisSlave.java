@@ -18,8 +18,11 @@ import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultTransferToDelayHook;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixedSyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.ProgressiveSyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.storage.TransferToDelayAware;
+import com.ctrip.xpipe.redis.keeper.storage.TransferToDelayHook;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -104,11 +107,16 @@ public class DefaultRedisSlave implements RedisSlave {
 	private SyncRateLimiter fsyncRateLimiter;
 	private SyncRateLimiter psyncRateLimiter;
 
+	private final TransferToDelayHook transferToDelayHook;
+
 	private ReplDelayConfigCache replDelayConfigCache;
 
 	public DefaultRedisSlave(RedisClient<RedisKeeperServer> redisClient, ReplDelayConfigCache replDelayConfigCache){
 		this.redisClient = redisClient;
 		this.replDelayConfigCache = replDelayConfigCache;
+		RedisKeeperServer redisKeeperServer = redisClient.getRedisServer();
+		this.transferToDelayHook = new DefaultTransferToDelayHook(redisKeeperServer.getReplId(), this,
+				() -> redisKeeperServer.getKeeperConfig().getTransferToDelayLogLimitMicro());
 		this.redisClient.addChannelCloseReleaseResources(this);
 		initExecutor(((DefaultRedisClient)redisClient).channel);
 	}
@@ -234,10 +242,17 @@ public class DefaultRedisSlave implements RedisSlave {
 	private ChannelFuture doWriteFile(ReferenceFileRegion referenceFileRegion) {
 
 		closeState.makeSureNotClosed();
+		bindTransferToDelayHook(referenceFileRegion);
 
 		ChannelFuture future = channel().writeAndFlush(referenceFileRegion);
 		future.addListener(writeExceptionListener);
 		return future;
+	}
+
+	private void bindTransferToDelayHook(Object message) {
+		if (message instanceof TransferToDelayAware) {
+			((TransferToDelayAware) message).bindTransferToDelayHook(transferToDelayHook);
+		}
 	}
 
 	@Override
@@ -420,6 +435,7 @@ public class DefaultRedisSlave implements RedisSlave {
 			}
 		}
 
+		bindTransferToDelayHook(command);
 		ChannelFuture future = channel().writeAndFlush(command);
 		future.addListener(writeExceptionListener);
 		return future;

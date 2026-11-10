@@ -4,6 +4,9 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.TransferToDelayAware;
+import com.ctrip.xpipe.redis.keeper.storage.TransferToDelayContext;
+import com.ctrip.xpipe.redis.keeper.storage.TransferToDelayHook;
 import io.netty.channel.FileRegion;
 
 import java.io.IOException;
@@ -19,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 保证异步 transfer 完成前底层 channel 不被关闭。
  * 与 {@link com.ctrip.xpipe.redis.keeper.store.cmd.AsyncReferenceFileRegion}（Cmd segment）对应。
  */
-public class AsyncRdbReferenceFileRegion implements ReferenceFileRegion {
+public class AsyncRdbReferenceFileRegion implements ReferenceFileRegion, TransferToDelayAware {
 
     private final AsyncRdbReadHandle readHandle;
 
@@ -39,12 +42,19 @@ public class AsyncRdbReferenceFileRegion implements ReferenceFileRegion {
 
     private volatile long totalPos;
 
+    private volatile TransferToDelayHook transferToDelayHook = TransferToDelayHook.NOOP;
+
     public AsyncRdbReferenceFileRegion(AsyncRdbReadHandle readHandle, long filePosition, long count) {
         this.readHandle = readHandle;
         this.asyncFileSystem = readHandle.getAsyncFileSystem();
         this.asyncFile = readHandle.getAsyncFile();
         this.filePosition = filePosition;
         this.count = count;
+    }
+
+    @Override
+    public void bindTransferToDelayHook(TransferToDelayHook hook) {
+        this.transferToDelayHook = hook == null ? TransferToDelayHook.NOOP : hook;
     }
 
     @Override
@@ -95,20 +105,37 @@ public class AsyncRdbReferenceFileRegion implements ReferenceFileRegion {
             return 0;
         }
 
+        long transferPosition = filePosition + position;
+        long transferOffset = transferPosition + remaining;
+        TransferToDelayContext delayContext = TransferToDelayHook.safeBegin(
+                transferToDelayHook, transferPosition, transferOffset);
         long wrote = 0;
-        while (remaining > 0) {
-            final long transferredSoFar = wrote;
-            final long requestBytes = Math.min(remaining, AsyncFileSystemHelper.TRANSFER_MAX_BYTES);
-            long transferredOnce = AsyncFileSystemHelper.await(() -> asyncFileSystem.transferTo(asyncFile, filePosition + position + transferredSoFar, requestBytes, target),
-                    "transfer rdb " + filePosition);
-            if (transferredOnce <= 0) {
-                break;
+        Throwable failure = null;
+        try {
+            while (remaining > 0) {
+                final long transferredSoFar = wrote;
+                final long requestBytes = Math.min(remaining, AsyncFileSystemHelper.TRANSFER_MAX_BYTES);
+                long transferredOnce = AsyncFileSystemHelper.await(() -> {
+                    long offset = transferPosition + transferredSoFar;
+                    if (delayContext == TransferToDelayContext.NONE) {
+                        return asyncFileSystem.transferTo(asyncFile, offset, requestBytes, target);
+                    }
+                    return asyncFileSystem.transferTo(asyncFile, offset, requestBytes, target, delayContext);
+                }, "transfer rdb " + filePosition);
+                if (transferredOnce <= 0) {
+                    break;
+                }
+                wrote += transferredOnce;
+                remaining -= transferredOnce;
             }
-            wrote += transferredOnce;
-            remaining -= transferredOnce;
+            transferred = Math.max(transferred, position + wrote);
+            return wrote;
+        } catch (IOException | RuntimeException | Error t) {
+            failure = t;
+            throw t;
+        } finally {
+            TransferToDelayContext.safeComplete(delayContext, wrote, failure);
         }
-        transferred = Math.max(transferred, position + wrote);
-        return wrote;
     }
 
     @Override

@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReasonTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStatsTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultMasterStatsTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStatsTest;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultTransferToDelayHookTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.GapAllowedSyncTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PartialOnlyGapAllowedSyncTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
@@ -160,6 +161,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RateLimitTest.class,
         LeakyBucketBasedMasterReplicationListenerTest.class,
         DefaultReplicationStoreStatsTest.class,
+        DefaultTransferToDelayHookTest.class,
         DefaultMetaStoreTest.class,
         DefaultMetaStoreReadOnlyTest.class,
         TestAbstractMetaStoreTest.class,

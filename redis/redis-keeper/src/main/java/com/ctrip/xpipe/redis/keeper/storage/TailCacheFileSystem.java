@@ -2355,33 +2355,48 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target) {
+        return transferTo(file, position, count, target, TransferToDelayContext.NONE);
+    }
+
+    @Override
+    public CompletableFuture<Long> transferTo(AsyncFile file, long position, long count,
+            WritableByteChannel target, TransferToDelayContext delayContext) {
         StorageUtil.requireOpen(file);
         return transferToInternal(file, position, count, target,
                 () -> true,
                 () -> executeWithIoFailureHandling(file,
-                        () -> delegate.transferToSync(file, position, count, target)));
+                        () -> delegate.transferToSync(file, position, count, target)),
+                delayContext);
     }
 
     private CompletableFuture<Long> transferToInternal(AbstractStorageFile file, long offset, long count,
             WritableByteChannel target, java.util.function.BooleanSupplier fsPrepare,
-            java.util.function.Supplier<Long> fsTransfer) {
+            java.util.function.Supplier<Long> fsTransfer, TransferToDelayContext delayContext) {
         StorageUtil.requireOpen(file);
         final BackingFsMode fsMode = backingFsMode;
         FileCacheEntry entry = file.getCacheEntry();
         Pair<Boolean, Boolean> decision = preferCacheRead(file, entry, offset, transferPreferCache, fsMode);
         if (decision.getKey()) {
             java.util.List<ByteBuf> slices = null;
-            synchronized (entry) {
-                if (offset >= entry.cacheStartOffset && entry.isInitialized()) {
-                    long end = Math.min(offset + count, entry.cacheEndOffset);
-                    slices = entry.collectCacheSlices(offset, end, false, file.isAtomicReplace(), chunkSize);
+            TransferToDelayContext.safeBegin(delayContext, TransferToDelayContext.Stage.CACHE_GET);
+            try {
+                synchronized (entry) {
+                    if (offset >= entry.cacheStartOffset && entry.isInitialized()) {
+                        long end = Math.min(offset + count, entry.cacheEndOffset);
+                        slices = entry.collectCacheSlices(offset, end, false, file.isAtomicReplace(), chunkSize);
+                    }
                 }
+            } finally {
+                TransferToDelayContext.safeEnd(delayContext, TransferToDelayContext.Stage.CACHE_GET);
             }
             if (slices != null) {
+                TransferToDelayContext.safeBegin(delayContext, TransferToDelayContext.Stage.CACHE_TRANSFER);
                 try {
                     return CompletableFuture.completedFuture(transferToByCache(slices, target));
                 } catch (IOException e) {
                     return CompletableFuture.failedFuture(new SocketErrorException(e));
+                } finally {
+                    TransferToDelayContext.safeEnd(delayContext, TransferToDelayContext.Stage.CACHE_TRANSFER);
                 }
             }
         }
@@ -2392,20 +2407,30 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
         // Barrier before fsPrepare — see readInternal for why the order matters.
         final String ioKey = file.ioKey;
+        TransferToDelayContext.safeBegin(delayContext, TransferToDelayContext.Stage.INFLIGHT_WAIT);
         try {
             awaitInFlightIo(ioKey, file.path, false);
         } catch (Exception e) {
             return CompletableFuture.completedFuture(0L);
+        } finally {
+            TransferToDelayContext.safeEnd(delayContext, TransferToDelayContext.Stage.INFLIGHT_WAIT);
         }
 
         if (!fsPrepare.getAsBoolean()) {
             return CompletableFuture.completedFuture(0L);
         }
 
+        TransferToDelayContext.safeBegin(delayContext, TransferToDelayContext.Stage.IO_QUEUE);
         CompletableFuture<Long> ioFuture = StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
-            prepareFileSync(file);
-            return fsTransfer.get();
+            TransferToDelayContext.safeEnd(delayContext, TransferToDelayContext.Stage.IO_QUEUE);
+            TransferToDelayContext.safeBegin(delayContext, TransferToDelayContext.Stage.FILE_TRANSFER);
+            try {
+                StorageUtil.requireOpen(file);
+                prepareFileSync(file);
+                return fsTransfer.get();
+            } finally {
+                TransferToDelayContext.safeEnd(delayContext, TransferToDelayContext.Stage.FILE_TRANSFER);
+            }
         });
         registerInFlight(ioKey, ioFuture);
         return ioFuture;
@@ -3128,10 +3153,17 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target) {
+        return transferTo(file, offset, count, target, TransferToDelayContext.NONE);
+    }
+
+    @Override
+    public CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count,
+            WritableByteChannel target, TransferToDelayContext delayContext) {
         return transferToInternal(file, offset, count, target,
                 () -> preReadMetadata(file, offset, null, false),
                 () -> executeWithIoFailureHandling(file, () ->
-                    delegate.transferToSync(file, offset, count, target)));
+                    delegate.transferToSync(file, offset, count, target)),
+                delayContext);
     }
 
 }
