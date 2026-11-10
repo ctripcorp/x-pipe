@@ -192,6 +192,13 @@ public class DefaultKeeperContainerConfig implements KeeperContainerConfig {
                 String.valueOf(DEFAULT_IO_HEALTH_PROBE_WINDOW_SEC)));
     }
 
+    @Override
+    public boolean ioHealthRecoveredPendingAutoRecover() {
+        return Boolean.parseBoolean(config.get(
+                KEY_IO_HEALTH_RECOVERED_PENDING_AUTO_RECOVER,
+                String.valueOf(DEFAULT_IO_HEALTH_RECOVERED_PENDING_AUTO_RECOVER)));
+    }
+
     private String getDefaultRdsDir() {
         return System.getProperty("user.dir");
     }
