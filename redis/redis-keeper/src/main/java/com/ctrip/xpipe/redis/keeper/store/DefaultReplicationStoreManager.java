@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
@@ -88,14 +89,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private ScheduledFuture<?> gcFuture;
 
-    static final long META_FLUSH_CHECK_PERIOD_MILLI = 10_000L;
-
-    private volatile long metaFlushCheckPeriodMilli = META_FLUSH_CHECK_PERIOD_MILLI;
-
-    private volatile ScheduledFuture<?> metaFlushFuture;
-
-    private volatile long lastMetaFlushMilli;
-
     /** Directory name of {@link #currentStore}; published / cleared together with it under the monitor. */
     private String currentStoreDirName;
 
@@ -180,36 +173,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 gc();
             }
         }, keeperConfig.getReplicationStoreGcIntervalSeconds(), keeperConfig.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
-
-        // keeper-tfs-m6 §11.2
-        lastMetaFlushMilli = System.currentTimeMillis();
-        long checkPeriod = metaFlushCheckPeriodMilli;
-        metaFlushFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-
-            @Override
-            protected void doRun() throws Exception {
-                checkAndFlushMeta();
-            }
-        }, checkPeriod, checkPeriod, TimeUnit.MILLISECONDS);
-    }
-
-    /** Takes effect on the next {@code start()}. */
-    @VisibleForTesting
-    public void setMetaFlushCheckPeriodMilli(long metaFlushCheckPeriodMilli) {
-        this.metaFlushCheckPeriodMilli = metaFlushCheckPeriodMilli;
-    }
-
-    private void checkAndFlushMeta() {
-        long interval = keeperConfig.getMetaFlushIntervalMilli();
-        if (interval <= 0) {
-            return;
-        }
-        long now = System.currentTimeMillis();
-        if (now - lastMetaFlushMilli < interval) {
-            return;
-        }
-        lastMetaFlushMilli = now;
-        flushMetaPeriodically();
     }
 
     void flushMetaPeriodically() {
@@ -261,11 +224,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return store;
     }
 
-    /** Cancel GC / meta flush → best-effort flush. Store resources are freed only by {@link #release()}. */
+    /** Cancel GC, which also performs periodic meta flushes, then best-effort flush the store. */
     @Override
     protected void doStop() throws Exception {
         cancelGcFuture();
-        cancelMetaFlushFuture();
         flushStoreBestEffort();
     }
 
@@ -273,7 +235,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     protected void doDispose() throws Exception {
         cancelGcFuture();
-        cancelMetaFlushFuture();
         if (scheduled != null) {
             scheduled.shutdownNow();
         }
@@ -283,14 +244,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         if (gcFuture != null) {
             gcFuture.cancel(true);
             gcFuture = null;
-        }
-    }
-
-    private void cancelMetaFlushFuture() {
-        ScheduledFuture<?> future = metaFlushFuture;
-        metaFlushFuture = null;
-        if (future != null) {
-            future.cancel(true);
         }
     }
 
@@ -598,10 +551,20 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             return;
         }
 
+        flushMetaPeriodically();
+
         gcCount.incrementAndGet();
         // keeper-tfs-m6 §11.5: no force load
         Properties meta = currentMeta();
         if (meta != null) {
+            if (managerMetaAsyncFile != null) {
+                AsyncFileSystemHelper.writeAllBytes(
+                        asyncFileSystem,
+                        managerMetaAsyncFile,
+                        encodeMeta(meta),
+                        "flush meta"
+                );
+            }
             final String currentDirName = meta.getProperty(LATEST_STORE_DIR);
             List<String> children = AsyncFileSystemHelper.await(() -> asyncFileSystem.list(baseDir.getAbsolutePath()),
                     "list replication store manager baseDir " + baseDir);

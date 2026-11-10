@@ -128,7 +128,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public int getReplicationStoreGcIntervalSeconds() {
-		return getIntProperty(KEY_REPLICATION_STORE_GC_INTERVAL_SECONDS, 2);
+		return getIntProperty(KEY_REPLICATION_STORE_GC_INTERVAL_SECONDS, 90);
 	}
 
 	@Override
@@ -424,11 +424,6 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public long getUnclosedHandleFlushRetryWindowMilli() {
 		return getLongProperty(KEY_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI,
 				DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI);
-	}
-
-	@Override
-	public long getMetaFlushIntervalMilli() {
-		return getLongProperty(KEY_META_FLUSH_INTERVAL_MILLI, DEFAULT_META_FLUSH_INTERVAL_MILLI);
 	}
 
 	@Override

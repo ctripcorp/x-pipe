@@ -39,8 +39,6 @@ public interface KeeperConfig extends CoreConfig{
 	long DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES = 100L * 1024 * 1024;
 	String KEY_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI = "keeper.unclosed.handle.flush.retry.window.milli";
 	long DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI = 5L * 60 * 1000;
-	String KEY_META_FLUSH_INTERVAL_MILLI = "keeper.meta.flush.interval.milli";
-	long DEFAULT_META_FLUSH_INTERVAL_MILLI = 3L * 60 * 1000;
 	// keeper-tfs-m6 §17.3: debug file channel fault injection.
 	String KEY_FS_DEBUG_ENABLED = "keeper.fs.debug.enabled";
 	String KEY_FS_DEBUG_FAULT_EIO = "keeper.fs.debug.fault.eio";
@@ -204,9 +202,6 @@ public interface KeeperConfig extends CoreConfig{
 	 * failed before it degrades to noFlush. Read when a handle is deferred.
 	 */
 	long getUnclosedHandleFlushRetryWindowMilli();
-	/** keeper-tfs-m6 §11.2: periodic meta flush interval; read on every check, ≤ 0 disables. */
-	long getMetaFlushIntervalMilli();
-
 	/** keeper-tfs-m6 §17.3: use the debug file channel; read at FS creation only. Default false. */
 	boolean isFsDebugEnabled();
 

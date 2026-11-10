@@ -30,10 +30,8 @@ import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
@@ -46,7 +44,6 @@ import static org.mockito.Mockito.*;
 
 public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKeeperTest {
 
-    private static final long CHECK_PERIOD_MILLI = 20;
     private static final String LATEST_STORE_DIR = "latest.store.dir";
 
     private AsyncFileSystem fs;
@@ -62,7 +59,6 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         baseDir = new File(getTestFileDir());
         config = new TestKeeperConfig();
         config.setReplicationStoreGcIntervalSeconds(3600);
-        config.setMetaFlushIntervalMilli(TimeUnit.HOURS.toMillis(1));
     }
 
     @After
@@ -73,85 +69,6 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
             LifecycleHelper.disposeIfPossible(manager);
         }
         fs.shutdown();
-    }
-
-    @Test
-    public void testScheduledByIntervalAndPicksUpChangedInterval() throws Exception {
-        config.setMetaFlushIntervalMilli(300);
-        long startAt = System.currentTimeMillis();
-        ReplicationStore store = startWithStore();
-        AtomicLong firstAt = new AtomicLong();
-        doAnswer(inv -> firstAt.compareAndSet(0, System.currentTimeMillis())).when(store).flushMeta();
-
-        verify(store, timeout(3000).atLeast(2)).flushMeta();
-        assertTrue("first flush after one interval", firstAt.get() - startAt >= 300);
-
-        config.setMetaFlushIntervalMilli(TimeUnit.HOURS.toMillis(1));
-        sleep(100);
-        clearInvocations(store);
-        sleep(300);
-        verify(store, never()).flushMeta();
-
-        config.setMetaFlushIntervalMilli(50);
-        verify(store, timeout(1000).atLeastOnce()).flushMeta();
-    }
-
-    @Test
-    public void testNonPositiveIntervalDisablesUntilRestored() throws Exception {
-        config.setMetaFlushIntervalMilli(0);
-        ReplicationStore store = startWithStore();
-        AsyncFile handle = managerHandle();
-        clearInvocations(fs);
-        sleep(200);
-        config.setMetaFlushIntervalMilli(-1);
-        sleep(100);
-        verify(store, never()).flushMeta();
-        verify(fs, never()).write(same(handle), any(ByteBuf.class));
-
-        config.setMetaFlushIntervalMilli(50);
-        verify(store, timeout(1000).atLeastOnce()).flushMeta();
-        verify(fs, atLeastOnce()).write(same(handle), any(ByteBuf.class));
-    }
-
-    @Test
-    public void testReadOnlyStartDoesNotSchedule() throws Exception {
-        config.setMetaFlushIntervalMilli(10);
-        manager = newManager(config);
-        manager.setReadOnly(true);
-        LifecycleHelper.startIfPossible(manager);
-        assertNull(metaFlushFuture());
-        sleep(100);
-        verify(fs, never()).write(any(AsyncFile.class), any(ByteBuf.class));
-    }
-
-    @Test
-    public void testStopAndDisposeCancelAndRestartReschedules() throws Exception {
-        config.setMetaFlushIntervalMilli(50);
-        ReplicationStore first = startWithStore();
-        ScheduledFuture<?> firstFuture = metaFlushFuture();
-        verify(first, timeout(1000).atLeastOnce()).flushMeta();
-
-        LifecycleHelper.stopIfPossible(manager);
-        manager.release();
-        assertTrue(firstFuture.isCancelled());
-        assertNull(metaFlushFuture());
-
-        LifecycleHelper.startIfPossible(manager);
-        ScheduledFuture<?> secondFuture = metaFlushFuture();
-        assertNotNull(secondFuture);
-        assertNotSame(firstFuture, secondFuture);
-        ReplicationStore reopened = manager.getCurrent();
-        assertNotSame(first, reopened);
-        verify(reopened, timeout(1000).atLeastOnce()).flushMeta();
-
-        LifecycleHelper.stopIfPossible(manager);
-        manager.release();
-        LifecycleHelper.disposeIfPossible(manager);
-        assertTrue(secondFuture.isCancelled());
-        assertNull(metaFlushFuture());
-        clearInvocations(reopened);
-        sleep(150);
-        verify(reopened, never()).flushMeta();
     }
 
     @Test
@@ -259,19 +176,6 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
             assertNull("no stack trace", warns.get(0).getThrown());
         }
         verify(store).flushMeta();
-    }
-
-    @Test
-    public void testThrowableDoesNotStopSchedule() throws Exception {
-        TestKeeperConfig spyConfig = spy(config);
-        doThrow(new RuntimeException("config-boom")).doReturn(50L).when(spyConfig).getMetaFlushIntervalMilli();
-        manager = newManager(spyConfig);
-        LifecycleHelper.startIfPossible(manager);
-        ReplicationStore store = manager.create();
-        doThrow(new AssertionError("store-boom")).doNothing().when(store).flushMeta();
-
-        verify(store, timeout(2000).atLeast(2)).flushMeta();
-        verify(spyConfig, atLeast(3)).getMetaFlushIntervalMilli();
     }
 
     @Test
@@ -439,13 +343,8 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
                 return store;
             }
         };
-        m.setMetaFlushCheckPeriodMilli(CHECK_PERIOD_MILLI);
         LifecycleHelper.initializeIfPossible(m);
         return m;
-    }
-
-    private ScheduledFuture<?> metaFlushFuture() {
-        return (ScheduledFuture<?>) ReflectionTestUtils.getField(manager, "metaFlushFuture");
     }
 
     private AsyncFile managerHandle() {
