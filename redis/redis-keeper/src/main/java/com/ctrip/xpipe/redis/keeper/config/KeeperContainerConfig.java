@@ -52,6 +52,8 @@ public interface KeeperContainerConfig {
     int DEFAULT_IO_HEALTH_PROBE_SLOW_RATIO_PERCENT = 67;
     String KEY_IO_HEALTH_PROBE_WINDOW_SEC = "io.health.probe.window.sec";
     long DEFAULT_IO_HEALTH_PROBE_WINDOW_SEC = 15L;
+    String KEY_IO_HEALTH_RECOVERED_PENDING_AUTO_RECOVER = "io.health.recovered.pending.auto.recover";
+    boolean DEFAULT_IO_HEALTH_RECOVERED_PENDING_AUTO_RECOVER = false;
 
     String getReplicationStoreDir();
 
@@ -116,5 +118,7 @@ public interface KeeperContainerConfig {
     int ioHealthProbeSlowRatioPercent();
 
     long ioHealthProbeWindowSeconds();
+
+    boolean ioHealthRecoveredPendingAutoRecover();
 
 }

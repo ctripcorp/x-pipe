@@ -28,6 +28,7 @@ public class TestKeeperContainerConfig implements KeeperContainerConfig{
 	private long ioHealthFileWindowSeconds = DEFAULT_IO_HEALTH_FILE_WINDOW_SEC;
 	private long ioHealthStateIdleSeconds = DEFAULT_IO_HEALTH_STATE_IDLE_SEC;
 	private String ioHealthDisabledRules = "";
+	private boolean ioHealthRecoveredPendingAutoRecover = DEFAULT_IO_HEALTH_RECOVERED_PENDING_AUTO_RECOVER;
 	
 	public TestKeeperContainerConfig(String replicationStoreDir) {
 		this.replicationStoreDir = replicationStoreDir;
@@ -218,6 +219,17 @@ public class TestKeeperContainerConfig implements KeeperContainerConfig{
 	@Override
 	public long ioHealthProbeWindowSeconds() {
 		return DEFAULT_IO_HEALTH_PROBE_WINDOW_SEC;
+	}
+
+	@Override
+	public boolean ioHealthRecoveredPendingAutoRecover() {
+		return ioHealthRecoveredPendingAutoRecover;
+	}
+
+	public TestKeeperContainerConfig setIoHealthRecoveredPendingAutoRecover(
+			boolean value) {
+		this.ioHealthRecoveredPendingAutoRecover = value;
+		return this;
 	}
 
 	public TestKeeperContainerConfig setIoHealthDisabledRules(String ioHealthDisabledRules) {
