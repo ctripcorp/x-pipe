@@ -1,0 +1,19 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_2aa312228f33f6::t_1c93d5ef3d17e8 268
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "9436250ef4d0ea2a327d2cb3b0d06e6ecfccbbd2",
+  "prompts": {},
+  "sessions": {
+    "s_2aa312228f33f6": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_b1d44ab3-5e73-4ada-811e-708005be9e96",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
