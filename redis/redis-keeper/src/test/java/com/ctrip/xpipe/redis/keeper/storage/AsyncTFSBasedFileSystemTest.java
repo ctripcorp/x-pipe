@@ -158,7 +158,7 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     private long writeSeg(AsyncSegmentFile seg, ByteBuf data) throws IOException {
-        return fs.writeSync(seg, data);
+        return fs.writeSync(seg, data).getKey();
     }
 
     private ByteBuf bufOf(byte[] data) {
@@ -766,14 +766,49 @@ public class AsyncTFSBasedFileSystemTest {
         AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
 
         // Write less than threshold (5 < 10 bytes) — should NOT trigger fsync
-        fs.writeSync(file, bufOf(new byte[5]));
+        assertEquals(Long.valueOf(5L), fs.writeSync(file, bufOf(new byte[5])).getKey());
         assertEquals(5, file.pendingFsyncBytes);
 
         // Write enough to exceed threshold (5 + 10 = 15 >= 10) — triggers fsync
-        fs.writeSync(file, bufOf(new byte[10]));
+        assertEquals(Long.valueOf(10L), fs.writeSync(file, bufOf(new byte[10])).getKey());
         assertEquals(0, file.pendingFsyncBytes);
 
         StorageUtil.closeChannels(fs.closeSync(file));
+    }
+
+    @Test
+    public void testWriteAndFlushForceFailureStillReturnsWritten() throws Exception {
+        fs.setFsyncIntervalBytes(1);
+        String p = path("file_force_fail");
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
+        FileChannel real = file.channel;
+        ForceFailingFileChannel failing = new ForceFailingFileChannel(real);
+        file.channel = failing;
+
+        Pair<Long, List<Exception>> outcome = fs.writeSync(file, bufOf(new byte[]{1, 2, 3, 4, 5}));
+        assertEquals(Long.valueOf(5L), outcome.getKey());
+        assertNotNull(outcome.getValue());
+        assertEquals(1, outcome.getValue().size());
+        assertTrue(outcome.getValue().get(0).getMessage().contains("force failed"));
+        // force failed, so the opportunistic fsync did not clear the counter
+        assertEquals(5, file.pendingFsyncBytes);
+        assertEquals(5, Files.size(Paths.get(p)));
+
+        file.channel = real;
+        StorageUtil.closeChannels(fs.closeSync(file));
+    }
+
+    @Test
+    public void testAtomicWriteSyncReportsNoSideFailures() throws Exception {
+        String p = path("file_atomic_pair");
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE,
+                AbstractStorageFile.ReplaceMode.ATOMIC, false);
+        byte[] data = new byte[]{9, 8, 7};
+        Pair<Long, List<Exception>> outcome = fs.writeSync(writer, bufOf(data));
+        assertEquals(Long.valueOf(3L), outcome.getKey());
+        assertNull(outcome.getValue());
+        assertArrayEquals(data, Files.readAllBytes(Paths.get(p)));
+        StorageUtil.closeChannels(fs.closeSync(writer));
     }
 
     // =========================================================================
@@ -1899,6 +1934,105 @@ public class AsyncTFSBasedFileSystemTest {
 
         public byte[] toByteArray() {
             return baos.toByteArray();
+        }
+    }
+
+    /**
+     * Delegates IO to a real channel but fails opportunistic {@code force}, so writeAndFlush can
+     * still report bytes written while attaching a side-path failure.
+     */
+    static final class ForceFailingFileChannel extends FileChannel {
+        private final FileChannel delegate;
+
+        ForceFailingFileChannel(FileChannel delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+            return delegate.read(dst);
+        }
+
+        @Override
+        public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
+            return delegate.read(dsts, offset, length);
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            return delegate.write(src);
+        }
+
+        @Override
+        public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
+            return delegate.write(srcs, offset, length);
+        }
+
+        @Override
+        public long position() throws IOException {
+            return delegate.position();
+        }
+
+        @Override
+        public FileChannel position(long newPosition) throws IOException {
+            delegate.position(newPosition);
+            return this;
+        }
+
+        @Override
+        public long size() throws IOException {
+            return delegate.size();
+        }
+
+        @Override
+        public FileChannel truncate(long size) throws IOException {
+            delegate.truncate(size);
+            return this;
+        }
+
+        @Override
+        public void force(boolean metaData) throws IOException {
+            throw new IOException("force failed");
+        }
+
+        @Override
+        public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
+            return delegate.transferTo(position, count, target);
+        }
+
+        @Override
+        public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
+            return delegate.transferFrom(src, position, count);
+        }
+
+        @Override
+        public int read(ByteBuffer dst, long position) throws IOException {
+            return delegate.read(dst, position);
+        }
+
+        @Override
+        public int write(ByteBuffer src, long position) throws IOException {
+            return delegate.write(src, position);
+        }
+
+        @Override
+        public MappedByteBuffer map(MapMode mode, long position, long size) throws IOException {
+            return delegate.map(mode, position, size);
+        }
+
+        @Override
+        public FileLock lock(long position, long size, boolean shared) throws IOException {
+            return delegate.lock(position, size, shared);
+        }
+
+        @Override
+        public FileLock tryLock(long position, long size, boolean shared) throws IOException {
+            return delegate.tryLock(position, size, shared);
+        }
+
+        @Override
+        protected void implCloseChannel() throws IOException {
+            delegate.close();
         }
     }
 

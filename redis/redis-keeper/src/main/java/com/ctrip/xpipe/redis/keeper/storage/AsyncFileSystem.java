@@ -74,7 +74,9 @@ public interface AsyncFileSystem {
     default CompletableFuture<Long> write(AsyncFile file, ByteBuf data) {
         throw new UnsupportedOperationException();
     }
-    default long writeSync(AsyncFile file, ByteBuf data) {
+    // Key: bytes written. Value: opportunistic force failure; null if none.
+    // Write success still updates written bytes even when force failure.
+    default Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
         throw new UnsupportedOperationException();
     }
     CompletableFuture<Void> delete(String path);
@@ -202,7 +204,9 @@ public interface AsyncFileSystem {
     default CompletableFuture<Long> write(AsyncSegmentFile file, ByteBuf data) {
         throw new UnsupportedOperationException();
     }
-    default long writeSync(AsyncSegmentFile file, ByteBuf data) {
+    // Key: bytes written. Value: opportunistic force failure; null if none.
+    // Write success still updates written bytes even when force failure.
+    default Pair<Long, List<Exception>> writeSync(AsyncSegmentFile file, ByteBuf data) {
         throw new UnsupportedOperationException();
     }
     // If the FS op fails, the caller must retry.

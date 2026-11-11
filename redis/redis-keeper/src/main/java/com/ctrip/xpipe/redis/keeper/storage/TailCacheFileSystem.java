@@ -452,7 +452,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     // require file inflight io to be completed before calling this
     private void flushPendingWriteAndAwait(AbstractStorageFile file,
-            java.util.function.Function<ByteBuf, Long> fsWrite,
+            java.util.function.Function<ByteBuf, Pair<Long, List<Exception>>> fsWrite,
             Runnable fsFsync, boolean failIfStillDirty) {
         if (!file.canWrite() || file.getCacheEntry() == null) {
             return;
@@ -491,7 +491,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
             long written = 0;
             if (hasWriteData) {
-                written = fsWrite.apply(writeBuf);
+                // Side-path failures from opportunistic force are ignored here: fsync follows and
+                // surfaces the concrete stack to the caller.
+                written = fsWrite.apply(writeBuf).getKey();
             } else {
                 writeBuf.release();
             }
@@ -1679,7 +1681,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private CompletableFuture<Long> writeInternal(AbstractStorageFile file, ByteBuf data,
             BackingFsMode fsMode,
             Runnable initCacheAndAppend,
-            java.util.function.Function<ByteBuf, Long> fsWrite,
+            java.util.function.Function<ByteBuf, Pair<Long, List<Exception>>> fsWrite,
             Runnable fsFsync,
             java.util.function.Supplier<Boolean> restoreBackingFs) {
         FileCacheEntry entry = file.getCacheEntry();
@@ -1799,12 +1801,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             writeBuf.release();
             return CompletableFuture.completedFuture(writeSize);
         }
-        CompletableFuture<Long> ioFuture = StorageUtil.supply(ioExecutor, () -> {
+        CompletableFuture<Long> ioFuture = StorageUtil.supplyIgnoringSideFailures(ioExecutor, () -> {
             if (file.closed) {
                 writeBuf.release();
                 throw new IllegalStateException("file is closed: " + file.path);
             }
-            long written = fsWrite.apply(writeBuf);
+            Pair<Long, List<Exception>> writeOutcome = fsWrite.apply(writeBuf);
+            long written = writeOutcome.getKey();
             if (useCache) {
                 synchronized (entry) {
                     if (!entry.fsInconsistent) {
@@ -1820,7 +1823,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     }
                 }
             }
-            return writeSize;
+            return writeOutcome;
         }, writeBuf);
         registerInFlight(id, ioFuture);
         if (!useCache || file.isAtomicReplace()) {

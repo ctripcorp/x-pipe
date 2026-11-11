@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,6 +152,18 @@ class StorageUtil {
         }
     }
 
+    // Like supply(..., data), but the task may attach side-path failures (e.g. opportunistic force)
+    // beside the primary result. The returned future only exposes the primary value.
+    static <T> CompletableFuture<T> supplyIgnoringSideFailures(ExecutorService executor,
+            Supplier<Pair<T, List<Exception>>> task, ByteBuf data) {
+        try {
+            return CompletableFuture.supplyAsync(wrapSupplierIgnoringSideFailures(task), executor);
+        } catch (Exception e) {
+            data.release();
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
     static CompletableFuture<Void> run(ExecutorService executor, Runnable task) {
         try {
             return CompletableFuture.runAsync(wrapRunnable(task), executor);
@@ -166,6 +179,27 @@ class StorageUtil {
             traceIoTask("dequeue", taskId);
             try {
                 return task.get();
+            } catch (Throwable t) {
+                logger.warn("async storage IO task failed", t);
+                throw t;
+            } finally {
+                traceIoTask("done", taskId);
+            }
+        };
+    }
+
+    // Same tracing as wrapSupplier; peels Pair to the primary value and metrics side-path failures.
+    private static <T> Supplier<T> wrapSupplierIgnoringSideFailures(Supplier<Pair<T, List<Exception>>> task) {
+        long taskId = traceEnqueue();
+        return () -> {
+            traceIoTask("dequeue", taskId);
+            try {
+                Pair<T, List<Exception>> outcome = task.get();
+                List<Exception> sideFailures = outcome.getValue();
+                if (sideFailures != null && !sideFailures.isEmpty()) {
+                    // TODO: track side-path failures for metrics
+                }
+                return outcome.getKey();
             } catch (Throwable t) {
                 logger.warn("async storage IO task failed", t);
                 throw t;

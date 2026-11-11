@@ -3883,6 +3883,97 @@ public class TailCacheFileSystemTest {
     }
 
     // =========================================================================
+    // Side-path failures / short write (writeSync Pair)
+    // =========================================================================
+
+    @Test
+    public void testWriteIgnoresOpportunisticForceSideFailures() throws Exception {
+        // Opportunistic force failure is a side path: Tail must still complete the write.
+        AsyncTFSBasedFileSystem forceFs = new AsyncTFSBasedFileSystem(
+                ioExecutor, 1L, Long.MAX_VALUE / 2_000_000L, FileChannelFactory.DEFAULT);
+        TailCacheFileSystem forceTcf = newTcf(forceFs,
+                baseConfig()
+                        .setWriteBatchBytes(1)
+                        .setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_CACHE));
+
+        String p = path("file_side_force_fail");
+        AsyncFile writer = forceTcf.open(p, AbstractStorageFile.OpenMode.WRITE,
+                AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        FileChannel real = writer.channel;
+        writer.channel = new AsyncTFSBasedFileSystemTest.ForceFailingFileChannel(real);
+        try {
+            Long written = forceTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
+            assertEquals(Long.valueOf(5L), written);
+            assertEquals(5, Files.size(Paths.get(p)));
+            assertArrayEquals(new byte[]{1, 2, 3, 4, 5}, readFileSync(p));
+        } finally {
+            writer.channel = real;
+            forceTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Caps each writeSync to at most 3 bytes so Tail's no-cache path can observe a short write.
+     */
+    static class ShortWriteDelegate extends AsyncTFSBasedFileSystem {
+        ShortWriteDelegate(ExecutorService ioExecutor) {
+            super(ioExecutor, Long.MAX_VALUE / 2, Long.MAX_VALUE / 2_000_000L);
+        }
+
+        @Override
+        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
+            int cap = Math.min(3, data.readableBytes());
+            ByteBuf head = data.readRetainedSlice(cap);
+            data.release();
+            return super.writeSync(file, head);
+        }
+    }
+
+    @Test
+    public void testNoCacheWriteReturnsShortWrittenCount() throws Exception {
+        ShortWriteDelegate shortFs = new ShortWriteDelegate(ioExecutor);
+        TailCacheFileSystem shortTcf = newTcf(shortFs,
+                baseConfig()
+                        .setWriteBatchBytes(1)
+                        .setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_CACHE));
+
+        String p = path("file_short_write");
+        AsyncFile writer = shortTcf.open(p, AbstractStorageFile.OpenMode.WRITE,
+                AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        try {
+            Long written = shortTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
+            assertEquals(Long.valueOf(3L), written);
+            assertEquals(3, Files.size(Paths.get(p)));
+            assertArrayEquals(new byte[]{1, 2, 3}, readFileSync(p));
+        } finally {
+            shortTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testCachedWriteAdvancesWrittenToFsByShortCount() throws Exception {
+        ShortWriteDelegate shortFs = new ShortWriteDelegate(ioExecutor);
+        TailCacheFileSystem shortTcf = newTcf(shortFs, baseConfig().setWriteBatchBytes(1));
+
+        String p = path("file_short_write_cache");
+        AsyncFile writer = shortTcf.open(p, AbstractStorageFile.OpenMode.WRITE,
+                AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        FileCacheEntry entry = writer.getCacheEntry();
+        try {
+            // Cached path still reports the caller writeSize on the future, but advances
+            // writtenToFsOffset by the backing FS's reported written count.
+            Long reported = shortTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertEquals(Long.valueOf(5L), reported);
+            assertEquals(5, entry.cacheEndOffset);
+            assertEquals(3, entry.writtenToFsOffset);
+            assertEquals(3, Files.size(Paths.get(p)));
+        } finally {
+            shortTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    // =========================================================================
     // O. EIO recovery
     // =========================================================================
 
@@ -3900,7 +3991,7 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public long writeSync(AsyncFile file, ByteBuf data) {
+        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
             if (eioMode) {
                 throw new EIOException(new IOException("Input/output error"));
             }
@@ -4080,13 +4171,13 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public long writeSync(AsyncFile file, ByteBuf data) {
+        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
             faultWrite(Op.FILE_WRITE, file.path, data);
             return super.writeSync(file, data);
         }
 
         @Override
-        public long writeSync(AsyncSegmentFile file, ByteBuf data) {
+        public Pair<Long, List<Exception>> writeSync(AsyncSegmentFile file, ByteBuf data) {
             faultWrite(Op.SEG_WRITE, file.path, data);
             return super.writeSync(file, data);
         }
@@ -4160,7 +4251,7 @@ public class TailCacheFileSystemTest {
         // ---- AsyncFile ----
 
         @Override
-        public long writeSync(AsyncFile file, ByteBuf data) {
+        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
             fileWriteCount++;
             byte[] copy = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), copy);
@@ -4195,7 +4286,7 @@ public class TailCacheFileSystemTest {
         // ---- AsyncSegmentFile ----
 
         @Override
-        public long writeSync(AsyncSegmentFile file, ByteBuf data) {
+        public Pair<Long, List<Exception>> writeSync(AsyncSegmentFile file, ByteBuf data) {
             segWriteCount++;
             byte[] copy = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), copy);

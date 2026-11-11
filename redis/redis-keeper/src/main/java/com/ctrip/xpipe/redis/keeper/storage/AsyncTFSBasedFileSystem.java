@@ -433,11 +433,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public long writeSync(AsyncFile file, ByteBuf data) {
+    public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
         try {
             StorageUtil.requireOpen(file);
             if (file.isAtomicReplace()) {
-                return atomicReplaceWrite(file, data);
+                return Pair.from(atomicReplaceWrite(file, data), null);
             }
             return writeAndFlush(file, data);
         } catch (IOException e) {
@@ -655,20 +655,22 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return length;
     }
 
-    private long writeAndFlush(AbstractStorageFile file, ByteBuf data) throws IOException {
+    private Pair<Long, List<Exception>> writeAndFlush(AbstractStorageFile file, ByteBuf data) throws IOException {
         long written = writeFully(file.currentWriteChannel(), data);
         file.pendingFsyncBytes += written;
+        List<Exception> sideFailures = null;
         if (file.pendingFsyncBytes >= fsyncIntervalBytes
                 || System.nanoTime() - file.lastFsyncNanos >= fsyncIntervalNanos) {
             try {
                 file.currentWriteChannel().force(true);
                 file.pendingFsyncBytes = 0;
                 file.lastFsyncNanos = System.nanoTime();
-            } catch (Throwable t) {
-                logger.error("fsync failed for {}", file.path, t);
+            } catch (Exception e) {
+                logger.error("fsync failed for {}", file.path, e);
+                sideFailures = Collections.singletonList(e);
             }
         }
-        return written;
+        return Pair.from(written, sideFailures);
     }
 
     void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead, long offset)
@@ -833,7 +835,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public long writeSync(AsyncSegmentFile file, ByteBuf data) {
+    public Pair<Long, List<Exception>> writeSync(AsyncSegmentFile file, ByteBuf data) {
         try {
             StorageUtil.requireOpen(file);
             return writeAndFlush(file, data);

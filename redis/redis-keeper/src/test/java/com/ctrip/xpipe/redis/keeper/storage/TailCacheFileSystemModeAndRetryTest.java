@@ -1025,13 +1025,13 @@ public class TailCacheFileSystemModeAndRetryTest {
         }
 
         @Override
-        public long writeSync(AsyncFile file, ByteBuf data) {
+        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
             beforeWrite(file instanceof AsyncIndexFile ? Op.INDEX_WRITE : Op.FILE_WRITE, data);
             return super.writeSync(file, data);
         }
 
         @Override
-        public long writeSync(AsyncSegmentFile file, ByteBuf data) {
+        public Pair<Long, List<Exception>> writeSync(AsyncSegmentFile file, ByteBuf data) {
             beforeWrite(Op.SEG_WRITE, data);
             return super.writeSync(file, data);
         }
