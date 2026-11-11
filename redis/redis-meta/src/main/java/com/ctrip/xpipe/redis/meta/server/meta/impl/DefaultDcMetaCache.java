@@ -393,6 +393,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("del:%d", clusterDbId));
 		clusterMeta = dcMetaManager.get().removeCluster(clusterDbId);
 		lockMap.remove(clusterDbId);
+		updateMetaLastChangeTime();
 
 		logger.info("[clusterDeleted]{}", clusterMeta);
 		DcMetaComparator dcMetaComparator = DcMetaComparator.buildClusterRemoved(clusterMeta);
