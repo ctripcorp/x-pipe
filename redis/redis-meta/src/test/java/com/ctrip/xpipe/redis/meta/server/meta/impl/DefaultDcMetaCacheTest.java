@@ -256,6 +256,22 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     }
 
     @Test
+    public void testClusterDeletedUpdatesMetaModifyTime() {
+        DcMeta current = (DcMeta) getXpipeMeta().getDcs().values().toArray()[0];
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
+        dcMetaCache.setMetaServerConfig(new UnitTestServerConfig());
+        dcMetaCache.changeDcMeta(current, future, System.currentTimeMillis() + 1);
+
+        ClusterMeta cluster = future.getClusters().values().iterator().next();
+        long before = dcMetaCache.getMetaModifyTime().get();
+        sleep(2);
+        dcMetaCache.clusterDeleted(cluster.getDbId());
+
+        Assert.assertTrue("cluster deletion must advance metaModifyTime",
+                dcMetaCache.getMetaModifyTime().get() > before);
+    }
+
+    @Test
     public void testKeeperMigrateOnlyNums_OnlyKeeperChange() {
         DcMeta current = (DcMeta) getXpipeMeta().getDcs().values().toArray()[0];
         DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
