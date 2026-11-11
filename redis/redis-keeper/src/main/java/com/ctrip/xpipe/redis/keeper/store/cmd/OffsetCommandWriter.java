@@ -99,7 +99,8 @@ public class OffsetCommandWriter implements CommandWriter {
     @Override
     public void doRotate() throws IOException {
         logger.info("Rotate command segment at offset {}", totalLength());
-        AsyncFileSystemHelper.await(() -> asyncFileSystem().roll(asyncSegmentFile()), "roll command segment");
+        AsyncFileSystemHelper.awaitWithRetryWithinTimeout(() -> asyncFileSystem().roll(asyncSegmentFile()),
+                asyncCommandStore.getCommandRotateTimeoutMilli(), "roll command segment");
     }
 
     @Override

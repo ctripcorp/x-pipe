@@ -16,6 +16,7 @@ public interface KeeperConfig extends CoreConfig{
 	String KEY_STOP_WRITE_CK = "keeper.stop.write.ck";
 	String KEY_BLOCK_SIZE_THRESHOLD = "keeper.block.size.threshold";
 	String KEY_ASYNC_WRITE_MAX_BYTES = "keeper.async.write.max.bytes";
+	String KEY_COMMAND_ROTATE_TIMEOUT_MILLI = "keeper.command.rotate.timeout.milli";
 	String KEY_ASYNC_FSYNC_INTERVAL_BYTES = "keeper.async.fsync.interval.bytes";
 	String KEY_ASYNC_FSYNC_INTERVAL_MILLIS = "keeper.async.fsync.interval.millis";
 	String KEY_ASYNC_IO_THREADS = "keeper.async.io.threads";
@@ -28,6 +29,7 @@ public interface KeeperConfig extends CoreConfig{
 	String KEY_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES = "keeper.async.tail.cache.max.size.bytes";
 
 	long DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES = 1024L * 1024L;
+	long DEFAULT_COMMAND_ROTATE_TIMEOUT_MILLI = 6000L;
 	long DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS = 1000L;
 	int DEFAULT_ASYNC_IO_THREADS = Runtime.getRuntime().availableProcessors() * 8;
 	double DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_RATIO = 0.8d;
@@ -179,6 +181,9 @@ public interface KeeperConfig extends CoreConfig{
 	int getBlockSizeThreshold();
 
 	int getAsyncWriteMaxBytes();
+
+	/** Total timeout for one command segment roll; read at each rotate. */
+	long getCommandRotateTimeoutMilli();
 
 	long getAsyncFsyncIntervalBytes();
 

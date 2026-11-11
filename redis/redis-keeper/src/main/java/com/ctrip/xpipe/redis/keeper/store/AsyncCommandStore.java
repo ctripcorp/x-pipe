@@ -35,6 +35,8 @@ public interface AsyncCommandStore {
 
     int getAsyncWriteMaxBytes();
 
+    long getCommandRotateTimeoutMilli();
+
     /**
      * Truncate the companion index/block files of the current write segment (spec §3.7.3).
      * <b>Index-only</b>: neither cmd segment position nor {@code fs.truncate(writeSeg,...)} is touched.

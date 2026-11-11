@@ -490,6 +490,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
+    public long getCommandRotateTimeoutMilli() {
+        return keeperConfig.getCommandRotateTimeoutMilli();
+    }
+
+    @Override
     public long currentSegmentSize() throws IOException {
         if (cmdWriter == null) {
             throw new IOException("cmd writer not initialized");

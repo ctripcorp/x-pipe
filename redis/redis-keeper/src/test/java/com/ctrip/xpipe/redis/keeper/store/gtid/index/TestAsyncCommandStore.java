@@ -25,6 +25,9 @@ import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX_
  */
 public class TestAsyncCommandStore implements AsyncCommandStore {
 
+    private static final int ASYNC_WRITE_MAX_BYTES = 65536;
+    private static final long COMMAND_ROTATE_TIMEOUT_MILLI = 6000L;
+
     private final AsyncFileSystem asyncFileSystem;
     private AsyncSegmentFile asyncSegmentFile;
     private final File baseDir;
@@ -35,7 +38,7 @@ public class TestAsyncCommandStore implements AsyncCommandStore {
 
     public TestAsyncCommandStore(AsyncFileSystem asyncFileSystem, AsyncSegmentFile asyncSegmentFile, File baseDir,
                                  String commandFileNamePrefix) {
-        this(asyncFileSystem, asyncSegmentFile, baseDir, commandFileNamePrefix, 65536);
+        this(asyncFileSystem, asyncSegmentFile, baseDir, commandFileNamePrefix, ASYNC_WRITE_MAX_BYTES);
     }
 
     public TestAsyncCommandStore(AsyncFileSystem asyncFileSystem, AsyncSegmentFile asyncSegmentFile, File baseDir,
@@ -175,5 +178,10 @@ public class TestAsyncCommandStore implements AsyncCommandStore {
     @Override
     public int getAsyncWriteMaxBytes() {
         return asyncWriteMaxBytes;
+    }
+
+    @Override
+    public long getCommandRotateTimeoutMilli() {
+        return COMMAND_ROTATE_TIMEOUT_MILLI;
     }
 }

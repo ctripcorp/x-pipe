@@ -390,6 +390,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
+	public long getCommandRotateTimeoutMilli() {
+		return getLongProperty(KEY_COMMAND_ROTATE_TIMEOUT_MILLI, DEFAULT_COMMAND_ROTATE_TIMEOUT_MILLI);
+	}
+
+	@Override
 	public long getAsyncFsyncIntervalBytes() {
 		return getLongProperty(KEY_ASYNC_FSYNC_INTERVAL_BYTES, DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
 	}

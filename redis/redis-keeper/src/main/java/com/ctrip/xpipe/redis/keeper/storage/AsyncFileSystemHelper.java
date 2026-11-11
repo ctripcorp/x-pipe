@@ -60,6 +60,9 @@ public final class AsyncFileSystemHelper {
     /** D7: total write invocations including the original (retry ×1 ⇒ 2). Loop always calls write on each attempt. */
     private static final int WRITE_SYNC_THROW_MAX_ATTEMPTS = 2;
 
+    /** Delay between synchronous ONE retries to avoid CPU spinning. */
+    private static final long NOT_EXECUTED_RETRY_SLEEP_MILLIS = 1L;
+
     /**
      * Per-await budget for PREPARE lease release (Metaserver {@code TFS_STEP_TIMEOUT_MILLI=1000}).
      */
@@ -138,6 +141,43 @@ public final class AsyncFileSystemHelper {
                 logCase(CASE_NOT_EXECUTED);
                 throw second;
             }
+        }
+    }
+
+    /**
+     * Invoke an FS operation with a bounded retry window. Only a synchronous
+     * {@link OperationNotExecutedException}, thrown before a future is returned, is retried while
+     * the window remains. Once a future exists, it is awaited for the remaining retry window, but
+     * never less than the current Helper IO timeout, and is never cancelled.
+     */
+    public static <T> T awaitWithRetryWithinTimeout(FsCall<T> call, long timeoutMillis, String operation)
+            throws IOException {
+        if (timeoutMillis <= 0) {
+            throw new IllegalArgumentException("timeoutMillis must be positive");
+        }
+        final long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+        while (true) {
+            final CompletableFuture<T> future;
+            try {
+                future = call.call();
+            } catch (OperationNotExecutedException e) {
+                if (deadlineNanos - System.nanoTime() <= 0) {
+                    logCase(CASE_NOT_EXECUTED);
+                    throw e;
+                }
+                logger.warn("[await][not-executed][retry] {}", operation, e);
+                logCase(CASE_NOT_EXECUTED_RETRY);
+                try {
+                    TimeUnit.MILLISECONDS.sleep(NOT_EXECUTED_RETRY_SLEEP_MILLIS);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    logCase(CASE_INTERRUPTED);
+                    throw new IOException("interrupted while waiting async file IO: " + operation, interrupted);
+                }
+                continue;
+            }
+            long remainingNanos = deadlineNanos - System.nanoTime();
+            return await(future, operation, Math.max(currentTimeoutMillis(), remainingNanos), TimeUnit.NANOSECONDS);
         }
     }
 

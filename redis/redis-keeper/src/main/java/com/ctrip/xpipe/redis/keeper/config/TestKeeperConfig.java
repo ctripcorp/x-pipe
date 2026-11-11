@@ -39,6 +39,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int prepareWatchCloseHoldMilli = DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI;
 	private long unclosedHandleFlushRetryWindowMilli = DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI;
 	private long asyncTailCacheMaxSizePerFileBytes = DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES;
+	private long commandRotateTimeoutMilli = DEFAULT_COMMAND_ROTATE_TIMEOUT_MILLI;
 	private volatile long metaFlushIntervalMilli = DEFAULT_META_FLUSH_INTERVAL_MILLI;
 	private boolean fsDebugEnabled = false;
 	private volatile boolean fsDebugFaultEio = false;
@@ -529,6 +530,16 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public long getAsyncFsyncIntervalBytes() {
 		return DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES;
+	}
+
+	@Override
+	public long getCommandRotateTimeoutMilli() {
+		return commandRotateTimeoutMilli;
+	}
+
+	public TestKeeperConfig setCommandRotateTimeoutMilli(long commandRotateTimeoutMilli) {
+		this.commandRotateTimeoutMilli = commandRotateTimeoutMilli;
+		return this;
 	}
 
 	@Override

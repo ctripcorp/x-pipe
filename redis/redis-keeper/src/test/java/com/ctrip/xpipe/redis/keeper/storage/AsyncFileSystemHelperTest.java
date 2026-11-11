@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 /**
  * Phase S / T-S.4 + Se T-S.8 / T-S.11 / T-S.17–S.19: awaitOpen abandon + write/read close split.
  * Phase H1 / T-H1.4: OperationNotExecutedException retry once at await entry.
+ * Cmd roll: total retry-window await retries synchronous OperationNotExecutedException until success or deadline.
  * Phase H3a / T-H3.CP-W.4 / .1: write sync-throw retry (any Exception) vs no retry after future.
  */
 public class AsyncFileSystemHelperTest extends AbstractTest {
@@ -249,6 +250,20 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
         AsyncFileSystemHelper.closeReadHandle(fs, file, null, "read close retry");
         Assert.assertEquals(2, closeCalls.get());
         verify(fs, times(2)).close(file);
+    }
+
+    @Test
+    public void awaitWithRetryWithinTimeoutRetriesSyncOperationNotExecutedUntilSuccess() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        long result = AsyncFileSystemHelper.awaitWithRetryWithinTimeout(() -> {
+            if (calls.getAndIncrement() < 2) {
+                throw new OperationNotExecutedException("cmd segment");
+            }
+            return CompletableFuture.completedFuture(42L);
+        }, 1000, "roll command segment");
+
+        Assert.assertEquals(42L, result);
+        Assert.assertEquals(3, calls.get());
     }
 
     @Test
