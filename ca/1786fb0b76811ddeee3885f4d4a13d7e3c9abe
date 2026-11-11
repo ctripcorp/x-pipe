@@ -1,0 +1,20 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/RordbReplicationSupportTest.java
+  s_1f8f951e2e1b3d::t_62e800e5ad974d 112-116
+  s_1f8f951e2e1b3d::t_9b24eaf084349e 156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "ca1786fb0b76811ddeee3885f4d4a13d7e3c9abe",
+  "prompts": {},
+  "sessions": {
+    "s_1f8f951e2e1b3d": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_dd1a3eb1-8718-4be6-af61-f89e4d90639e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
