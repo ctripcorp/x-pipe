@@ -138,7 +138,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     private AsyncIndexFile openIndexFile(String indexPrefix, long startOffset, boolean noFs) {
         String fileName = indexPrefix + startOffset;
         AsyncIndexFile af = new AsyncIndexFile(key, ioKey, absolutePathOf(fileName), indexPrefix, startOffset,
-                canWrite() ? OpenMode.READ_WRITE : OpenMode.READ);
+                canWrite() ? OpenMode.READ_WRITE : OpenMode.READ, tenant);
         af.channelFactory = channelFactory;
         af.needPrepare = needPrepare || noFs;
         tryBindIndexFileCacheEntry(af);
@@ -148,8 +148,13 @@ public class AsyncSegmentFile extends AbstractStorageFile {
 
     AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, String ioKey,
             boolean writeMode) {
+        this(dirPath, prefix, indexPrefixes, key, ioKey, writeMode, null);
+    }
+
+    AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, String ioKey,
+            boolean writeMode, String tenant) {
         super(writeMode ? OpenMode.WRITE : OpenMode.READ, ReplaceMode.NORMAL, key, ioKey,
-                Paths.get(dirPath, prefix).toString(), dirPath);
+                Paths.get(dirPath, prefix).toString(), dirPath, tenant);
         this.prefix = prefix;
         this.indexPrefixes = indexPrefixes;
         this.currentIndexFiles = new HashMap<>();

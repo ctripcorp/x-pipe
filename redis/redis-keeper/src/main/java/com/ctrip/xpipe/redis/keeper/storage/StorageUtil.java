@@ -12,11 +12,12 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,6 +31,8 @@ import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.ctrip.xpipe.redis.keeper.storage.health.IoTask;
 
 class StorageUtil {
 
@@ -89,7 +92,7 @@ class StorageUtil {
     static <T> T awaitIoCachePrep(ExecutorService executor, AbstractStorageFile file, String registerKey,
             long timeoutMs, BiConsumer<String, CompletableFuture<?>> register,
             Supplier<T> task, Consumer<T> clean) {
-        CompletableFuture<T> future = supply(executor, () -> {
+        CompletableFuture<T> future = supply(executor, file, () -> {
             requireOpen(file);
             return task.get();
         });
@@ -135,86 +138,114 @@ class StorageUtil {
         }
     }
 
-    static <T> CompletableFuture<T> supply(ExecutorService executor, java.util.function.Supplier<T> task) {
-        try {
-            return CompletableFuture.supplyAsync(wrapSupplier(task), executor);
-        } catch (Exception e) {
-            return CompletableFuture.failedFuture(e);
-        }
-    }
-
-    static <T> CompletableFuture<T> supply(ExecutorService executor, java.util.function.Supplier<T> task, ByteBuf data) {
-        try {
-            return CompletableFuture.supplyAsync(wrapSupplier(task), executor);
-        } catch (Exception e) {
-            data.release();
-            return CompletableFuture.failedFuture(e);
-        }
-    }
 
     // Like supply(..., data), but the task may attach side-path failures (e.g. opportunistic force)
     // beside the primary result. The returned future only exposes the primary value.
-    static <T> CompletableFuture<T> supplyIgnoringSideFailures(ExecutorService executor,
-            Supplier<Pair<T, List<Exception>>> task, ByteBuf data) {
-        try {
-            return CompletableFuture.supplyAsync(wrapSupplierIgnoringSideFailures(task), executor);
-        } catch (Exception e) {
-            data.release();
-            return CompletableFuture.failedFuture(e);
-        }
+    static <T> CompletableFuture<T> supplyIgnoringSideFailures(
+            ExecutorService executor,
+            AbstractStorageFile file,
+            Supplier<Pair<T, List<Exception>>> task,
+            ByteBuf data) {
+        return submit(
+                executor,
+                file == null ? null : file.tenant,
+                file == null ? null : file.path,
+                () -> {
+                    Pair<T, List<Exception>> result = task.get();
+                    return IoTask.Result.withSideFailures(
+                            result.getKey(), result.getValue());
+                },
+                data);
     }
 
-    static CompletableFuture<Void> run(ExecutorService executor, Runnable task) {
+
+    static <T> CompletableFuture<T> supply(
+            ExecutorService executor,
+            Supplier<T> task) {
+        return submit(executor, null, null,
+                () -> IoTask.Result.success(task.get()), null);
+    }
+
+    // ---- IO health instrumentation ----
+    // submitNanos is taken before execute(); the task object itself is what sits in the queue.
+
+    static <T> CompletableFuture<T> supply(
+            ExecutorService executor,
+            AbstractStorageFile file,
+            java.util.function.Supplier<T> task) {
+        return supply(executor, file == null ? null : file.tenant,
+                file == null ? null : file.path, task);
+    }
+
+    static <T> CompletableFuture<T> supply(
+            ExecutorService executor,
+            AbstractStorageFile file,
+            java.util.function.Supplier<T> task,
+            ByteBuf data) {
+        return submit(
+                executor,
+                file == null ? null : file.tenant,
+                file == null ? null : file.path,
+                () -> IoTask.Result.success(task.get()),
+                data);
+    }
+
+    static CompletableFuture<Void> run(
+            ExecutorService executor,
+            AbstractStorageFile file,
+            Runnable task) {
+        return run(executor, file == null ? null : file.tenant,
+                file == null ? null : file.path, task);
+    }
+
+    static <T> CompletableFuture<T> supply(
+            ExecutorService executor,
+            String tenant,
+            String path,
+            java.util.function.Supplier<T> task) {
+        return submit(executor, tenant, path,
+                () -> IoTask.Result.success(task.get()), null);
+    }
+
+    static CompletableFuture<Void> run(
+            ExecutorService executor,
+            String tenant,
+            String path,
+            Runnable task) {
+        return submit(executor, tenant, path,
+                () -> IoTask.Result.success(runAndReturn(task)), null);
+    }
+
+    private static Void runAndReturn(Runnable task) {
+        task.run();
+        return null;
+    }
+
+    private static <T> CompletableFuture<T> submit(
+            ExecutorService executor,
+            String tenant,
+            String path,
+            Supplier<IoTask.Result<T>> task,
+            ByteBuf data) {
+        IoTask<T> ioTask = new IoTask<>(tenant, path, System.nanoTime(), wrapSupplier(task));
         try {
-            return CompletableFuture.runAsync(wrapRunnable(task), executor);
-        } catch (RejectedExecutionException e) {
+            executor.execute(ioTask);
+        } catch (Throwable e) {
+            if (data != null) {
+                data.release();
+            }
             return CompletableFuture.failedFuture(e);
         }
+        return ioTask.future();
     }
 
     // Called on the submitting thread, before the task is handed to the executor.
-    private static <T> java.util.function.Supplier<T> wrapSupplier(java.util.function.Supplier<T> task) {
+    private static <T> Supplier<T> wrapSupplier(Supplier<T> task) {
         long taskId = traceEnqueue();
         return () -> {
             traceIoTask("dequeue", taskId);
             try {
                 return task.get();
-            } catch (Throwable t) {
-                logger.warn("async storage IO task failed", t);
-                throw t;
-            } finally {
-                traceIoTask("done", taskId);
-            }
-        };
-    }
-
-    // Same tracing as wrapSupplier; peels Pair to the primary value and metrics side-path failures.
-    private static <T> Supplier<T> wrapSupplierIgnoringSideFailures(Supplier<Pair<T, List<Exception>>> task) {
-        long taskId = traceEnqueue();
-        return () -> {
-            traceIoTask("dequeue", taskId);
-            try {
-                Pair<T, List<Exception>> outcome = task.get();
-                List<Exception> sideFailures = outcome.getValue();
-                if (sideFailures != null && !sideFailures.isEmpty()) {
-                    // TODO: track side-path failures for metrics
-                }
-                return outcome.getKey();
-            } catch (Throwable t) {
-                logger.warn("async storage IO task failed", t);
-                throw t;
-            } finally {
-                traceIoTask("done", taskId);
-            }
-        };
-    }
-
-    private static Runnable wrapRunnable(Runnable task) {
-        long taskId = traceEnqueue();
-        return () -> {
-            traceIoTask("dequeue", taskId);
-            try {
-                task.run();
             } catch (Throwable t) {
                 logger.warn("async storage IO task failed", t);
                 throw t;

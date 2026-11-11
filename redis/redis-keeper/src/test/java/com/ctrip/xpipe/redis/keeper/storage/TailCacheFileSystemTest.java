@@ -3887,8 +3887,9 @@ public class TailCacheFileSystemTest {
     // =========================================================================
 
     @Test
-    public void testWriteIgnoresOpportunisticForceSideFailures() throws Exception {
-        // Opportunistic force failure is a side path: Tail must still complete the write.
+    public void testWriteReportsOpportunisticForceSideFailures() throws Exception {
+        // The write bytes are present, but the opportunistic force failure is now the primary
+        // IoTask failure so health telemetry can observe it.
         AsyncTFSBasedFileSystem forceFs = new AsyncTFSBasedFileSystem(
                 ioExecutor, 1L, Long.MAX_VALUE / 2_000_000L, FileChannelFactory.DEFAULT);
         TailCacheFileSystem forceTcf = newTcf(forceFs,
@@ -3902,8 +3903,13 @@ public class TailCacheFileSystemTest {
         FileChannel real = writer.channel;
         writer.channel = new AsyncTFSBasedFileSystemTest.ForceFailingFileChannel(real);
         try {
-            Long written = forceTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
-            assertEquals(Long.valueOf(5L), written);
+            try {
+                forceTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5}))
+                        .get(5, TimeUnit.SECONDS);
+                fail("expected opportunistic force failure");
+            } catch (Exception expected) {
+                assertNotNull(expected);
+            }
             assertEquals(5, Files.size(Paths.get(p)));
             assertArrayEquals(new byte[]{1, 2, 3, 4, 5}, readFileSync(p));
         } finally {
