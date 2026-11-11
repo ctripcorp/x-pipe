@@ -75,10 +75,13 @@ public final class IoTelemetry {
             long endNanos = clock.getAsLong();
             long startNanos = task.startNanos == 0 ? endNanos : task.startNanos;
             boolean failed = isFailure(error);
-            record(endNanos, task.tenant, task.path, endNanos - startNanos, endNanos - task.submitNanos, failed);
-            recordedCount.incrementAndGet();
+            record(endNanos, task.source(), task.tenant, task.path,
+                    endNanos - startNanos, endNanos - task.submitNanos, failed);
+            if (task.source() == IoSource.BUSINESS) {
+                recordedCount.incrementAndGet();
+            }
             if (failed) {
-                logger.debug("[taskCompleted][fail]{}, {}", task.tenant, task.path, error);
+                logger.debug("[taskCompleted][{}][fail]{}, {}", task.source(), task.tenant, task.path, error);
             }
         }catch (Throwable ignored){
         }
