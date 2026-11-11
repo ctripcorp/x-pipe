@@ -44,6 +44,14 @@ public interface KeeperContainerConfig {
     long DEFAULT_IO_HEALTH_STATE_IDLE_SEC = 60L;
     /** Comma separated rule names to switch off, e.g. {@code fileFailure,slowRatio}. */
     String KEY_IO_HEALTH_DISABLED_RULES = "io.health.disabled.rules";
+    String KEY_IO_HEALTH_PROBE_INTERVAL_MILL = "io.health.probe.interval.mill";
+    long DEFAULT_IO_HEALTH_PROBE_INTERVAL_MILL = 5000L;
+    String KEY_IO_HEALTH_PROBE_SLOW_MIN_RECORDS = "io.health.probe.slow.min.records";
+    int DEFAULT_IO_HEALTH_PROBE_SLOW_MIN_RECORDS = 3;
+    String KEY_IO_HEALTH_PROBE_SLOW_RATIO_PERCENT = "io.health.probe.slow.ratio.percent";
+    int DEFAULT_IO_HEALTH_PROBE_SLOW_RATIO_PERCENT = 67;
+    String KEY_IO_HEALTH_PROBE_WINDOW_SEC = "io.health.probe.window.sec";
+    long DEFAULT_IO_HEALTH_PROBE_WINDOW_SEC = 15L;
 
     String getReplicationStoreDir();
 
@@ -100,5 +108,13 @@ public interface KeeperContainerConfig {
 
     /** Comma separated rule names switched off for this container; empty means all enabled. */
     String ioHealthDisabledRules();
+
+    long ioHealthProbeIntervalMill();
+
+    int ioHealthProbeSlowMinRecords();
+
+    int ioHealthProbeSlowRatioPercent();
+
+    long ioHealthProbeWindowSeconds();
 
 }

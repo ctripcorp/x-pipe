@@ -21,11 +21,14 @@ public final class RuleConfig {
     private final int tenantAbnormalFloor;
     private final int fileConsecutiveFails;
     private final int fileFailsInWindow;
+    private final int probeSlowMinRecords;
+    private final int probeSlowRatioPercent;
     private final Set<String> disabledRules;
 
     private RuleConfig(long hangNanos, int failRatioPercent, int slowRatioPercent, long minWindowRecords,
             int tenantAbnormalPercent, int tenantAbnormalFloor, int fileConsecutiveFails,
-            int fileFailsInWindow, Set<String> disabledRules) {
+            int fileFailsInWindow, int probeSlowMinRecords, int probeSlowRatioPercent,
+            Set<String> disabledRules) {
         this.hangNanos = hangNanos;
         this.failRatioPercent = failRatioPercent;
         this.slowRatioPercent = slowRatioPercent;
@@ -34,6 +37,8 @@ public final class RuleConfig {
         this.tenantAbnormalFloor = tenantAbnormalFloor;
         this.fileConsecutiveFails = fileConsecutiveFails;
         this.fileFailsInWindow = fileFailsInWindow;
+        this.probeSlowMinRecords = probeSlowMinRecords;
+        this.probeSlowRatioPercent = probeSlowRatioPercent;
         this.disabledRules = disabledRules;
     }
 
@@ -47,6 +52,8 @@ public final class RuleConfig {
                 .tenantAbnormalFloor(config.ioHealthTenantAbnormalFloor())
                 .fileConsecutiveFails(config.ioHealthFileConsecutiveFails())
                 .fileFailsInWindow(config.ioHealthFileFailsInWindow())
+                .probeSlowMinRecords(config.ioHealthProbeSlowMinRecords())
+                .probeSlowRatioPercent(config.ioHealthProbeSlowRatioPercent())
                 .disabledRules(config.ioHealthDisabledRules())
                 .build();
     }
@@ -83,6 +90,14 @@ public final class RuleConfig {
         return fileFailsInWindow;
     }
 
+    public int probeSlowMinRecords() {
+        return probeSlowMinRecords;
+    }
+
+    public int probeSlowRatioPercent() {
+        return probeSlowRatioPercent;
+    }
+
     public boolean isEnabled(String ruleName) {
         return !disabledRules.contains(ruleName);
     }
@@ -100,6 +115,8 @@ public final class RuleConfig {
         private int tenantAbnormalFloor = 5;
         private int fileConsecutiveFails = 3;
         private int fileFailsInWindow = 5;
+        private int probeSlowMinRecords = 3;
+        private int probeSlowRatioPercent = 67;
         private Set<String> disabledRules = Collections.emptySet();
 
         public Builder hangMillis(long v) { this.hangMillis = v; return this; }
@@ -110,6 +127,8 @@ public final class RuleConfig {
         public Builder tenantAbnormalFloor(int v) { this.tenantAbnormalFloor = v; return this; }
         public Builder fileConsecutiveFails(int v) { this.fileConsecutiveFails = v; return this; }
         public Builder fileFailsInWindow(int v) { this.fileFailsInWindow = v; return this; }
+        public Builder probeSlowMinRecords(int v) { this.probeSlowMinRecords = v; return this; }
+        public Builder probeSlowRatioPercent(int v) { this.probeSlowRatioPercent = v; return this; }
 
         public Builder disabledRules(String csv) {
             if (csv == null || csv.trim().isEmpty()) {
@@ -133,6 +152,8 @@ public final class RuleConfig {
                     Math.max(0, tenantAbnormalFloor),
                     Math.max(1, fileConsecutiveFails),
                     Math.max(1, fileFailsInWindow),
+                    Math.max(1, probeSlowMinRecords),
+                    Math.max(1, probeSlowRatioPercent),
                     disabledRules);
         }
     }

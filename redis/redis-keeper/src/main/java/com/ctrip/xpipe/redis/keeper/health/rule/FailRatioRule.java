@@ -13,11 +13,11 @@ public final class FailRatioRule implements IoHealthRule {
 
     @Override
     public void evaluate(RuleContext ctx, RuleResult result) {
-        IoHealthSnapshot snapshot = ctx.snapshot();
-        if (snapshot.total() < ctx.config().minWindowRecords()) {
+        IoHealthSnapshot.SourceSnapshot business = ctx.snapshot().business();
+        if (business.total() < ctx.config().minWindowRecords()) {
             return;
         }
-        if (snapshot.failed() * 100L > snapshot.total() * ctx.config().failRatioPercent()) {
+        if (business.failed() * 100L > business.total() * ctx.config().failRatioPercent()) {
             result.markContainer(this);
         }
     }

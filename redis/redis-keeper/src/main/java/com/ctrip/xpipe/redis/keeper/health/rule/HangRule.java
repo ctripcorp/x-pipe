@@ -15,7 +15,12 @@ public final class HangRule implements IoHealthRule {
     public void evaluate(RuleContext ctx, RuleResult result) {
         IoHealthSnapshot snapshot = ctx.snapshot();
         long hangNanos = ctx.config().hangNanos();
-        if (snapshot.maxInFlightNanos() > hangNanos || snapshot.maxExecNanos() > hangNanos) {
+        if (snapshot.business().maxInFlightNanos() > hangNanos
+                || snapshot.business().maxExecNanos() > hangNanos) {
+            result.markContainer(this);
+        }
+        if (snapshot.probe().tasks().maxInFlightNanos() > hangNanos
+                || snapshot.probe().tasks().maxExecNanos() > hangNanos) {
             result.markContainer(this);
         }
     }

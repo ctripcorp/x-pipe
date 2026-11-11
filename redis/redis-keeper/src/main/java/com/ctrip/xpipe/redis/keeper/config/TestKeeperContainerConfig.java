@@ -200,6 +200,26 @@ public class TestKeeperContainerConfig implements KeeperContainerConfig{
 		return ioHealthDisabledRules;
 	}
 
+	@Override
+	public long ioHealthProbeIntervalMill() {
+		return DEFAULT_IO_HEALTH_PROBE_INTERVAL_MILL;
+	}
+
+	@Override
+	public int ioHealthProbeSlowMinRecords() {
+		return DEFAULT_IO_HEALTH_PROBE_SLOW_MIN_RECORDS;
+	}
+
+	@Override
+	public int ioHealthProbeSlowRatioPercent() {
+		return DEFAULT_IO_HEALTH_PROBE_SLOW_RATIO_PERCENT;
+	}
+
+	@Override
+	public long ioHealthProbeWindowSeconds() {
+		return DEFAULT_IO_HEALTH_PROBE_WINDOW_SEC;
+	}
+
 	public TestKeeperContainerConfig setIoHealthDisabledRules(String ioHealthDisabledRules) {
 		this.ioHealthDisabledRules = ioHealthDisabledRules;
 		return this;
