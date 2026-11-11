@@ -50,6 +50,8 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
      */
     private static final int DEFAULT_BUFFER_SIZE = 128 * 1024;
 
+    private static final int MAX_ZERO_TRANSFER_RETRIES = 1;
+
     public GtidCommandSearcher(String uuid, long begGno, long endGno, RedisKeeperServer redisKeeperServer, RedisOpParser redisOpParser) {
         this.uuid = uuid;
         this.begGno = begGno;
@@ -119,8 +121,23 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
                 );
                 
                 try {
-                    // Transfer file content to channel, which will process data in chunks
-                    fileRegion.transferTo(channel, 0);
+                    long transferred = 0;
+                    long count = fileRegion.count();
+                    do {
+                        long currentTransferred = fileRegion.transferTo(channel, transferred);
+                        int retryTimes = 0;
+                        while (currentTransferred <= 0 && transferred < count && retryTimes < MAX_ZERO_TRANSFER_RETRIES) {
+                            retryTimes++;
+                            currentTransferred = fileRegion.transferTo(channel, transferred);
+                        }
+                        if (currentTransferred <= 0) {
+                            if (transferred >= count) {
+                                break;
+                            }
+                            throw new IOException(String.format("Failed to transfer file region at position %d of %d after retry", transferred, count));
+                        }
+                        transferred += currentTransferred;
+                    } while (transferred < count);
                     // Flush any remaining data in the buffer
                     channel.flush();
                 } finally {
