@@ -1,0 +1,33 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelperTest.java
+  s_4f4a8f14a42b68::t_8e24bffe09193c 611-646
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_4f4a8f14a42b68::t_f0c3f806a99a4d 380,383,390-392
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_4f4a8f14a42b68::t_707696f6383d5b 622-626
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_4f4a8f14a42b68::t_b9fc48f2bd24fe 47-48
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_4f4a8f14a42b68::t_3403142345bb55 12,16-17,157-182
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_4f4a8f14a42b68::t_6ae14af6ef9eaf 1486-1492
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/TfsStoreDeleter.java
+  s_4f4a8f14a42b68::t_4a781007e24a68 129-134,136-139,141-142
+  s_4f4a8f14a42b68::t_e7fbbe2cb102e0 75-88,90
+  s_4f4a8f14a42b68::t_752d5b71801064 120-121,143-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "9632da3b3233ed2e80965c9d24e3a2eb1ee1120c",
+  "prompts": {},
+  "sessions": {
+    "s_4f4a8f14a42b68": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_7c09f46c-b969-46c2-a4b9-5a6ed61d3df4",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_f92f378a6685f0::t_64b36cc7740337 32
+  s_f92f378a6685f0::t_1a6f3eb6d21695 185-187
+  s_f92f378a6685f0::t_62fd24ce9973d7 19
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_f92f378a6685f0::t_04501dc4611aa5 493-496
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_f92f378a6685f0::t_6badb2a78a11fb 152-159,161,163-165,167-169,178,181-183
+  s_f92f378a6685f0::t_4d59de98d6821b 166
+  s_f92f378a6685f0::t_de9d58b76e91b1 170-176
+  s_f92f378a6685f0::t_72b9ffa823213a 160,162,177,179
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandWriter.java
+  s_f92f378a6685f0::t_1b3a2dc7efeaff 102-103
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_f92f378a6685f0::t_48d0d388dab887 536-544
+  s_f92f378a6685f0::t_67cccd086bf6fa 42
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelperTest.java
+  s_f92f378a6685f0::t_8afb51c0e48534 23,255-266
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_f92f378a6685f0::t_5b580408ba0255 393-396
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/TestAsyncCommandStore.java
+  s_f92f378a6685f0::t_83a893d51aa619 182-186
+  s_f92f378a6685f0::t_d41e789a595c5e 28-30
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AsyncCommandStore.java
+  s_f92f378a6685f0::t_22457ad379f1dd 38-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "0f540403e9887172a279308ee9c647903708c90f",
+  "prompts": {},
+  "sessions": {
+    "s_f92f378a6685f0": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_caf94bde-45b4-4a0d-90a6-aa4485883bbc",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
