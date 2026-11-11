@@ -105,7 +105,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public AsyncFile openSync(String path, String key, String ioKey,
             AbstractStorageFile.OpenMode openMode, AbstractStorageFile.ReplaceMode replaceMode,
             boolean lenient, String tenant, boolean noFs) {
-        AsyncFile file = new AsyncFile(path, replaceMode, openMode, key, ioKey, lenient);
+        AsyncFile file = new AsyncFile(path, replaceMode, openMode, key, ioKey, lenient, tenant);
         file.channelFactory = channelFactory;
         file.needPrepare = noFs;
         return file;
@@ -449,7 +449,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> delete(String path) {
-        return StorageUtil.run(ioExecutor, () -> deleteSync(path));
+        return StorageUtil.run(ioExecutor, null,() -> deleteSync(path));
     }
 
     @Override
@@ -726,7 +726,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     @Override
     public AsyncSegmentFile openSync(String path, String prefix, String key, String ioKey,
             List<String> indexPrefixes, boolean write, String tenant, boolean noFs) {
-        AsyncSegmentFile file = new AsyncSegmentFile(path, prefix, indexPrefixes, key, ioKey, write);
+        AsyncSegmentFile file = new AsyncSegmentFile(path, prefix, indexPrefixes, key, ioKey, write, tenant);
         file.channelFactory = channelFactory;
         file.needPrepare = noFs;
         return file;

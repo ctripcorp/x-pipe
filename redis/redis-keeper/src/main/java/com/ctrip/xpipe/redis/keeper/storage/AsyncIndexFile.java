@@ -7,8 +7,8 @@ public class AsyncIndexFile extends AsyncFile {
     boolean firstOpener;
 
     AsyncIndexFile(String segmentKey, String segmentIoKey, String absolutePath, String indexPrefix,
-            long startOffset, OpenMode openMode) {
-        super(absolutePath, ReplaceMode.NORMAL, openMode, false, segmentKey, segmentIoKey, false);
+            long startOffset, OpenMode openMode, String tenant) {
+        super(absolutePath, ReplaceMode.NORMAL, openMode, false, segmentKey, segmentIoKey, false, tenant);
         this.indexPrefix = indexPrefix;
         this.startOffset = startOffset;
         this.cacheMode = CacheMode.FULL_CACHE;
