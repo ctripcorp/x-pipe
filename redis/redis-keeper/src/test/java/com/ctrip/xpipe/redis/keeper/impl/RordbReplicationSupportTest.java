@@ -109,7 +109,11 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         Assert.assertArrayEquals(redisServer.getRordbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psync.getRdb()));
 
-        Assert.assertEquals(redisKeeperServer.getReplicationStore().getMetaStore().dupReplicationStoreMeta().getRordbFileSize(), psync.getRdb().length);
+        long receivedRordbSize = psync.getRdb().length;
+        waitConditionUntilTimeOut(() -> redisKeeperServer.getReplicationStore().getMetaStore()
+                .dupReplicationStoreMeta().getRordbFileSize() != -1);
+        Assert.assertEquals(receivedRordbSize, redisKeeperServer.getReplicationStore().getMetaStore()
+                .dupReplicationStoreMeta().getRordbFileSize());
     }
 
     @Test
@@ -149,6 +153,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
         redisKeeperServer.initialize();
         redisKeeperServer.start();
+        add(redisKeeperServer);
 
         redisKeeperServer.setRedisKeeperServerState(
                 new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", redisServer.getPort())));

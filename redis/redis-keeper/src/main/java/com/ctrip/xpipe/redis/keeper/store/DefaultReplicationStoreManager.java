@@ -608,7 +608,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
             if (children != null && !children.isEmpty()) {
 
-                logger.info("[GC][old replicationstore]newest:{}", currentDirName);
+                logger.debug("[GC][old replicationstore]newest:{}", currentDirName);
                 for (String name : children) {
                     if (currentDirName != null && currentDirName.equals(name)) {
                         continue;
