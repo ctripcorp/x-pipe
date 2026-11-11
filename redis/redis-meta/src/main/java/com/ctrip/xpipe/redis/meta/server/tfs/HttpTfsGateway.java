@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.tfs;
 
+import com.ctrip.xpipe.api.codec.GenericTypeReference;
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.tfs.proto.ForceCloseDirRequest;
-import com.ctrip.xpipe.redis.meta.server.tfs.proto.ForceCloseDirResponse;
 import com.ctrip.xpipe.redis.meta.server.tfs.proto.TfsStatus;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -20,21 +20,30 @@ import org.springframework.web.client.RestOperations;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
- * Real TFS Gateway over HTTP POST + protobuf via {@link RestOperations}.
+ * Real TFS Gateway over HTTP POST + JSON via {@link RestOperations}.
  * Host/appId are read from {@link MetaServerConfig} on every call (D23 hot reload).
- * Business failure ({@code error_code != 0}) returns {@code false}; transport errors throw.
+ * Business failure ({@code status.error_code != 0}) returns {@code false}; transport errors throw.
  */
 public class HttpTfsGateway implements TfsGateway {
 
-    public static final String CONTENT_TYPE_X_PROTOBUF = "application/x-protobuf";
+    public static final String CONTENT_TYPE_JSON = "application/json";
 
     public static final String METRIC_TYPE = "call.tfs";
 
     public static final String API_FORCE_CLOSE_DIR = "ForceCloseDir";
 
-    private static final MediaType PROTOBUF = MediaType.parseMediaType(CONTENT_TYPE_X_PROTOBUF);
+    private static final String FIELD_FS_ID = "fs_id";
+    private static final String FIELD_DIR_PATH = "dir_path";
+    private static final String FIELD_POD_IP = "pod_ip";
+    private static final String FIELD_STATUS = "status";
+    private static final String FIELD_ERROR_CODE = "error_code";
+    private static final String FIELD_MESSAGE = "message";
+
+    private static final MediaType JSON = MediaType.APPLICATION_JSON;
 
     private static final Logger logger = LoggerFactory.getLogger(HttpTfsGateway.class);
 
@@ -101,16 +110,13 @@ public class HttpTfsGateway implements TfsGateway {
         Integer errorCode = null;
         String message = null;
         try {
-            byte[] body = new ForceCloseDirRequest(fsId, dirPath, podIp).toByteArray();
+            String body = JsonCodec.INSTANCE.encode(createRequestBody(fsId, dirPath, podIp));
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(PROTOBUF);
-            ResponseEntity<byte[]> response = restOperations.exchange(
-                    url, HttpMethod.POST, new HttpEntity<>(body, headers), byte[].class);
-            byte[] respBytes = response.getBody() == null ? new byte[0] : response.getBody();
-            ForceCloseDirResponse parsed = ForceCloseDirResponse.parseFrom(respBytes);
-            TfsStatus status = parsed.getStatus();
+            headers.setContentType(JSON);
+            ResponseEntity<String> response = restOperations.exchange(
+                    url, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
+            TfsStatus status = parseStatus(response.getBody());
             if (status == null) {
-                errorCode = null;
                 message = "missing status";
                 success = false;
             } else {
@@ -125,6 +131,41 @@ public class HttpTfsGateway implements TfsGateway {
                     url, fsId, dirPath, podIp, success, errorCode, message, endTime - startTime);
             tryMetric(API_FORCE_CLOSE_DIR, success, startTime, endTime);
         }
+    }
+
+    private Map<String, String> createRequestBody(String fsId, String dirPath, String podIp) {
+        Map<String, String> request = new LinkedHashMap<>();
+        request.put(FIELD_FS_ID, fsId == null ? "" : fsId);
+        request.put(FIELD_DIR_PATH, dirPath == null ? "" : dirPath);
+        request.put(FIELD_POD_IP, podIp == null ? "" : podIp);
+        return request;
+    }
+
+    private TfsStatus parseStatus(String responseBody) {
+        if (StringUtil.isEmpty(responseBody)) {
+            return null;
+        }
+
+        Map<String, Object> response = JsonCodec.INSTANCE.decode(responseBody,
+                new GenericTypeReference<Map<String, Object>>() {
+                });
+        if (response == null) {
+            return null;
+        }
+
+        Object statusNode = response.get(FIELD_STATUS);
+        if (!(statusNode instanceof Map)) {
+            return null;
+        }
+
+        Map<?, ?> status = (Map<?, ?>) statusNode;
+        Object errorCode = status.get(FIELD_ERROR_CODE);
+        if (!(errorCode instanceof Number)) {
+            return null;
+        }
+
+        Object message = status.get(FIELD_MESSAGE);
+        return new TfsStatus(((Number) errorCode).intValue(), message instanceof String ? (String) message : "");
     }
 
     private void tryMetric(String api, boolean isSuccess, long startTime, long endTime) {

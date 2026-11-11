@@ -1,17 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.tfs;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
-import com.ctrip.xpipe.redis.meta.server.tfs.proto.ForceCloseDirRequest;
-import com.ctrip.xpipe.redis.meta.server.tfs.proto.ForceCloseDirResponse;
-import com.ctrip.xpipe.redis.meta.server.tfs.proto.TfsStatus;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import okhttp3.mockwebserver.SocketPolicy;
-import okio.Buffer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -21,6 +18,7 @@ import org.springframework.web.client.RestOperations;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class HttpTfsGatewayTest {
@@ -50,7 +48,7 @@ public class HttpTfsGatewayTest {
     }
 
     @Test
-    public void testForceCloseDirSuccessPostsProtobuf() throws Exception {
+    public void testForceCloseDirSuccessPostsJson() throws Exception {
         enqueueStatus(webServer, 0, "ok");
 
         Assert.assertTrue(gateway.forceCloseDir("fs-1", "/opt/data/repl_9", "10.0.0.1"));
@@ -59,18 +57,24 @@ public class HttpTfsGatewayTest {
         Assert.assertNotNull(request);
         Assert.assertEquals("POST", request.getMethod());
         Assert.assertEquals("/tfs/app/100004376/fs/fs-1/TFSGateway/ForceCloseDir", request.getPath());
-        Assert.assertTrue(request.getHeader("Content-Type").contains(HttpTfsGateway.CONTENT_TYPE_X_PROTOBUF));
-
-        ForceCloseDirRequest body = ForceCloseDirRequest.parseFrom(request.getBody().readByteArray());
-        Assert.assertEquals("fs-1", body.getFsId());
-        Assert.assertEquals("/opt/data/repl_9", body.getDirPath());
-        Assert.assertEquals("10.0.0.1", body.getPodIp());
+        Assert.assertTrue(request.getHeader("Content-Type").contains(HttpTfsGateway.CONTENT_TYPE_JSON));
+        assertRequestBody(request, "fs-1", "/opt/data/repl_9", "10.0.0.1");
         assertMetric("SUCCESS");
     }
 
     @Test
     public void testForceCloseDirNonZeroErrorCodeReturnsFalse() throws Exception {
         enqueueStatus(webServer, 7, "busy");
+        Assert.assertFalse(gateway.forceCloseDir("fs-1", "/path", "10.0.0.1"));
+        assertMetric("FAIL");
+    }
+
+    @Test
+    public void testForceCloseDirWithoutStatusReturnsFalse() throws Exception {
+        webServer.enqueue(new MockResponse()
+                .setHeader("Content-Type", HttpTfsGateway.CONTENT_TYPE_JSON)
+                .setBody("{}"));
+
         Assert.assertFalse(gateway.forceCloseDir("fs-1", "/path", "10.0.0.1"));
         assertMetric("FAIL");
     }
@@ -122,10 +126,7 @@ public class HttpTfsGatewayTest {
             RecordedRequest second = hostB.takeRequest(1, TimeUnit.SECONDS);
             Assert.assertNotNull(second);
             Assert.assertEquals("/tfs/app/42/fs/fs-b/TFSGateway/ForceCloseDir", second.getPath());
-            ForceCloseDirRequest body = ForceCloseDirRequest.parseFrom(second.getBody().readByteArray());
-            Assert.assertEquals("fs-b", body.getFsId());
-            Assert.assertEquals("/p2", body.getDirPath());
-            Assert.assertEquals("10.0.0.2", body.getPodIp());
+            assertRequestBody(second, "fs-b", "/p2", "10.0.0.2");
         } finally {
             hostB.close();
         }
@@ -150,11 +151,18 @@ public class HttpTfsGatewayTest {
         return server.url("/").toString().replaceAll("/$", "");
     }
 
+    private static void assertRequestBody(RecordedRequest request, String fsId, String dirPath, String podIp) {
+        Map<?, ?> body = JsonCodec.INSTANCE.decode(request.getBody().readUtf8(), Map.class);
+        Assert.assertEquals(fsId, body.get("fs_id"));
+        Assert.assertEquals(dirPath, body.get("dir_path"));
+        Assert.assertEquals(podIp, body.get("pod_ip"));
+    }
+
     private static void enqueueStatus(MockWebServer server, int errorCode, String message) {
-        byte[] body = new ForceCloseDirResponse(new TfsStatus(errorCode, message)).toByteArray();
+        String body = String.format("{\"status\":{\"error_code\":%d,\"message\":\"%s\"}}", errorCode, message);
         server.enqueue(new MockResponse()
-                .setHeader("Content-Type", HttpTfsGateway.CONTENT_TYPE_X_PROTOBUF)
-                .setBody(new Buffer().write(body)));
+                .setHeader("Content-Type", HttpTfsGateway.CONTENT_TYPE_JSON)
+                .setBody(body));
     }
 
     private static class RecordingMetricProxy implements MetricProxy {
