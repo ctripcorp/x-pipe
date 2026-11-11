@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.xpipe.redis.keeper.storage.health.IoTask;
+import com.ctrip.xpipe.redis.keeper.storage.health.IoTelemetryContext;
 
 class StorageUtil {
 
@@ -227,7 +228,7 @@ class StorageUtil {
             String path,
             Supplier<IoTask.Result<T>> task,
             ByteBuf data) {
-        IoTask<T> ioTask = new IoTask<>(tenant, path, System.nanoTime(), wrapSupplier(task));
+        IoTask<T> ioTask = new IoTask<>(tenant, path, System.nanoTime(),IoTelemetryContext.currentSource(), wrapSupplier(task));
         try {
             executor.execute(ioTask);
         } catch (Throwable e) {

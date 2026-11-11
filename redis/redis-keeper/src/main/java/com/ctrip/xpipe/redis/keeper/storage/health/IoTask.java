@@ -16,6 +16,7 @@ public final class IoTask<T> implements Runnable {
     final String tenant;
     final String path;
     final long submitNanos;
+    final IoSource source;
     /** Set when a pool thread picks the task up; 0 while it is still queued. */
     volatile long startNanos;
 
@@ -48,14 +49,21 @@ public final class IoTask<T> implements Runnable {
     private final Supplier<Result<T>> task;
     private final CompletableFuture<T> future = new CompletableFuture<>();
 
-
     public IoTask(String tenant, String path, long submitNanos, Supplier<Result<T>> task) {
+        this(tenant, path, submitNanos, IoSource.BUSINESS, task);
+    }
+
+    public IoTask(String tenant, String path, long submitNanos, IoSource source, Supplier<Result<T>> task) {
         this.tenant = tenant;
         this.path = path;
         this.submitNanos = submitNanos;
+        this.source = source == null ? IoSource.BUSINESS : source;
         this.task = task;
     }
 
+    public IoSource source() {
+        return source;
+    }
 
     public long submitNanos() {
         return submitNanos;

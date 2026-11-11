@@ -8,28 +8,15 @@ import java.util.Map;
 public final class IoHealthSnapshot {
 
     private final long sampleNanos;
-    private final long total;
-    private final long failed;
-    private final long slow;
-    private final long inFlight;
-    private final long slowInFlight;
-    private final long maxInFlightNanos;
-    private final long maxEndToEndNanos;
-    private final long maxExecNanos;
+    private final SourceSnapshot business;
+    private final ProbeSnapshot probe;
     private final Map<String, TenantStat> tenants;
 
-    IoHealthSnapshot(long sampleNanos, long total, long failed, long slow, long inFlight,
-            long slowInFlight, long maxInFlightNanos, long maxEndToEndNanos, long maxExecNanos,
+    IoHealthSnapshot(long sampleNanos, SourceSnapshot business, ProbeSnapshot probe,
             Map<String, TenantStat> tenants) {
         this.sampleNanos = sampleNanos;
-        this.total = total;
-        this.failed = failed;
-        this.slow = slow;
-        this.inFlight = inFlight;
-        this.slowInFlight = slowInFlight;
-        this.maxInFlightNanos = maxInFlightNanos;
-        this.maxEndToEndNanos = maxEndToEndNanos;
-        this.maxExecNanos = maxExecNanos;
+        this.business = business;
+        this.probe = probe;
         this.tenants = Collections.unmodifiableMap(tenants);
     }
 
@@ -37,43 +24,24 @@ public final class IoHealthSnapshot {
         return sampleNanos;
     }
 
-    /** Every pool task (tenant==null included) inside the fixed 30s rule window. */
-    public long total() {
-        return total;
+    /** Business IO snapshot. Legacy top-level getters below delegate to this object. */
+    public SourceSnapshot business() {
+        return business;
     }
 
-    public long failed() {
-        return failed;
+    /** Probe task and logical probe-round snapshot. */
+    public ProbeSnapshot probe() {
+        return probe;
     }
 
-    /** Finished tasks whose execution time (queue wait excluded) is above the slow threshold. */
-    public long slow() {
-        return slow;
-    }
-
-    /** Tasks inside {@code run()} at the sample time; not part of {@link #total()}. */
-    public long inFlight() {
-        return inFlight;
-    }
-
-    /** Of {@link #inFlight()}, those already running longer than the slow threshold. */
-    public long slowInFlight() {
-        return slowInFlight;
-    }
-
-    /** Longest time a still-running task has been inside {@code run()}, queue wait excluded. */
-    public long maxInFlightNanos() {
-        return maxInFlightNanos;
-    }
-
-    /** Longest submit-to-end time among finished tasks in the window, queue wait included. */
-    public long maxEndToEndNanos() {
-        return maxEndToEndNanos;
-    }
-
-    public long maxExecNanos() {
-        return maxExecNanos;
-    }
+    public long total() { return business.total(); }
+    public long failed() { return business.failed(); }
+    public long slow() { return business.slow(); }
+    public long inFlight() { return business.inFlight(); }
+    public long slowInFlight() { return business.slowInFlight(); }
+    public long maxInFlightNanos() { return business.maxInFlightNanos(); }
+    public long maxEndToEndNanos() { return business.maxEndToEndNanos(); }
+    public long maxExecNanos() { return business.maxExecNanos(); }
 
     public Map<String, TenantStat> tenants() {
         return tenants;
@@ -98,7 +66,18 @@ public final class IoHealthSnapshot {
         private long maxInFlightNanos;
         private long maxEndToEndNanos;
         private long maxExecNanos;
+        private long probeTotal;
+        private long probeFailed;
+        private long probeSlow;
+        private long probeInFlight;
+        private long probeSlowInFlight;
+        private long probeMaxInFlightNanos;
+        private long probeMaxEndToEndNanos;
+        private long probeMaxExecNanos;
+        private long probeRounds;
+        private long probeSlowRounds;
         private final Map<String, TenantStat> tenants = new HashMap<>();
+        private final Map<String, FileStat> probeFiles = new HashMap<>();
 
         public Builder sampleNanos(long v) { this.sampleNanos = v; return this; }
         public Builder total(long v) { this.total = v; return this; }
@@ -109,6 +88,22 @@ public final class IoHealthSnapshot {
         public Builder maxInFlightNanos(long v) { this.maxInFlightNanos = v; return this; }
         public Builder maxEndToEndNanos(long v) { this.maxEndToEndNanos = v; return this; }
         public Builder maxExecNanos(long v) { this.maxExecNanos = v; return this; }
+
+        public Builder probe(long total, long failed, long slow, long inFlight,
+                long slowInFlight, long maxInFlightNanos, long maxEndToEndNanos,
+                long maxExecNanos, long rounds, long slowRounds) {
+            this.probeTotal = total;
+            this.probeFailed = failed;
+            this.probeSlow = slow;
+            this.probeInFlight = inFlight;
+            this.probeSlowInFlight = slowInFlight;
+            this.probeMaxInFlightNanos = maxInFlightNanos;
+            this.probeMaxEndToEndNanos = maxEndToEndNanos;
+            this.probeMaxExecNanos = maxExecNanos;
+            this.probeRounds = rounds;
+            this.probeSlowRounds = slowRounds;
+            return this;
+        }
 
         public Builder tenant(String tenant, long total, long abnormal, long inFlight, long slowInFlight) {
             this.tenants.put(tenant, TenantStat.of(total, abnormal, inFlight, slowInFlight));
@@ -122,10 +117,76 @@ public final class IoHealthSnapshot {
             return this;
         }
 
-        public IoHealthSnapshot build() {
-            return new IoHealthSnapshot(sampleNanos, total, failed, slow, inFlight, slowInFlight,
-                    maxInFlightNanos, maxEndToEndNanos, maxExecNanos, tenants);
+        public Builder probeFile(String path, long consecutiveFails, long fails10, long lastEndNanos) {
+            this.probeFiles.put(path, FileStat.of(null, path, consecutiveFails, fails10, lastEndNanos));
+            return this;
         }
+
+        public IoHealthSnapshot build() {
+            SourceSnapshot business = new SourceSnapshot(sampleNanos, total, failed, slow,
+                    inFlight, slowInFlight, maxInFlightNanos, maxEndToEndNanos, maxExecNanos);
+            ProbeSnapshot probe = new ProbeSnapshot(
+                    new SourceSnapshot(sampleNanos, probeTotal, probeFailed, probeSlow,
+                            probeInFlight, probeSlowInFlight, probeMaxInFlightNanos,
+                            probeMaxEndToEndNanos, probeMaxExecNanos),
+                    probeRounds, probeSlowRounds, probeFiles);
+            return new IoHealthSnapshot(sampleNanos, business, probe, tenants);
+        }
+    }
+
+    public static class SourceSnapshot {
+        private final long sampleNanos;
+        private final long total;
+        private final long failed;
+        private final long slow;
+        private final long inFlight;
+        private final long slowInFlight;
+        private final long maxInFlightNanos;
+        private final long maxEndToEndNanos;
+        private final long maxExecNanos;
+
+        SourceSnapshot(long sampleNanos, long total, long failed, long slow, long inFlight,
+                long slowInFlight, long maxInFlightNanos, long maxEndToEndNanos, long maxExecNanos) {
+            this.sampleNanos = sampleNanos;
+            this.total = total;
+            this.failed = failed;
+            this.slow = slow;
+            this.inFlight = inFlight;
+            this.slowInFlight = slowInFlight;
+            this.maxInFlightNanos = maxInFlightNanos;
+            this.maxEndToEndNanos = maxEndToEndNanos;
+            this.maxExecNanos = maxExecNanos;
+        }
+
+        public long sampleNanos() { return sampleNanos; }
+        public long total() { return total; }
+        public long failed() { return failed; }
+        public long slow() { return slow; }
+        public long inFlight() { return inFlight; }
+        public long slowInFlight() { return slowInFlight; }
+        public long maxInFlightNanos() { return maxInFlightNanos; }
+        public long maxEndToEndNanos() { return maxEndToEndNanos; }
+        public long maxExecNanos() { return maxExecNanos; }
+    }
+
+    public static final class ProbeSnapshot {
+        private final SourceSnapshot tasks;
+        private final long rounds;
+        private final long slowRounds;
+        private final Map<String, FileStat> files;
+
+        ProbeSnapshot(SourceSnapshot tasks, long rounds, long slowRounds,
+                Map<String, FileStat> files) {
+            this.tasks = tasks;
+            this.rounds = rounds;
+            this.slowRounds = slowRounds;
+            this.files = Collections.unmodifiableMap(new HashMap<>(files));
+        }
+
+        public SourceSnapshot tasks() { return tasks; }
+        public long rounds() { return rounds; }
+        public long slowRounds() { return slowRounds; }
+        public Map<String, FileStat> files() { return files; }
     }
 
     public static final class TenantStat {
@@ -144,30 +205,11 @@ public final class IoHealthSnapshot {
             return stat;
         }
 
-        /** Files of this tenant seen inside the file rule window. */
-        public Map<String, FileStat> files() {
-            return files;
-        }
-
-        /** This tenant's finished tasks inside the fixed 30s rule window. */
-        public long total() {
-            return total;
-        }
-
-        /** Of {@link #total()}, those failed or slower than 2s. */
-        public long abnormal() {
-            return abnormal;
-        }
-
-        /** This tenant's tasks inside {@code run()} at the sample time; not part of {@link #total()}. */
-        public long inFlight() {
-            return inFlight;
-        }
-
-        /** Of {@link #inFlight()}, those already running longer than 2s. */
-        public long slowInFlight() {
-            return slowInFlight;
-        }
+        public Map<String, FileStat> files() { return files; }
+        public long total() { return total; }
+        public long abnormal() { return abnormal; }
+        public long inFlight() { return inFlight; }
+        public long slowInFlight() { return slowInFlight; }
     }
 
     public static final class FileStat {
@@ -187,26 +229,10 @@ public final class IoHealthSnapshot {
             return stat;
         }
 
-        /** Owning keeper, so a rule does not have to parse the composite key. */
-        public String tenant() {
-            return tenant;
-        }
-
-        public String path() {
-            return path;
-        }
-
-        public long fails10() {
-            return fails10;
-        }
-
-        /** Trailing failures in the window; reset by any success of the same file. */
-        public long consecutiveFails() {
-            return consecutiveFails;
-        }
-
-        public long lastEndNanos() {
-            return lastEndNanos;
-        }
+        public String tenant() { return tenant; }
+        public String path() { return path; }
+        public long fails10() { return fails10; }
+        public long consecutiveFails() { return consecutiveFails; }
+        public long lastEndNanos() { return lastEndNanos; }
     }
 }

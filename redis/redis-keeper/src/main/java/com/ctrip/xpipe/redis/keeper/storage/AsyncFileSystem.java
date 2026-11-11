@@ -27,6 +27,13 @@ public interface AsyncFileSystem {
             AbstractStorageFile.ReplaceMode replaceMode, boolean lenient, String tenant) {
         throw new UnsupportedOperationException();
     }
+
+    /** Opens a file with a per-handle cache override. Backing filesystems ignore the override. */
+    default CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode,
+            AbstractStorageFile.ReplaceMode replaceMode, boolean lenient, String tenant,
+            AbstractStorageFile.CacheMode cacheMode) {
+        return open(path, openMode, replaceMode, lenient, tenant);
+    }
     // Open the file synchronously. noFs=true skips backing IO and marks needPrepare.
     default AsyncFile openSync(String path, String key, String ioKey, AbstractStorageFile.OpenMode openMode,
             AbstractStorageFile.ReplaceMode replaceMode, boolean lenient, String tenant, boolean noFs) {

@@ -18,6 +18,10 @@ public interface IoTelemetrySettings {
 
     long stateIdleNanos();
 
+    default long probeWindowNanos() {
+        return windowNanos();
+    }
+
     IoTelemetrySettings DEFAULTS = new IoTelemetrySettings() {
 
         @Override
