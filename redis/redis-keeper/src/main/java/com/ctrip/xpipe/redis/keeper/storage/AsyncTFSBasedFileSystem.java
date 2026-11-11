@@ -377,14 +377,19 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public CompletableFuture<Long> lastModified(AsyncFile file) {
+    public CompletableFuture<Long> lastModified(String path) {
         return StorageUtil.supply(ioExecutor, () -> {
             try {
-                return Files.getLastModifiedTime(Paths.get(file.path)).toMillis();
+                return Files.getLastModifiedTime(Paths.get(path)).toMillis();
             } catch (IOException e) {
                 throw StorageUtil.wrapIOException(e);
             }
         });
+    }
+
+    @Override
+    public CompletableFuture<Long> lastModified(AsyncFile file) {
+        return lastModified(file.path);
     }
 
 

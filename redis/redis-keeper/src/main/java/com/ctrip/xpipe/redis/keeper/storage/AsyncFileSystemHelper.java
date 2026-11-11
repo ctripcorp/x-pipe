@@ -9,9 +9,12 @@ import io.netty.util.ReferenceCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -149,6 +152,34 @@ public final class AsyncFileSystemHelper {
     public static <T> T await(CompletableFuture<T> future, String operation, long timeout, TimeUnit unit)
             throws IOException {
         return doAwait(future, operation, timeout, unit, () -> logLateFailure(future, operation));
+    }
+
+    /**
+     * Returns the greatest mtime among the direct entries of {@code directory}. The directory itself
+     * is excluded and descendants are not scanned. An empty directory returns {@code 0}.
+     *
+     * <p>All child stat calls are started before waiting, so this method does not serially block on
+     * per-entry filesystem I/O. A failed list or stat propagates as {@link IOException}.</p>
+     */
+    public static long getLatestDirectChildLastModified(AsyncFileSystem fs, String directory) throws IOException {
+        List<String> children = await(() -> fs.list(directory), "list directory " + directory);
+        if (children == null || children.isEmpty()) {
+            return 0L;
+        }
+
+        List<CompletableFuture<Long>> lastModifiedFutures = new ArrayList<>(children.size());
+        for (String child : children) {
+            String childPath = new File(directory, child).getAbsolutePath();
+            lastModifiedFutures.add(fs.lastModified(childPath));
+        }
+        await(CompletableFuture.allOf(lastModifiedFutures.toArray(new CompletableFuture[0])),
+                "get direct child lastModified " + directory);
+
+        long latest = 0L;
+        for (CompletableFuture<Long> future : lastModifiedFutures) {
+            latest = Math.max(latest, future.join());
+        }
+        return latest;
     }
 
     /**

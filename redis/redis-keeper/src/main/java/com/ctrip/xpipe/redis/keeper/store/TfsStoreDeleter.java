@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * TFS: the store directory is shared, so it is removed only when nobody can be using it. Holds a write
@@ -33,10 +34,14 @@ public final class TfsStoreDeleter implements ReplicationStoreDeleter {
     @Override
     public GcOrphanStoreResult delete(File baseDir, ReplId replId) {
         String metaPath = new File(baseDir, META_FILE).getAbsolutePath();
+        GcOrphanStoreResult existsResult = checkStoreExists(baseDir, replId, "delete");
+        if (existsResult != null) {
+            return existsResult;
+        }
+
         AsyncFile meta = null;
         try {
             try {
-
                 long newest = getCurrentDirLastModified(baseDir);
                 if (tooFresh(newest)) {
                     return GcOrphanStoreResult.skip(replId.id(), "store dir without meta modified too recently");
@@ -67,18 +72,23 @@ public final class TfsStoreDeleter implements ReplicationStoreDeleter {
     @Override
     public GcOrphanStoreResult delete(File baseDir, ReplId replId, AsyncFile heldMeta) {
         String metaPath = new File(baseDir, META_FILE).getAbsolutePath();
-        if (heldMeta == null) {
-            try {
-                if (AsyncFileSystemHelper.await(() -> fs.exists(metaPath), "destroy meta exists " + metaPath)) {
-                    return GcOrphanStoreResult.skip(replId.id(), "no held meta handle, left to orphan gc");
-                }
-            } catch (Throwable th) {
-                logger.warn("[delete][meta exists check failed, skip]{}", baseDir, th);
-                return GcOrphanStoreResult.skip(replId.id(), "meta exists check failed: " + th.getMessage());
-            }
-            return deleteWithoutMeta(baseDir, replId);
-        }
         try {
+            GcOrphanStoreResult existsResult = checkStoreExists(baseDir, replId, "destroy");
+            if (existsResult != null) {
+                return existsResult;
+            }
+
+            if (heldMeta == null) {
+                try {
+                    if (AsyncFileSystemHelper.await(() -> fs.exists(metaPath), "destroy meta exists " + metaPath)) {
+                        return GcOrphanStoreResult.skip(replId.id(), "no held meta handle, left to orphan gc");
+                    }
+                } catch (Throwable th) {
+                    logger.warn("[delete][meta exists check failed, skip]{}", baseDir, th);
+                    return GcOrphanStoreResult.skip(replId.id(), "meta exists check failed: " + th.getMessage());
+                }
+                return deleteWithoutMeta(baseDir, replId);
+            }
             try {
                 long size = AsyncFileSystemHelper.await(() -> fs.size(heldMeta), "destroy stat meta " + metaPath);
                 byte[] data = size == 0 ? new byte[0]
@@ -107,27 +117,35 @@ public final class TfsStoreDeleter implements ReplicationStoreDeleter {
 
     /**
      * No meta file: the directory may be a store still being created (mkdir comes before the first meta
-     * write), so it is removed only when the directory and its direct children are all idle. Uses
-     * java.io directly: AsyncFileSystem has no path-level mtime, and its list() hides TMP_REP_ files.
+     * write), so it is removed only when its direct entries are idle. Empty directories fall back to
+     * their own mtime to protect the mkdir-to-first-file window.
      */
     private GcOrphanStoreResult deleteWithoutMeta(File baseDir, ReplId replId) {
-        if (!baseDir.exists()) {
-            return GcOrphanStoreResult.notFound(replId.id());
-        }
         return rmdir(baseDir) ? GcOrphanStoreResult.deleted(replId.id())
                 : GcOrphanStoreResult.fail(replId.id(), "rmdir store dir without meta failed");
     }
 
 
-    private long getCurrentDirLastModified(File dir){
-        long newest = dir.lastModified();
-        File[] children = dir.listFiles();
-        if (children != null) {
-            for (File child : children) {
-                newest = Math.max(newest, child.lastModified());
+    private GcOrphanStoreResult checkStoreExists(File baseDir, ReplId replId, String operation) {
+        String baseDirPath = baseDir.getAbsolutePath();
+        try {
+            if (!AsyncFileSystemHelper.await(() -> fs.exists(baseDirPath),
+                    operation + " store exists " + baseDirPath)) {
+                return GcOrphanStoreResult.notFound(replId.id());
             }
+            return null;
+        } catch (Throwable th) {
+            logger.warn("[delete][store exists check failed, skip]{}", baseDir, th);
+            return GcOrphanStoreResult.skip(replId.id(), "store exists check failed: " + th.getMessage());
         }
-        return newest;
+    }
+
+    private long getCurrentDirLastModified(File dir) throws IOException {
+        String path = dir.getAbsolutePath();
+        long newest = AsyncFileSystemHelper.getLatestDirectChildLastModified(fs, path);
+        return newest == 0
+                ? AsyncFileSystemHelper.await(() -> fs.lastModified(path), "lastModified empty store directory " + path)
+                : newest;
     }
 
     private boolean tooFresh(long mtime) {

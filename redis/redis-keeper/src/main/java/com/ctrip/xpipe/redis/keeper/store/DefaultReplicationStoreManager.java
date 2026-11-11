@@ -619,8 +619,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                     if (!isDir) {
                         continue;
                     }
-                    // TODO T-FS.14: replace with asyncFileSystem.lastModified(childPath) once path-level mtime lands.
-                    long lastModified = new File(childPath).lastModified();
+                    long lastModified = AsyncFileSystemHelper.getLatestDirectChildLastModified(asyncFileSystem, childPath);
+                    if (lastModified == 0) {
+                        lastModified = AsyncFileSystemHelper.await(() -> asyncFileSystem.lastModified(childPath),
+                                "lastModified empty replication store " + childPath);
+                    }
                     if (System.currentTimeMillis() - lastModified > keeperConfig.getReplicationStoreMinTimeMilliToGcAfterCreate()) {
                         logger.info("[GC] directory {}", childPath);
                         AsyncFileSystemHelper.await(() -> asyncFileSystem.rmdir(childPath, true),

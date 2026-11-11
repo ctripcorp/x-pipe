@@ -608,4 +608,40 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
         Assert.assertEquals(2, writes.get());
         Assert.assertEquals(0, data.refCnt());
     }
+
+    @Test
+    public void getLatestDirectChildLastModifiedUsesNewestDirectChildOnly() throws Exception {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        String directory = "/store";
+        String older = new java.io.File(directory, "cmd_0").getAbsolutePath();
+        String newest = new java.io.File(directory, "meta.v2.json").getAbsolutePath();
+        String nestedDirectory = new java.io.File(directory, "nested").getAbsolutePath();
+
+        when(fs.list(directory)).thenReturn(CompletableFuture.completedFuture(
+                java.util.Arrays.asList("cmd_0", "meta.v2.json", "nested")));
+        when(fs.lastModified(older)).thenReturn(CompletableFuture.completedFuture(100L));
+        when(fs.lastModified(newest)).thenReturn(CompletableFuture.completedFuture(300L));
+        when(fs.lastModified(nestedDirectory)).thenReturn(CompletableFuture.completedFuture(200L));
+
+        long latest = AsyncFileSystemHelper.getLatestDirectChildLastModified(fs, directory);
+
+        Assert.assertEquals(300L, latest);
+        verify(fs).list(directory);
+        verify(fs).lastModified(older);
+        verify(fs).lastModified(newest);
+        verify(fs).lastModified(nestedDirectory);
+        verify(fs, times(0)).lastModified(directory);
+    }
+
+    @Test
+    public void getLatestDirectChildLastModifiedReturnsZeroForEmptyDirectory() throws Exception {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        String directory = "/empty-store";
+        when(fs.list(directory)).thenReturn(CompletableFuture.completedFuture(java.util.Collections.emptyList()));
+
+        long latest = AsyncFileSystemHelper.getLatestDirectChildLastModified(fs, directory);
+
+        Assert.assertEquals(0L, latest);
+        verify(fs).list(directory);
+    }
 }

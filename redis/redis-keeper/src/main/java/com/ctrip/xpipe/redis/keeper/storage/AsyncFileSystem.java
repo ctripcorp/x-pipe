@@ -44,6 +44,8 @@ public interface AsyncFileSystem {
     }
     CompletableFuture<Boolean> isFile(AsyncFile file);
     CompletableFuture<Boolean> isDirectory(String path);
+    /** Returns the backing filesystem mtime for a file or directory path. */
+    CompletableFuture<Long> lastModified(String path);
     CompletableFuture<Long> lastModified(AsyncFile file);
     // Only available in read mode.
     default CompletableFuture<Void> position(AsyncFile file, long position) {

@@ -1483,6 +1483,14 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     @Override
+    public CompletableFuture<Long> lastModified(String path) {
+        if (backingFsMode == BackingFsMode.NO_FS) {
+            throw new CannotDetermineInNoFsException("lastModified(" + path + ")");
+        }
+        return delegate.lastModified(path);
+    }
+
+    @Override
     public CompletableFuture<Long> lastModified(AsyncFile file) {
         return lastModifiedOf(backingFsMode == BackingFsMode.NO_FS, file, () -> delegate.lastModified(file));
     }
