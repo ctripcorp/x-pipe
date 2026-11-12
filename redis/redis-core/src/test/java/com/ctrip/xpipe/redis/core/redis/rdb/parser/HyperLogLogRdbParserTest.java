@@ -17,9 +17,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbDataBytes.hllKeys;
-import static com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbDataBytes.hllPayloads;
-import static com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbDataBytes.hllRdbBytes;
+import static com.ctrip.xpipe.redis.core.redis.rdb.parser.HyperLogLogRdbDataBytes.hllKeys;
+import static com.ctrip.xpipe.redis.core.redis.rdb.parser.HyperLogLogRdbDataBytes.hllPayloads;
+import static com.ctrip.xpipe.redis.core.redis.rdb.parser.HyperLogLogRdbDataBytes.hllRdbBytes;
 
 public class HyperLogLogRdbParserTest extends AbstractTest implements RdbParseListener {
 

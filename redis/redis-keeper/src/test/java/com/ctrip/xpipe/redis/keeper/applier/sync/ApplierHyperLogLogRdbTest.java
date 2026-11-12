@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbDataBytes.hllKeys;
-import static com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbDataBytes.hllPayloads;
+import static com.ctrip.xpipe.redis.core.redis.rdb.parser.HyperLogLogRdbDataBytes.hllKeys;
+import static com.ctrip.xpipe.redis.core.redis.rdb.parser.HyperLogLogRdbDataBytes.hllPayloads;
 
 public class ApplierHyperLogLogRdbTest {
 
