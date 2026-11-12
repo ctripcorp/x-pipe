@@ -31,7 +31,7 @@ public class IoRuleEvaluatorTest {
                 .evaluate(new RuleContext(hanging, disabled, 0L));
 
         Assert.assertFalse(result.isContainerAnomalous());
-        Assert.assertTrue(result.triggered().isEmpty());
+        Assert.assertTrue(result.triggerDetails().isEmpty());
     }
 
     @Test
@@ -82,7 +82,9 @@ public class IoRuleEvaluatorTest {
         RuleResult result = IoRuleEvaluator.defaults()
                 .evaluate(new RuleContext(snapshot, RuleConfig.builder().build(), 0L));
 
-        Assert.assertTrue(result.triggered().contains(HangRule.NAME));
-        Assert.assertTrue(result.triggered().contains(FailRatioRule.NAME));
+        Assert.assertTrue(result.triggerDetails().stream()
+                .anyMatch(trigger -> HangRule.NAME.equals(trigger.rule())));
+        Assert.assertTrue(result.triggerDetails().stream()
+                .anyMatch(trigger -> FailRatioRule.NAME.equals(trigger.rule())));
     }
 }

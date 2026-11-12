@@ -126,6 +126,9 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
 
         RuleResult result = evaluator.evaluate(
                 new RuleContext(telemetry.snapshot(nowNanos), settings.rules(), nowNanos));
+        if (!result.triggerDetails().isEmpty()) {
+            logger.info("[check] triggerDetails={}", result.triggerDetails());
+        }
 
         Set<String> seen = new HashSet<>();
         for (RedisKeeperServer keeper : keepers.get()) {
@@ -138,7 +141,7 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
                     config.ioHealthRecoveredPendingAutoRecover());
             if (next != current) {
                 states.put(tenant, next);
-                logger.info("[check][{}]{} -> {}, triggered={}", tenant, current, next, result.triggered());
+                logger.info("[check][{}]{} -> {}", tenant, current, next);
             }
             // publish whenever zk lags the decided state, so a throttled/failed reset self-heals here
             if (shouldPublish(next, current, publishedStates.get(tenant))) {

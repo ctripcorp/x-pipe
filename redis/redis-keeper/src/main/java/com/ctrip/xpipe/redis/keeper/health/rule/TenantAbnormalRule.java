@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.health.rule;
 
 import com.ctrip.xpipe.redis.keeper.storage.health.IoHealthSnapshot;
+import com.ctrip.xpipe.redis.keeper.storage.health.IoSource;
 
 import java.util.Map;
 
@@ -22,7 +23,10 @@ public final class TenantAbnormalRule implements IoHealthRule {
             long threshold = Math.max(ctx.config().tenantAbnormalFloor(),
                     known * ctx.config().tenantAbnormalPercent() / 100L);
             if (abnormal > threshold) {
-                result.markTenant(this, e.getKey());
+                result.markTenant(this, e.getKey(), RuleTrigger.tenant(
+                        this, IoSource.BUSINESS, e.getKey(), null,
+                        RuleTrigger.Signal.TENANT_ABNORMAL,
+                        abnormal, threshold, known));
             }
         }
     }
