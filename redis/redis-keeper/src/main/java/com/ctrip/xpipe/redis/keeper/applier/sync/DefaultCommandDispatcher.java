@@ -233,9 +233,23 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         return redisOp.getOpType().name();
     }
 
+    private int resolveCommandDbNumber(RedisOp redisOp) {
+        if (Objects.isNull(redisOp.getOpGtid())) {
+            return dbNumber;
+        }
+
+        String gtidDbId = redisOp.getDbId();
+        try {
+            return Integer.parseInt(gtidDbId);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("invalid GTID dbid: " + gtidDbId, exception);
+        }
+    }
+
     private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate, String gtid) {
         logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
 
+        int commandDbNumber = resolveCommandDbNumber(redisOp);
         redisOp.clearGtid();
         if (RedisOpType.PING.equals(redisOp.getOpType())) {
             offsetRecorder.addAndGet(commandOffsetToAccumulate);
@@ -262,10 +276,10 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         } else if (RedisOpType.EXEC.equals(redisOp.getOpType())) {
             addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp), commandOffsetToAccumulate, gtid);
         } else if (redisOp instanceof RedisMultiKeyOp) {
-            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, dbNumber, workerThreads),
+            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, commandDbNumber, workerThreads),
                     commandOffsetToAccumulate, gtid);
         } else {
-            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp, dbNumber),
+            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp, commandDbNumber),
                     commandOffsetToAccumulate, gtid);
         }
     }

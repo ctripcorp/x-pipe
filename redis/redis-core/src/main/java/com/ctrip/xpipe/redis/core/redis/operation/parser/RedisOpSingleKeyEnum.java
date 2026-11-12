@@ -49,6 +49,9 @@ public enum RedisOpSingleKeyEnum {
     SPOP(RedisOpType.SPOP, 1, null),
 //    SREM(RedisOpType.SREM, 1, 2),
 
+    // HyperLogLog
+    PFADD(RedisOpType.PFADD, 1, 2),
+
     // ZSet
 //    ZADD(RedisOpType.ZADD, 1, null),
 //    ZINCRBY(RedisOpType.ZINCRBY, 1, null),

@@ -106,6 +106,24 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
     }
 
     @Test
+    public void testHyperLogLogParse() {
+        RedisOp pfadd = parser.parse(Arrays.asList("PFADD", "hll", "member-1", "member-2").toArray());
+        Assert.assertEquals(RedisOpType.PFADD, pfadd.getOpType());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("PFADD", "hll", "member-1", "member-2")), pfadd.buildRawOpArgs());
+        Assert.assertArrayEquals("hll".getBytes(), ((RedisSingleKeyOp) pfadd).getKey().get());
+
+        RedisOp pfcount = parser.parse(Arrays.asList("PFCOUNT", "hll-1", "hll-2").toArray());
+        Assert.assertEquals(RedisOpType.PFCOUNT, pfcount.getOpType());
+        Assert.assertEquals(Arrays.asList(new RedisKey("hll-1"), new RedisKey("hll-2")), ((RedisMultiKeyOp) pfcount).getKeys());
+
+        RedisOp pfmerge = parser.parse(Arrays.asList("GTID", "a1:10", "15", "PFMERGE", "destination", "source-1", "source-2").toArray());
+        Assert.assertEquals(RedisOpType.PFMERGE, pfmerge.getOpType());
+        Assert.assertEquals("a1:10", pfmerge.getOpGtid());
+        Assert.assertEquals("15", pfmerge.getDbId());
+        Assert.assertEquals(Arrays.asList(new RedisKey("destination"), new RedisKey("source-1"), new RedisKey("source-2")), ((RedisMultiKeyOp) pfmerge).getKeys());
+    }
+
+    @Test
     public void testMSetParse() {
         RedisOp redisOp = parser.parse(Arrays.asList("MSET", "k1", "v1", "k2", "v2").toArray());
         Assert.assertEquals(RedisOpType.MSET, redisOp.getOpType());
