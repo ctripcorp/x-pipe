@@ -101,7 +101,7 @@ public final class IoTelemetry {
             }
         }
         probeFiles.computeIfAbsent(path, p -> new FileState(null, p))
-                .record(now, success);
+                .record(now, !success);
     }
 
     public long recordedCount() {

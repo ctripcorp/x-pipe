@@ -19,7 +19,8 @@ public class FailRatioRuleTest {
     public void testRatioAbovePercentFires() {
         RuleResult result = evaluate(IoHealthSnapshot.builder().total(1000).failed(11).build());
         Assert.assertTrue(result.isContainerAnomalous());
-        Assert.assertTrue(result.triggered().contains(FailRatioRule.NAME));
+        Assert.assertTrue(result.triggerDetails().stream()
+                .anyMatch(trigger -> FailRatioRule.NAME.equals(trigger.rule())));
     }
 
     @Test

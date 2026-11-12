@@ -17,7 +17,8 @@ public class HangRuleTest {
         RuleResult result = evaluate(IoHealthSnapshot.builder()
                 .maxInFlightNanos(TimeUnit.MILLISECONDS.toNanos(HANG) + 1).build());
         Assert.assertTrue(result.isContainerAnomalous());
-        Assert.assertTrue(result.triggered().contains(HangRule.NAME));
+        Assert.assertTrue(result.triggerDetails().stream()
+                .anyMatch(trigger -> HangRule.NAME.equals(trigger.rule())));
     }
 
     @Test
@@ -32,7 +33,7 @@ public class HangRuleTest {
         RuleResult result = evaluate(IoHealthSnapshot.builder()
                 .maxInFlightNanos(TimeUnit.MILLISECONDS.toNanos(HANG)).build());
         Assert.assertFalse(result.isContainerAnomalous());
-        Assert.assertTrue(result.triggered().isEmpty());
+        Assert.assertTrue(result.triggerDetails().isEmpty());
     }
 
     private RuleResult evaluate(IoHealthSnapshot snapshot) {

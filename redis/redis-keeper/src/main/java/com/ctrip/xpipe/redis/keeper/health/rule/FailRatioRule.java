@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.health.rule;
 
 import com.ctrip.xpipe.redis.keeper.storage.health.IoHealthSnapshot;
+import com.ctrip.xpipe.redis.keeper.storage.health.IoSource;
 
 public final class FailRatioRule implements IoHealthRule {
 
@@ -18,7 +19,9 @@ public final class FailRatioRule implements IoHealthRule {
             return;
         }
         if (business.failed() * 100L > business.total() * ctx.config().failRatioPercent()) {
-            result.markContainer(this);
+            result.markContainer(this, RuleTrigger.container(
+                    this, IoSource.BUSINESS, null, RuleTrigger.Signal.FAILURE_RATIO,
+                    business.failed(), ctx.config().failRatioPercent(), business.total()));
         }
     }
 }

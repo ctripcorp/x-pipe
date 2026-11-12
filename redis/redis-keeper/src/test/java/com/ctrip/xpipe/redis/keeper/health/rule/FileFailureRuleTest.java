@@ -13,7 +13,8 @@ public class FileFailureRuleTest {
         RuleResult result = evaluate(IoHealthSnapshot.builder()
                 .file("repl_1", "/data/bad", 3, 3, 0L).build());
         Assert.assertTrue(result.isAnomalous("repl_1"));
-        Assert.assertTrue(result.triggered().contains(FileFailureRule.NAME));
+        Assert.assertTrue(result.triggerDetails().stream()
+                .anyMatch(trigger -> FileFailureRule.NAME.equals(trigger.rule())));
     }
 
     @Test
@@ -28,7 +29,7 @@ public class FileFailureRuleTest {
         RuleResult result = evaluate(IoHealthSnapshot.builder()
                 .file("repl_1", "/data/bad", 2, 4, 0L).build());
         Assert.assertFalse(result.isAnomalous("repl_1"));
-        Assert.assertTrue(result.triggered().isEmpty());
+        Assert.assertTrue(result.triggerDetails().isEmpty());
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.health.rule;
 
 import com.ctrip.xpipe.redis.keeper.storage.health.IoHealthSnapshot;
+import com.ctrip.xpipe.redis.keeper.storage.health.IoSource;
 
 public final class HangRule implements IoHealthRule {
 
@@ -13,15 +14,22 @@ public final class HangRule implements IoHealthRule {
 
     @Override
     public void evaluate(RuleContext ctx, RuleResult result) {
-        IoHealthSnapshot snapshot = ctx.snapshot();
         long hangNanos = ctx.config().hangNanos();
-        if (snapshot.business().maxInFlightNanos() > hangNanos
-                || snapshot.business().maxExecNanos() > hangNanos) {
-            result.markContainer(this);
+        markSource(result, IoSource.BUSINESS, ctx.snapshot().business(), hangNanos);
+        markSource(result, IoSource.PROBE, ctx.snapshot().probe().tasks(), hangNanos);
+    }
+
+    private void markSource(RuleResult result, IoSource source,
+            IoHealthSnapshot.SourceSnapshot snapshot, long hangNanos) {
+        if (snapshot.maxInFlightNanos() > hangNanos) {
+            result.markContainer(this, RuleTrigger.container(
+                    this, source, null, RuleTrigger.Signal.IN_FLIGHT_NANOS,
+                    snapshot.maxInFlightNanos(), hangNanos, snapshot.inFlight()));
         }
-        if (snapshot.probe().tasks().maxInFlightNanos() > hangNanos
-                || snapshot.probe().tasks().maxExecNanos() > hangNanos) {
-            result.markContainer(this);
+        if (snapshot.maxExecNanos() > hangNanos) {
+            result.markContainer(this, RuleTrigger.container(
+                    this, source, null, RuleTrigger.Signal.MAX_EXEC_NANOS,
+                    snapshot.maxExecNanos(), hangNanos, snapshot.total()));
         }
     }
 }

@@ -19,7 +19,8 @@ public class SlowRatioRuleTest {
         // 50/1000 == 5%, the rule is greater-or-equal
         RuleResult result = evaluate(IoHealthSnapshot.builder().total(1000).slow(50).build());
         Assert.assertTrue(result.isContainerAnomalous());
-        Assert.assertTrue(result.triggered().contains(SlowRatioRule.NAME));
+        Assert.assertTrue(result.triggerDetails().stream()
+                .anyMatch(trigger -> SlowRatioRule.NAME.equals(trigger.rule())));
     }
 
     @Test
