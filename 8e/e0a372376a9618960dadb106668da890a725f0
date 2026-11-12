@@ -1,0 +1,35 @@
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/config/DefaultMetaServerConfigTfsTest.java
+  s_6f25e630e6eebf::t_d0d782754cadc1 14
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/config/DefaultMetaServerConfig.java
+  s_6f25e630e6eebf::t_696f54ab9db843 87
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/HttpTfsGateway.java
+  s_6f25e630e6eebf::t_0346bd13721021 27,29,33,39-46
+  s_6f25e630e6eebf::t_37d25e1fa97023 152-155
+  s_6f25e630e6eebf::t_e6d7528338d4ad 3-4
+  s_6f25e630e6eebf::t_d279e40ea86dbe 23-24
+  s_6f25e630e6eebf::t_904e9d00339e61 113,115-118
+  s_6f25e630e6eebf::t_91347907146dff 136-151,156-170
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/HttpTfsGatewayTest.java
+  s_6f25e630e6eebf::t_0a6f2e6d5fcd8e 129
+  s_6f25e630e6eebf::t_33be40c2c946d3 51,60-61
+  s_6f25e630e6eebf::t_78c5d1c72db51c 3
+  s_6f25e630e6eebf::t_a5b3fd090a2e05 154-160,162,164-165
+  s_6f25e630e6eebf::t_1b6ae3ed658256 73-81
+  s_6f25e630e6eebf::t_accf955f5b019b 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "8ee0a372376a9618960dadb106668da890a725f0",
+  "prompts": {},
+  "sessions": {
+    "s_6f25e630e6eebf": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_bfd4d84d-5f16-400b-8fd6-2a3734b8f2b7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
