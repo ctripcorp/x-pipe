@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author lishanglin
@@ -68,6 +69,7 @@ public class BeaconServiceTest extends AbstractServiceTest {
                 "    \"msg\": \"success\",\n" +
                 "    \"data\": [\"cluster1\", \"cluster2\"]\n" +
                 "}")
+                .setBodyDelay(50, TimeUnit.MILLISECONDS)
                 .setHeader("Content-Type", "application/json"));
 
         Set<String> clusters = beaconService.fetchAllClusters(system);
@@ -76,7 +78,8 @@ public class BeaconServiceTest extends AbstractServiceTest {
         RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals("/api/v1/monitor/xpipe/clusters", request.getPath());
         Assert.assertEquals("GET", request.getMethod());
-        assertBeaconMetric("fetchAllClusters", "GET", true, system, "-");
+        MetricData metricData = assertBeaconMetric("fetchAllClusters", "GET", true, system, "-");
+        Assert.assertTrue(metricData.getValue() >= 50);
     }
 
     @Test
@@ -255,18 +258,19 @@ public class BeaconServiceTest extends AbstractServiceTest {
         beaconService.getBeaconClusterExtra(system, cluster);
     }
 
-    private void assertBeaconMetric(String operation, String method, boolean success, String metricSystem, String metricCluster) {
+    private MetricData assertBeaconMetric(String operation, String method, boolean success, String metricSystem, String metricCluster) {
         MetricData metricData = metricProxy.poll();
 
         Assert.assertNotNull(metricData);
         Assert.assertEquals("call.beacon", metricData.getMetricType());
-        Assert.assertEquals(1D, metricData.getValue(), 0D);
+        Assert.assertTrue(metricData.getValue() >= 0);
         Assert.assertEquals(metricCluster, metricData.getClusterName());
         Assert.assertEquals(operation, metricData.getTags().get("operation"));
         Assert.assertEquals(method, metricData.getTags().get("method"));
         Assert.assertEquals(String.valueOf(success), metricData.getTags().get("success"));
         Assert.assertEquals(metricSystem, metricData.getTags().get("system"));
         Assert.assertNull(metricProxy.poll());
+        return metricData;
     }
 
     private void assertBeaconServiceException(Runnable action) {
