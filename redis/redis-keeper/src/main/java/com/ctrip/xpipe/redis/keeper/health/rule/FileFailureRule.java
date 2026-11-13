@@ -57,14 +57,14 @@ public final class FileFailureRule implements IoHealthRule {
         boolean triggered = false;
         if (file.consecutiveFails() >= ctx.config().fileConsecutiveFails()) {
             result.markContainer(this, RuleTrigger.container(
-                    this, IoSource.PROBE, file.path(),
+                    this, IoSource.PROBE, null, file.path(),
                     RuleTrigger.Signal.FILE_CONSECUTIVE_FAILURES,
                     file.consecutiveFails(), ctx.config().fileConsecutiveFails(), 0));
             triggered = true;
         }
         if (file.fails10() >= ctx.config().fileFailsInWindow()) {
             result.markContainer(this, RuleTrigger.container(
-                    this, IoSource.PROBE, file.path(),
+                    this, IoSource.PROBE, null, file.path(),
                     RuleTrigger.Signal.FILE_FAILURES_IN_WINDOW,
                     file.fails10(), ctx.config().fileFailsInWindow(), 0));
             triggered = true;

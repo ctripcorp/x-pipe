@@ -24,7 +24,7 @@ public final class TenantAbnormalRule implements IoHealthRule {
                     known * ctx.config().tenantAbnormalPercent() / 100L);
             if (abnormal > threshold) {
                 result.markTenant(this, e.getKey(), RuleTrigger.tenant(
-                        this, IoSource.BUSINESS, e.getKey(), null,
+                        this, IoSource.BUSINESS, e.getKey(), stat.path(),
                         RuleTrigger.Signal.TENANT_ABNORMAL,
                         abnormal, threshold, known));
             }

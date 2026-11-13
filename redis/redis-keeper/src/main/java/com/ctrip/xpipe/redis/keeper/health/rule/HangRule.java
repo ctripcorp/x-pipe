@@ -23,12 +23,14 @@ public final class HangRule implements IoHealthRule {
             IoHealthSnapshot.SourceSnapshot snapshot, long hangNanos) {
         if (snapshot.maxInFlightNanos() > hangNanos) {
             result.markContainer(this, RuleTrigger.container(
-                    this, source, null, RuleTrigger.Signal.IN_FLIGHT_NANOS,
+                    this, source, snapshot.maxInFlightTenant(), snapshot.maxInFlightPath(),
+                    RuleTrigger.Signal.IN_FLIGHT_NANOS,
                     snapshot.maxInFlightNanos(), hangNanos, snapshot.inFlight()));
         }
         if (snapshot.maxExecNanos() > hangNanos) {
             result.markContainer(this, RuleTrigger.container(
-                    this, source, null, RuleTrigger.Signal.MAX_EXEC_NANOS,
+                    this, source, snapshot.maxExecTenant(), snapshot.maxExecPath(),
+                    RuleTrigger.Signal.MAX_EXEC_NANOS,
                     snapshot.maxExecNanos(), hangNanos, snapshot.total()));
         }
     }

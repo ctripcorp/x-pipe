@@ -144,6 +144,14 @@ public final class IoHealthSnapshot {
         private final long maxInFlightNanos;
         private final long maxEndToEndNanos;
         private final long maxExecNanos;
+        private String failureTenant;
+        private String failurePath;
+        private String slowTenant;
+        private String slowPath;
+        private String maxExecTenant;
+        private String maxExecPath;
+        private String maxInFlightTenant;
+        private String maxInFlightPath;
 
         SourceSnapshot(long sampleNanos, long total, long failed, long slow, long inFlight,
                 long slowInFlight, long maxInFlightNanos, long maxEndToEndNanos, long maxExecNanos) {
@@ -167,25 +175,54 @@ public final class IoHealthSnapshot {
         public long maxInFlightNanos() { return maxInFlightNanos; }
         public long maxEndToEndNanos() { return maxEndToEndNanos; }
         public long maxExecNanos() { return maxExecNanos; }
+        public String failureTenant() { return failureTenant; }
+        public String failurePath() { return failurePath; }
+        public String slowTenant() { return slowTenant; }
+        public String slowPath() { return slowPath; }
+        public String maxExecTenant() { return maxExecTenant; }
+        public String maxExecPath() { return maxExecPath; }
+        public String maxInFlightTenant() { return maxInFlightTenant; }
+        public String maxInFlightPath() { return maxInFlightPath; }
+
+        void setSources(String failureTenant, String failurePath, String slowTenant,
+                String slowPath, String maxExecTenant, String maxExecPath,
+                String maxInFlightTenant, String maxInFlightPath) {
+            this.failureTenant = failureTenant;
+            this.failurePath = failurePath;
+            this.slowTenant = slowTenant;
+            this.slowPath = slowPath;
+            this.maxExecTenant = maxExecTenant;
+            this.maxExecPath = maxExecPath;
+            this.maxInFlightTenant = maxInFlightTenant;
+            this.maxInFlightPath = maxInFlightPath;
+        }
     }
 
     public static final class ProbeSnapshot {
         private final SourceSnapshot tasks;
         private final long rounds;
         private final long slowRounds;
+        private final String slowPath;
         private final Map<String, FileStat> files;
 
         ProbeSnapshot(SourceSnapshot tasks, long rounds, long slowRounds,
                 Map<String, FileStat> files) {
+            this(tasks, rounds, slowRounds, null, files);
+        }
+
+        ProbeSnapshot(SourceSnapshot tasks, long rounds, long slowRounds,
+                String slowPath, Map<String, FileStat> files) {
             this.tasks = tasks;
             this.rounds = rounds;
             this.slowRounds = slowRounds;
+            this.slowPath = slowPath;
             this.files = Collections.unmodifiableMap(new HashMap<>(files));
         }
 
         public SourceSnapshot tasks() { return tasks; }
         public long rounds() { return rounds; }
         public long slowRounds() { return slowRounds; }
+        public String slowPath() { return slowPath; }
         public Map<String, FileStat> files() { return files; }
     }
 
@@ -194,6 +231,7 @@ public final class IoHealthSnapshot {
         long abnormal;
         long inFlight;
         long slowInFlight;
+        String path;
         final Map<String, FileStat> files = new HashMap<>();
 
         static TenantStat of(long total, long abnormal, long inFlight, long slowInFlight) {
@@ -210,6 +248,7 @@ public final class IoHealthSnapshot {
         public long abnormal() { return abnormal; }
         public long inFlight() { return inFlight; }
         public long slowInFlight() { return slowInFlight; }
+        public String path() { return path; }
     }
 
     public static final class FileStat {

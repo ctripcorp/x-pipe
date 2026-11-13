@@ -45,9 +45,9 @@ public final class RuleTrigger {
         this.sampleCount = sampleCount;
     }
 
-    public static RuleTrigger container(IoHealthRule rule, IoSource source, String path,
-            Signal signal, long actualValue, long thresholdValue, long sampleCount) {
-        return new RuleTrigger(rule.name(), Scope.CONTAINER, source, null, path,
+    public static RuleTrigger container(IoHealthRule rule, IoSource source, String tenant,
+            String path, Signal signal, long actualValue, long thresholdValue, long sampleCount) {
+        return new RuleTrigger(rule.name(), Scope.CONTAINER, source, tenant, path,
                 signal, actualValue, thresholdValue, sampleCount);
     }
 
