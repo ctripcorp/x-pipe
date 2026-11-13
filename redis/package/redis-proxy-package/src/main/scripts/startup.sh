@@ -146,8 +146,9 @@ echo "current env:"$ENV
 export JAVA_OPTS="-server $JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:MaxTenuringThreshold=1 --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true -Dio.netty.maxDirectMemory=-1 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dlog4j2.asyncLoggerRingBufferSize=32768 -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:safepoint,classhisto*=trace,age*,gc*=info:file=$LOG_DIR/gc-%t.log:time,tid,tags:filecount=5,filesize=50m -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/ -Djava.rmi.server.hostname=${IP} -XX:+FlightRecorder -Djava.security.egd=file:/dev/./urandom"
 
 # 容器镜像由 Captain 的「jemalloc 服务」装好库，但它只给 tomcat 配 LD_PRELOAD，
-# 且 supervisord 的 app.ini 会把 LD_PRELOAD 清空，所以在这里设置。VM 上没有这个文件，仍用 glibc malloc。
-# 容器里的 jemalloc 5.2.1 按宿主机全部核数定 arena 数(48 核即 192 个)，不看 cpuset，所以按 nproc 显式指定。
+# 且 supervisord 的 app.ini 会把 LD_PRELOAD 清空，所以在这里设置。
+# 容器可超分时 nproc 读取的是 cpuset 可见核数，可能大于申请 CPU 数；
+# 优先使用平台下发的 CDOS_CPUS，再回退 LIBSYSCONFCPUS 和 nproc。
 # 优先使用 VM 路径，不存在时回退到容器内的 jemalloc 路径。
 JEMALLOC_LIB=/usr/local/lib/libjemalloc.so
 if [ ! -f "$JEMALLOC_LIB" ]; then
@@ -155,8 +156,13 @@ if [ ! -f "$JEMALLOC_LIB" ]; then
 fi
 if [ -f "$JEMALLOC_LIB" ]; then
     export LD_PRELOAD=$JEMALLOC_LIB
-    CPU_NUM=$(nproc 2>/dev/null) && export MALLOC_CONF=narenas:$((CPU_NUM * 4))
-    echo "LD_PRELOAD: "$LD_PRELOAD", MALLOC_CONF: "$MALLOC_CONF
+    CPU_NUM=${CDOS_CPUS:-${LIBSYSCONFCPUS:-$(nproc 2>/dev/null)}}
+    if [[ "$CPU_NUM" =~ ^[1-9][0-9]*$ ]]; then
+        export MALLOC_CONF=narenas:$((CPU_NUM * 4))
+        echo "LD_PRELOAD: $LD_PRELOAD, CPU_NUM: $CPU_NUM, MALLOC_CONF: $MALLOC_CONF"
+    else
+        echo "WARN: invalid jemalloc CPU_NUM: $CPU_NUM, skip MALLOC_CONF"
+    fi
 fi
 
 PATH_TO_JAR=$SERVICE_NAME".jar"

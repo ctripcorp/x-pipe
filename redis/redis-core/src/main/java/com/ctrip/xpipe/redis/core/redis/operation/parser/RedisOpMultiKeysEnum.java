@@ -13,6 +13,8 @@ public enum RedisOpMultiKeysEnum {
     MSETNX(RedisOpType.MSETNX, 1, 2),
     DEL(RedisOpType.DEL, 1, 1),
     UNLINK(RedisOpType.UNLINK, 1, 1),
+    PFCOUNT(RedisOpType.PFCOUNT, 1, 1),
+    PFMERGE(RedisOpType.PFMERGE, 1, 1),
     LMPOP(RedisOpType.LMPOP, 2, 1),
     BLMPOP(RedisOpType.BLMPOP, 3, 1),
     ZMPOP(RedisOpType.ZMPOP, 2, 1),
