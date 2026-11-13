@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
+import java.nio.file.FileSystemException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -98,6 +99,7 @@ public final class IoTelemetry {
             bucket.probeRounds.increment();
             if (durationNanos > settings.slowNanos()) {
                 bucket.probeSlowRounds.increment();
+                bucket.probeSlowPath = path;
             }
         }
         probeFiles.computeIfAbsent(path, p -> new FileState(null, p))
@@ -126,6 +128,8 @@ public final class IoTelemetry {
         long businessInFlight = 0;
         long businessSlowInFlight = 0;
         long businessMaxInFlight = 0;
+        String businessMaxInFlightTenant = null;
+        String businessMaxInFlightPath = null;
         long probeInFlight = 0;
         long probeSlowInFlight = 0;
         long probeMaxInFlight = 0;
@@ -146,13 +150,18 @@ public final class IoTelemetry {
             if (slow) {
                 businessSlowInFlight++;
             }
-            businessMaxInFlight = Math.max(businessMaxInFlight, execNanos);
+            if (execNanos > businessMaxInFlight) {
+                businessMaxInFlight = execNanos;
+                businessMaxInFlightTenant = task.tenant;
+                businessMaxInFlightPath = task.path;
+            }
             if (task.tenant != null) {
                 IoHealthSnapshot.TenantStat stat =
                         tenants.computeIfAbsent(task.tenant, t -> IoHealthSnapshot.TenantStat.of(0, 0, 0, 0));
                 stat.inFlight++;
                 if (slow) {
                     stat.slowInFlight++;
+                    stat.path = task.path;
                 }
             }
         }
@@ -161,12 +170,23 @@ public final class IoTelemetry {
                 nowNanos, business.total, business.failed, business.slow,
                 businessInFlight, businessSlowInFlight, businessMaxInFlight,
                 business.maxEndToEndNanos, business.maxExecNanos);
+        businessSnapshot.setSources(
+                business.failureTenant, business.failurePath,
+                business.slowTenant, business.slowPath,
+                business.maxExecTenant, business.maxExecPath,
+                businessMaxInFlightTenant, businessMaxInFlightPath);
         IoHealthSnapshot.SourceSnapshot probeTaskSnapshot = new IoHealthSnapshot.SourceSnapshot(
                 nowNanos, probe.total, probe.failed, probe.slow,
                 probeInFlight, probeSlowInFlight, probeMaxInFlight,
                 probe.maxEndToEndNanos, probe.maxExecNanos);
+        probeTaskSnapshot.setSources(
+                probe.failureTenant, probe.failurePath,
+                probe.slowTenant, probe.slowPath,
+                probe.maxExecTenant, probe.maxExecPath,
+                null, null);
         IoHealthSnapshot.ProbeSnapshot probeSnapshot = new IoHealthSnapshot.ProbeSnapshot(
-                probeTaskSnapshot, probe.rounds, probe.slowRounds, probeFileStats);
+                probeTaskSnapshot, probe.rounds, probe.slowRounds, probe.probeSlowPath,
+                probeFileStats);
         return new IoHealthSnapshot(nowNanos, businessSnapshot, probeSnapshot, tenants);
     }
 
@@ -183,6 +203,7 @@ public final class IoTelemetry {
             if (agg.total > 0 || !files.isEmpty()) {
                 IoHealthSnapshot.TenantStat stat = IoHealthSnapshot.TenantStat.of(
                         agg.total, agg.abnormal, 0, 0);
+                stat.path = agg.failurePath != null ? agg.failurePath : agg.slowPath;
                 stat.files.putAll(files);
                 stats.put(entry.getKey(), stat);
             }
@@ -251,8 +272,25 @@ public final class IoTelemetry {
                 agg.abnormal += bucket.abnormal.sum();
                 agg.rounds += bucket.probeRounds.sum();
                 agg.slowRounds += bucket.probeSlowRounds.sum();
-                agg.maxExecNanos = Math.max(agg.maxExecNanos, bucket.maxExecNanos.get());
-                agg.maxEndToEndNanos = Math.max(agg.maxEndToEndNanos, bucket.maxEndToEndNanos.get());
+                long bucketMaxExec = bucket.maxExecNanos.get();
+                if (bucketMaxExec > agg.maxExecNanos) {
+                    agg.maxExecNanos = bucketMaxExec;
+                    agg.maxExecTenant = bucket.maxExecTenant;
+                    agg.maxExecPath = bucket.maxExecPath;
+                }
+                agg.maxEndToEndNanos = Math.max(agg.maxEndToEndNanos,
+                        bucket.maxEndToEndNanos.get());
+                if (agg.failurePath == null && bucket.failurePath != null) {
+                    agg.failureTenant = bucket.failureTenant;
+                    agg.failurePath = bucket.failurePath;
+                }
+                if (agg.slowPath == null && bucket.slowPath != null) {
+                    agg.slowTenant = bucket.slowTenant;
+                    agg.slowPath = bucket.slowPath;
+                }
+                if (agg.probeSlowPath == null && bucket.probeSlowPath != null) {
+                    agg.probeSlowPath = bucket.probeSlowPath;
+                }
             }
         }
         return agg;
@@ -278,6 +316,13 @@ public final class IoTelemetry {
         long slowRounds;
         long maxExecNanos;
         long maxEndToEndNanos;
+        String failureTenant;
+        String failurePath;
+        String slowTenant;
+        String slowPath;
+        String probeSlowPath;
+        String maxExecTenant;
+        String maxExecPath;
     }
 
     private void record(long endNanos, IoSource source, String tenant, String path,
@@ -286,18 +331,20 @@ public final class IoTelemetry {
         boolean slow = execNanos > current.slowNanos();
         AtomicReferenceArray<Bucket> windows =
                 source == IoSource.PROBE ? probeWindows : businessWindows;
-        add(bucketFor(windows, endNanos), execNanos, endToEndNanos, failed, slow);
-        if (source != IoSource.BUSINESS || tenant == null) {
+        add(bucketFor(windows, endNanos), execNanos, endToEndNanos,
+                failed, slow, tenant, path);
+        if (tenant == null) {
             return;
         }
         TenantHealth health = tenantHealth.computeIfAbsent(tenant, key -> new TenantHealth());
-        add(bucketFor(health.buckets, endNanos), execNanos, endToEndNanos, failed, slow);
+        add(bucketFor(health.buckets, endNanos), execNanos, endToEndNanos,
+                failed, slow, tenant, path);
         health.files.computeIfAbsent(path, key -> new FileState(tenant, path))
                 .record(endNanos, failed);
     }
 
     private static void add(Bucket bucket, long execNanos, long endToEndNanos,
-            boolean failed, boolean slow) {
+            boolean failed, boolean slow, String tenant, String path) {
         if (bucket == null) {
             return;
         }
@@ -311,7 +358,21 @@ public final class IoTelemetry {
         if (failed || slow) {
             bucket.abnormal.increment();
         }
-        accumulateMax(bucket.maxExecNanos, execNanos);
+
+        if (failed) {
+            bucket.failureTenant = tenant;
+            bucket.failurePath = path;
+        }
+        if (slow) {
+            bucket.slowTenant = tenant;
+            bucket.slowPath = path;
+        }
+        if (execNanos > bucket.maxExecNanos.get()) {
+            accumulateMax(bucket.maxExecNanos, execNanos);
+            bucket.maxExecTenant = tenant;
+            bucket.maxExecPath = path;
+        }
+
         accumulateMax(bucket.maxEndToEndNanos, endToEndNanos);
     }
 
@@ -346,7 +407,8 @@ public final class IoTelemetry {
             return true;
         }
         if (cause instanceof StorageIOException) {
-            return !(cause.getCause() instanceof ClosedChannelException);
+            Throwable th = cause.getCause();
+            return !(th instanceof ClosedChannelException || th instanceof FileSystemException);
         }
         return false;
     }
@@ -393,6 +455,13 @@ public final class IoTelemetry {
         final LongAdder probeSlowRounds = new LongAdder();
         final AtomicLong maxExecNanos = new AtomicLong();
         final AtomicLong maxEndToEndNanos = new AtomicLong();
+        volatile String failureTenant;
+        volatile String failurePath;
+        volatile String slowTenant;
+        volatile String slowPath;
+        volatile String probeSlowPath;
+        volatile String maxExecTenant;
+        volatile String maxExecPath;
 
         Bucket(long startNanos) {
             this.startNanos = startNanos;

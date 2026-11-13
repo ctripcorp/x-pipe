@@ -20,7 +20,8 @@ public final class FailRatioRule implements IoHealthRule {
         }
         if (business.failed() * 100L > business.total() * ctx.config().failRatioPercent()) {
             result.markContainer(this, RuleTrigger.container(
-                    this, IoSource.BUSINESS, null, RuleTrigger.Signal.FAILURE_RATIO,
+                    this, IoSource.BUSINESS, business.failureTenant(), business.failurePath(),
+                    RuleTrigger.Signal.FAILURE_RATIO,
                     business.failed(), ctx.config().failRatioPercent(), business.total()));
         }
     }

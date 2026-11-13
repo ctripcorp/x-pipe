@@ -20,7 +20,8 @@ public final class SlowRatioRule implements IoHealthRule {
             long known = business.total() + business.slowInFlight();
             if (slow * 100L >= known * ctx.config().slowRatioPercent()) {
                 result.markContainer(this, RuleTrigger.container(
-                        this, IoSource.BUSINESS, null, RuleTrigger.Signal.SLOW_RATIO,
+                        this, IoSource.BUSINESS, business.slowTenant(), business.slowPath(),
+                        RuleTrigger.Signal.SLOW_RATIO,
                         slow, ctx.config().slowRatioPercent(), known));
             }
         }
@@ -30,7 +31,8 @@ public final class SlowRatioRule implements IoHealthRule {
                 && probe.slowRounds() * 100L
                 >= probe.rounds() * ctx.config().probeSlowRatioPercent()) {
             result.markContainer(this, RuleTrigger.container(
-                    this, IoSource.PROBE, null, RuleTrigger.Signal.SLOW_RATIO,
+                    this, IoSource.PROBE, null, probe.slowPath(),
+                    RuleTrigger.Signal.SLOW_RATIO,
                     probe.slowRounds(), ctx.config().probeSlowRatioPercent(), probe.rounds()));
         }
     }
