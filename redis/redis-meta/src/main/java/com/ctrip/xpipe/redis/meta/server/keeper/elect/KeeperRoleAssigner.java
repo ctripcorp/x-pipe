@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.meta.HealthState;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -53,8 +54,19 @@ public final class KeeperRoleAssigner {
         return assignRoles(activeKeeper, keepers, dcMetaCache);
     }
 
+    /**
+     * A healthy TFS keeper holds the slot when there is one, so the shared store keeps being
+     * written while the BM is active; with none healthy the slot still goes by priority, ready for
+     * when TFS comes back.
+     */
     private static KeeperMeta selectTfsSlotKeeper(KeeperMeta activeKeeper, List<KeeperMeta> keepers,
                                                   DcMetaCache dcMetaCache) {
+        KeeperMeta healthy = selectTfsSlotKeeper(activeKeeper, keepers, dcMetaCache, true);
+        return healthy != null ? healthy : selectTfsSlotKeeper(activeKeeper, keepers, dcMetaCache, false);
+    }
+
+    private static KeeperMeta selectTfsSlotKeeper(KeeperMeta activeKeeper, List<KeeperMeta> keepers,
+                                                  DcMetaCache dcMetaCache, boolean healthyOnly) {
         KeeperMeta best = null;
         int bestPriority = -1;
         for (KeeperMeta keeperMeta : keepers) {
@@ -62,6 +74,9 @@ public final class KeeperRoleAssigner {
                 continue;
             }
             if (!isKeeperTfs(keeperMeta, dcMetaCache)) {
+                continue;
+            }
+            if (healthyOnly && !HealthState.isElectable(keeperMeta.getHealthState())) {
                 continue;
             }
             int priority = keeperPriority(keeperMeta);
