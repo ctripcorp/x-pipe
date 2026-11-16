@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.container;
 
+import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
@@ -17,8 +18,10 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -27,6 +30,12 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperContainerService.class);
     private static final ParameterizedTypeReference<List<KeeperInstanceMeta>> keeperInstanceMetaListType = new
             ParameterizedTypeReference<List<KeeperInstanceMeta>>() {
+            };
+    private static final ParameterizedTypeReference<List<String>> stringListType = new
+            ParameterizedTypeReference<List<String>>() {
+            };
+    private static final ParameterizedTypeReference<List<GcOrphanStoreResult>> gcOrphanStoreResultListType = new
+            ParameterizedTypeReference<List<GcOrphanStoreResult>>() {
             };
     private KeeperContainerMeta keeperContainerMeta;
     private RestOperations restTemplate;
@@ -140,6 +149,52 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
                     new HttpEntity<>(keeperTransMeta, createHeaders()), Void.class, 
                     ip, keeperContainerMeta.getPort(),
                     keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId());
+        } catch (HttpStatusCodeException ex) {
+            throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
+        }
+    }
+
+
+    @Override
+    public List<String> listStoreDirNames() {
+        try {
+            String ip = resolveAddress();
+            ResponseEntity<List<String>> result = restTemplate.exchange("http://{ip}:{port}/keepers/gc/dirs",
+                    HttpMethod.GET, new HttpEntity<>(createHeaders()), stringListType,
+                    ip, keeperContainerMeta.getPort());
+            return result.getBody();
+        } catch (HttpStatusCodeException ex) {
+            throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
+        }
+    }
+
+    @Override
+    public GcOrphanStoreResult gcOrphanStore(Long replId, String requestId) {
+        try {
+            String ip = resolveAddress();
+            String url = UriComponentsBuilder.fromUriString("http://{ip}:{port}/keepers/gc/{replId}")
+                    .queryParamIfPresent("requestId", Optional.ofNullable(requestId))
+                    .buildAndExpand(ip, keeperContainerMeta.getPort(), replId)
+                    .toUriString();
+            ResponseEntity<GcOrphanStoreResult> result = restTemplate.exchange(url,
+                    HttpMethod.PUT, new HttpEntity<>(createHeaders()), GcOrphanStoreResult.class);
+            return result.getBody();
+        } catch (HttpStatusCodeException ex) {
+            throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
+        }
+    }
+
+    @Override
+    public List<GcOrphanStoreResult> gcOrphanStores(List<Long> replIds, String requestId) {
+        try {
+            String ip = resolveAddress();
+            String url = UriComponentsBuilder.fromUriString("http://{ip}:{port}/keepers/gc")
+                    .queryParamIfPresent("requestId", Optional.ofNullable(requestId))
+                    .buildAndExpand(ip, keeperContainerMeta.getPort())
+                    .toUriString();
+            ResponseEntity<List<GcOrphanStoreResult>> result = restTemplate.exchange(url,
+                    HttpMethod.PUT, new HttpEntity<>(replIds, createHeaders()), gcOrphanStoreResultListType);
+            return result.getBody();
         } catch (HttpStatusCodeException ex) {
             throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
         }

@@ -79,6 +79,16 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static final String KEY_KEEPER_CONTAINER_ADDRESS_MIN_REMOVED_HOSTNAMES =
 			"keepercontainer.address.local.min.removed.hostnames";
 
+	public static final String KEY_ORPHAN_GC_ENABLED = "metaserver.orphan.gc.enabled";
+
+	public static final String KEY_ORPHAN_GC_DRY_RUN = "metaserver.orphan.gc.dryrun";
+
+	public static final String KEY_ORPHAN_GC_META_FRESH_MILLI = "metaserver.orphan.gc.meta.fresh.milli";
+
+	public static final String KEY_ORPHAN_GC_ROUND_INTERVAL_MILLI = "metaserver.orphan.gc.round.interval.milli";
+
+	public static final String KEY_ORPHAN_GC_GROUP_PARALLELISM = "metaserver.orphan.gc.group.parallelism";
+
 	public static final String DEFAULT_TFS_GATEWAY_HOST = "mock://tfs-gateway";
 
 	public static final long DEFAULT_TFS_GATEWAY_APP_ID = 0L;
@@ -271,6 +281,31 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public int getKeeperContainerAddressMinRemovedHostnames() {
 		return getIntProperty(KEY_KEEPER_CONTAINER_ADDRESS_MIN_REMOVED_HOSTNAMES, 5);
+	}
+
+	@Override
+	public boolean isOrphanGcEnabled() {
+		return getBooleanProperty(KEY_ORPHAN_GC_ENABLED, false);
+	}
+
+	@Override
+	public boolean isOrphanGcDryRun() {
+		return getBooleanProperty(KEY_ORPHAN_GC_DRY_RUN, true);
+	}
+
+	@Override
+	public long getOrphanGcMetaFreshMilli() {
+		return getLongProperty(KEY_ORPHAN_GC_META_FRESH_MILLI, 120_000L);
+	}
+
+	@Override
+	public long getOrphanGcRoundIntervalMilli() {
+		return getLongProperty(KEY_ORPHAN_GC_ROUND_INTERVAL_MILLI, 3_600_000L);
+	}
+
+	@Override
+	public int getOrphanGcGroupParallelism() {
+		return getIntProperty(KEY_ORPHAN_GC_GROUP_PARALLELISM, 4);
 	}
 
 	public void setDefaultServerPort(int defaultServerPort) {
