@@ -181,25 +181,13 @@ public class DefaultKeeperContainerServiceTest extends AbstractMetaServerTest {
         this.webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(expected))
                 .addHeader("Content-Type", "application/json"));
 
-        GcOrphanStoreResult result = this.service.gcOrphanStore(42L, "req-1");
+        GcOrphanStoreResult result = this.service.gcOrphanStore(42L);
 
         RecordedRequest request = this.webServer.takeRequest();
         Assert.assertEquals(HttpMethod.PUT.toString(), request.getMethod());
-        Assert.assertEquals("/keepers/gc/42?requestId=req-1", request.getPath());
+        Assert.assertEquals("/keepers/gc/42", request.getPath());
         Assert.assertEquals(GcOrphanStoreResult.Status.DELETED, result.status);
         Assert.assertEquals(expected.replId, result.replId);
-    }
-
-    @Test
-    public void testGcOrphanStoreWithoutRequestId() throws Exception {
-        GcOrphanStoreResult expected = GcOrphanStoreResult.notFound(7L);
-        this.webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(expected))
-                .addHeader("Content-Type", "application/json"));
-
-        this.service.gcOrphanStore(7L, null);
-
-        RecordedRequest request = this.webServer.takeRequest();
-        Assert.assertEquals("/keepers/gc/7", request.getPath());
     }
 
     @Test
@@ -208,11 +196,11 @@ public class DefaultKeeperContainerServiceTest extends AbstractMetaServerTest {
         this.webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(expected))
                 .addHeader("Content-Type", "application/json"));
 
-        List<GcOrphanStoreResult> result = this.service.gcOrphanStores(Arrays.asList(1L, 2L), "req-batch");
+        List<GcOrphanStoreResult> result = this.service.gcOrphanStores(Arrays.asList(1L, 2L));
 
         RecordedRequest request = this.webServer.takeRequest();
         Assert.assertEquals(HttpMethod.PUT.toString(), request.getMethod());
-        Assert.assertEquals("/keepers/gc?requestId=req-batch", request.getPath());
+        Assert.assertEquals("/keepers/gc", request.getPath());
         Assert.assertEquals("[1,2]", request.getBody().readUtf8());
         Assert.assertEquals(2, result.size());
         Assert.assertEquals(GcOrphanStoreResult.Status.DELETED, result.get(0).status);
