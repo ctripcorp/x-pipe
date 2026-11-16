@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.container;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
@@ -18,6 +19,8 @@ import org.junit.Test;
 import org.springframework.http.HttpMethod;
 
 import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -157,6 +160,63 @@ public class DefaultKeeperContainerServiceTest extends AbstractMetaServerTest {
 
     private KeeperTransMeta mockKeeperMeta() {
         return new KeeperTransMeta(1L, 1L, new KeeperMeta());
+    }
+
+    @Test
+    public void testListStoreDirNames() throws Exception {
+        this.webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(Arrays.asList("repl_1", "repl_2")))
+                .addHeader("Content-Type", "application/json"));
+
+        List<String> dirs = this.service.listStoreDirNames();
+
+        RecordedRequest request = this.webServer.takeRequest();
+        Assert.assertEquals(HttpMethod.GET.toString(), request.getMethod());
+        Assert.assertEquals("/keepers/gc/dirs", request.getPath());
+        Assert.assertEquals(Arrays.asList("repl_1", "repl_2"), dirs);
+    }
+
+    @Test
+    public void testGcOrphanStore() throws Exception {
+        GcOrphanStoreResult expected = GcOrphanStoreResult.deleted(42L);
+        this.webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(expected))
+                .addHeader("Content-Type", "application/json"));
+
+        GcOrphanStoreResult result = this.service.gcOrphanStore(42L, "req-1");
+
+        RecordedRequest request = this.webServer.takeRequest();
+        Assert.assertEquals(HttpMethod.PUT.toString(), request.getMethod());
+        Assert.assertEquals("/keepers/gc/42?requestId=req-1", request.getPath());
+        Assert.assertEquals(GcOrphanStoreResult.Status.DELETED, result.status);
+        Assert.assertEquals(expected.replId, result.replId);
+    }
+
+    @Test
+    public void testGcOrphanStoreWithoutRequestId() throws Exception {
+        GcOrphanStoreResult expected = GcOrphanStoreResult.notFound(7L);
+        this.webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(expected))
+                .addHeader("Content-Type", "application/json"));
+
+        this.service.gcOrphanStore(7L, null);
+
+        RecordedRequest request = this.webServer.takeRequest();
+        Assert.assertEquals("/keepers/gc/7", request.getPath());
+    }
+
+    @Test
+    public void testGcOrphanStores() throws Exception {
+        List<GcOrphanStoreResult> expected = Arrays.asList(GcOrphanStoreResult.deleted(1L), GcOrphanStoreResult.notFound(2L));
+        this.webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(expected))
+                .addHeader("Content-Type", "application/json"));
+
+        List<GcOrphanStoreResult> result = this.service.gcOrphanStores(Arrays.asList(1L, 2L), "req-batch");
+
+        RecordedRequest request = this.webServer.takeRequest();
+        Assert.assertEquals(HttpMethod.PUT.toString(), request.getMethod());
+        Assert.assertEquals("/keepers/gc?requestId=req-batch", request.getPath());
+        Assert.assertEquals("[1,2]", request.getBody().readUtf8());
+        Assert.assertEquals(2, result.size());
+        Assert.assertEquals(GcOrphanStoreResult.Status.DELETED, result.get(0).status);
+        Assert.assertEquals(GcOrphanStoreResult.Status.NOT_FOUND, result.get(1).status);
     }
 
 }

@@ -72,6 +72,9 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 	private AtomicLong metaModifyTime = new AtomicLong(System.currentTimeMillis());
 
+	/** See {@link DcMetaCache#getLastSuccessfulLoadMilli()}. */
+	private final AtomicLong lastSuccessfulLoadMilli = new AtomicLong(System.currentTimeMillis());
+
 	public DefaultDcMetaCache() {
 	}
 
@@ -138,6 +141,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 			if (consoleService != null) {
 				long metaLoadTime = System.currentTimeMillis();
 				DcMeta future = loadMetaFromConsole();
+				lastSuccessfulLoadMilli.set(System.currentTimeMillis());
 				DcMeta current = dcMetaManager.get().getDcMeta();
 
 				changeDcMeta(current, future, metaLoadTime);
@@ -319,6 +323,17 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@Override
 	public KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta) {
 		return dcMetaManager.get().getKeeperContainer(keeperMeta);
+	}
+
+	@Override
+	public List<KeeperContainerMeta> getKeeperContainers() {
+		List<KeeperContainerMeta> containers = dcMetaManager.get().getDcMeta().getKeeperContainers();
+		return containers == null ? Collections.emptyList() : containers;
+	}
+
+	@Override
+	public long getLastSuccessfulLoadMilli() {
+		return lastSuccessfulLoadMilli.get();
 	}
 
 	@Override
