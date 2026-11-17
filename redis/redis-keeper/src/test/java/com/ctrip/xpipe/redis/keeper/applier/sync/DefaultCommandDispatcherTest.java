@@ -1,19 +1,33 @@
 package com.ctrip.xpipe.redis.keeper.applier.sync;
 
+import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisSingleKeyOpGtidWrapper;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
+import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
+import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.google.common.util.concurrent.MoreExecutors;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 import redis.clients.util.SafeEncoder;
 
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
@@ -68,6 +82,43 @@ public class DefaultCommandDispatcherTest {
         Assert.assertEquals(15, gtidOp1.estimatedSize());
         Assert.assertEquals(40, gtidOp2.estimatedSize());
         Assert.assertEquals(23, gtidOp3.estimatedSize());
+    }
+
+    @Test
+    public void testGtidCommandUsesGtidDbId() {
+        ApplierSequenceController sequenceController = configureDispatcherForCommandDispatch();
+
+        dispatcher.doOnAppendCommand(resp("SELECT", "0"));
+        dispatcher.doOnAppendCommand(resp("GTID", "0123456789012345678901234567890123456789:1", "15", "SET", "key", "value"));
+
+        ArgumentCaptor<RedisOpCommand> commandCaptor = ArgumentCaptor.forClass(RedisOpCommand.class);
+        Mockito.verify(sequenceController).submit(commandCaptor.capture(), Mockito.anyLong(), Mockito.any(GtidSet.class));
+        DefaultDataCommand command = (DefaultDataCommand) commandCaptor.getValue();
+        Assert.assertEquals(15, command.getDbNumber());
+        Assert.assertArrayEquals(string2Bytes("SET key value"), command.redisOp().buildRawOpArgs());
+    }
+
+    private ApplierSequenceController configureDispatcherForCommandDispatch() {
+        ApplierSequenceController sequenceController = Mockito.mock(ApplierSequenceController.class);
+        RedisOpParserManager parserManager = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(parserManager);
+        dispatcher.sequenceController = sequenceController;
+        dispatcher.client = Mockito.mock(AsyncRedisClient.class);
+        dispatcher.parser = new GeneralRedisOpParser(parserManager);
+        dispatcher.offsetRecorder = new AtomicLong();
+        return sequenceController;
+    }
+
+    private ByteBuf resp(String... arguments) {
+        ByteBuf byteBuf = Unpooled.buffer();
+        byteBuf.writeBytes(("*" + arguments.length + "\r\n").getBytes(StandardCharsets.US_ASCII));
+        for (String argument : arguments) {
+            byte[] bytes = argument.getBytes(StandardCharsets.US_ASCII);
+            byteBuf.writeBytes(("$" + bytes.length + "\r\n").getBytes(StandardCharsets.US_ASCII));
+            byteBuf.writeBytes(bytes);
+            byteBuf.writeBytes("\r\n".getBytes(StandardCharsets.US_ASCII));
+        }
+        return byteBuf;
     }
 
     private byte[][] string2Bytes(String s) {

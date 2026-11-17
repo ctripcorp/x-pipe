@@ -40,8 +40,8 @@ public enum RedisOpType {
     LREM(false, 4),
     LSET(false, 4),
     LTRIM(false, 4),
-    BLMPOP(true,-5),
-    LMPOP(true,-4),
+    BLMPOP(true, -5, false, true),
+    LMPOP(true, -4, false, true),
 
     // Hash single
     HDEL(false, -3),
@@ -64,6 +64,11 @@ public enum RedisOpType {
     SPOP(false, -2),
     SREM(false, -3),
 
+    // HyperLogLog
+    PFADD(false, -3),
+    PFCOUNT(true, -2, false, true),
+    PFMERGE(true, -3, false, true),
+
     // ZSet single
     ZADD(false, -4),
     ZINCRBY(false, 4),
@@ -71,8 +76,8 @@ public enum RedisOpType {
     ZREMRANGEBYLEX(false, 4),
     ZREMRANGEBYRANK(false, 4),
     ZREMRANGEBYSCORE(false, 4),
-    ZMPOP(true,-4),
-    BZMPOP(true,-5),
+    ZMPOP(true, -4, false, true),
+    BZMPOP(true, -5, false, true),
 
     // Stream single
     XADD(false, -5),
@@ -168,6 +173,8 @@ public enum RedisOpType {
 
     private boolean swallow;
 
+    private boolean sameGroupCommand;
+
     private RedisOpCrdtTransfer transfer;
 
     private boolean fields;
@@ -190,7 +197,11 @@ public enum RedisOpType {
     }
 
     RedisOpType(boolean multiKey, int arity, boolean swallow) {
-        this(multiKey, arity, swallow, null);
+        this(multiKey, arity, swallow, false);
+    }
+
+    RedisOpType(boolean multiKey, int arity, boolean swallow, boolean sameGroupCommand) {
+        this(multiKey, arity, swallow, null, sameGroupCommand);
     }
 
     RedisOpType(boolean multiKey, boolean fields, int artiy) {
@@ -200,14 +211,19 @@ public enum RedisOpType {
     }
 
     RedisOpType(boolean multiKey, int arity, RedisOpCrdtTransfer transfer) {
-        this(multiKey, arity, false, transfer);
+        this(multiKey, arity, false, transfer, false);
     }
 
     RedisOpType(boolean multiKey, int arity, boolean swallow, RedisOpCrdtTransfer transfer) {
+        this(multiKey, arity, swallow, transfer, false);
+    }
+
+    RedisOpType(boolean multiKey, int arity, boolean swallow, RedisOpCrdtTransfer transfer, boolean sameGroupCommand) {
         this.supportMultiKey = multiKey;
         this.arity = arity;
         this.swallow = swallow;
         this.transfer = transfer;
+        this.sameGroupCommand = sameGroupCommand;
     }
 
     public boolean supportMultiKey() {
@@ -220,6 +236,10 @@ public enum RedisOpType {
 
     public boolean isSwallow() {
         return swallow;
+    }
+
+    public boolean isSameGroupCommand() {
+        return sameGroupCommand;
     }
 
     public boolean isFields() {return fields;}

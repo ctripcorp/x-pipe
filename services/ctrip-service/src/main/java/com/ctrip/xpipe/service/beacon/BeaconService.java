@@ -4,9 +4,12 @@ import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.service.beacon.exception.BeaconServiceException;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,7 +26,11 @@ import java.util.Map;
  */
 public class BeaconService implements MonitorService {
 
+    private static final String METRIC_TYPE = "call.beacon";
+    private static final String NO_CLUSTER = "-";
+
     RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplateWithRetry(1, 300);
+    private MetricProxy metricProxy = MetricProxy.DEFAULT;
 
     protected static final String PATH_GET_CLUSTERS = "/api/v1/monitor/{system}/clusters";
     protected static final String PATH_CLUSTER = "/api/v1/monitor/{system}/cluster/{cluster}";
@@ -84,16 +91,23 @@ public class BeaconService implements MonitorService {
 
     @Override
     public Set<String> fetchAllClusters(String system) {
-        ResponseEntity<BeaconResp<Set<String>>> responseEntity = restTemplate.exchange(getAllClustersPath, HttpMethod.GET, null, clustersRespTypeDef, system);
-        BeaconResp<Set<String>> beaconResp = responseEntity.getBody();
-        if (null == beaconResp) {
-            throw new BeaconServiceException(getAllClustersPath, 0, "no body");
-        } else if (!beaconResp.isSuccess()) {
-            logger.info("[fetchAllClusters] fail, {}", beaconResp.getMsg());
-            throw new BeaconServiceException(getAllClustersPath, beaconResp.getCode(), beaconResp.getMsg());
-        }
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        try {
+            ResponseEntity<BeaconResp<Set<String>>> responseEntity = restTemplate.exchange(getAllClustersPath, HttpMethod.GET, null, clustersRespTypeDef, system);
+            BeaconResp<Set<String>> beaconResp = responseEntity.getBody();
+            if (null == beaconResp) {
+                throw new BeaconServiceException(getAllClustersPath, 0, "no body");
+            } else if (!beaconResp.isSuccess()) {
+                logger.info("[fetchAllClusters] fail, {}", beaconResp.getMsg());
+                throw new BeaconServiceException(getAllClustersPath, beaconResp.getCode(), beaconResp.getMsg());
+            }
 
-        return beaconResp.getData();
+            success = true;
+            return beaconResp.getData();
+        } finally {
+            tryMetric("fetchAllClusters", HttpMethod.GET, system, NO_CLUSTER, success, startTime);
+        }
     }
 
     @Override
@@ -122,14 +136,23 @@ public class BeaconService implements MonitorService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Object> entity = new HttpEntity<>(new MonitorClusterMeta(groups, shards, extraData), headers);
-        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, method, entity, BeaconResp.class, system, clusterName);
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        try {
+            ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, method, entity, BeaconResp.class, system, clusterName);
 
-        BeaconResp beaconResp = respResponseEntity.getBody();
-        if (null == beaconResp) {
-            throw new BeaconServiceException(clusterPath, 0, "no body");
-        } else if (!beaconResp.isSuccess()) {
-            logger.info("[registerCluster] fail, {}", beaconResp.getMsg());
-            throw new BeaconServiceException(clusterPath, beaconResp.getCode(), beaconResp.getMsg());
+            BeaconResp beaconResp = respResponseEntity.getBody();
+            if (null == beaconResp) {
+                throw new BeaconServiceException(clusterPath, 0, "no body");
+            } else if (!beaconResp.isSuccess()) {
+                logger.info("[registerCluster] fail, {}", beaconResp.getMsg());
+                throw new BeaconServiceException(clusterPath, beaconResp.getCode(), beaconResp.getMsg());
+            }
+            success = true;
+        } finally {
+            if (HttpMethod.POST.equals(method)) {
+                tryMetric("registerCluster", method, system, clusterName, success, startTime);
+            }
         }
     }
 
@@ -139,14 +162,21 @@ public class BeaconService implements MonitorService {
             return;
         }
         logger.info("[unregisterCluster][{}][{}]", system, clusterName);
-        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.DELETE,
-            null, BeaconResp.class, system, clusterName);
-        BeaconResp beaconResp = respResponseEntity.getBody();
-        if (null == beaconResp) {
-            throw new BeaconServiceException(clusterPath, 0, "no body");
-        } else if (!beaconResp.isSuccess()) {
-            logger.info("[unregisterCluster] fail, {}", beaconResp.getMsg());
-            throw new BeaconServiceException(clusterPath, beaconResp.getCode(), beaconResp.getMsg());
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        try {
+            ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.DELETE,
+                null, BeaconResp.class, system, clusterName);
+            BeaconResp beaconResp = respResponseEntity.getBody();
+            if (null == beaconResp) {
+                throw new BeaconServiceException(clusterPath, 0, "no body");
+            } else if (!beaconResp.isSuccess()) {
+                logger.info("[unregisterCluster] fail, {}", beaconResp.getMsg());
+                throw new BeaconServiceException(clusterPath, beaconResp.getCode(), beaconResp.getMsg());
+            }
+            success = true;
+        } finally {
+            tryMetric("unregisterCluster", HttpMethod.DELETE, system, clusterName, success, startTime);
         }
     }
 
@@ -181,15 +211,22 @@ public class BeaconService implements MonitorService {
 
     @Override
     public int getBeaconClusterHash(String system, String clusterName) {
-        ResponseEntity<BeaconResp<Integer>> respResponseEntity = restTemplate.exchange(hashPath, HttpMethod.GET, null, new ParameterizedTypeReference<BeaconResp<Integer>>(){}, system, clusterName);
-        BeaconResp<Integer> beaconResp = respResponseEntity.getBody();
-        if (null == beaconResp) {
-            throw new BeaconServiceException(hashPath, 0, "no body");
-        } else if (!beaconResp.isSuccess()) {
-            logger.info("[getBeaconClusterHash] fail, {}", beaconResp.getMsg());
-            throw new BeaconServiceException(hashPath, beaconResp.getCode(), beaconResp.getMsg());
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        try {
+            ResponseEntity<BeaconResp<Integer>> respResponseEntity = restTemplate.exchange(hashPath, HttpMethod.GET, null, new ParameterizedTypeReference<BeaconResp<Integer>>(){}, system, clusterName);
+            BeaconResp<Integer> beaconResp = respResponseEntity.getBody();
+            if (null == beaconResp) {
+                throw new BeaconServiceException(hashPath, 0, "no body");
+            } else if (!beaconResp.isSuccess()) {
+                logger.info("[getBeaconClusterHash] fail, {}", beaconResp.getMsg());
+                throw new BeaconServiceException(hashPath, beaconResp.getCode(), beaconResp.getMsg());
+            }
+            success = true;
+            return beaconResp.getData();
+        } finally {
+            tryMetric("getBeaconClusterHash", HttpMethod.GET, system, clusterName, success, startTime);
         }
-        return beaconResp.getData();
     }
 
     private final ParameterizedTypeReference<BeaconResp<Map<String, String>>> extraDataTypeDef = new ParameterizedTypeReference<>(){};
@@ -210,17 +247,46 @@ public class BeaconService implements MonitorService {
     private final ParameterizedTypeReference<BeaconResp<Map<String, Set<String>>>> clusterWithDcTypeDef = new ParameterizedTypeReference<>() {};
     @Override
     public Map<String, Set<String>> getAllClusterWithDc(String system) {
-        ResponseEntity<BeaconResp<Map<String, Set<String>>>> responseEntity = restTemplate.exchange(allClustersPath,
-                HttpMethod.GET, null, clusterWithDcTypeDef, system);
-        BeaconResp<Map<String, Set<String>>> beaconResp = responseEntity.getBody();
-        if (null == beaconResp) {
-            throw new BeaconServiceException(allClustersPath, 0, "no body");
-        } else if (!beaconResp.isSuccess()) {
-            logger.info("[getAllClusterWithDc] fail, {}", beaconResp.getMsg());
-            throw new BeaconServiceException(allClustersPath, beaconResp.getCode(), beaconResp.getMsg());
-        }
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        try {
+            ResponseEntity<BeaconResp<Map<String, Set<String>>>> responseEntity = restTemplate.exchange(allClustersPath,
+                    HttpMethod.GET, null, clusterWithDcTypeDef, system);
+            BeaconResp<Map<String, Set<String>>> beaconResp = responseEntity.getBody();
+            if (null == beaconResp) {
+                throw new BeaconServiceException(allClustersPath, 0, "no body");
+            } else if (!beaconResp.isSuccess()) {
+                logger.info("[getAllClusterWithDc] fail, {}", beaconResp.getMsg());
+                throw new BeaconServiceException(allClustersPath, beaconResp.getCode(), beaconResp.getMsg());
+            }
 
-        return beaconResp.getData();
+            success = true;
+            return beaconResp.getData();
+        } finally {
+            tryMetric("getAllClusterWithDc", HttpMethod.GET, system, NO_CLUSTER, success, startTime);
+        }
+    }
+
+    @VisibleForTesting
+    protected void setMetricProxy(MetricProxy metricProxy) {
+        this.metricProxy = metricProxy;
+    }
+
+    private void tryMetric(String operation, HttpMethod method, String system, String clusterName, boolean success,
+                           long startTime) {
+        try {
+            long endTime = System.currentTimeMillis();
+            MetricData metricData = new MetricData(METRIC_TYPE, null, clusterName, null);
+            metricData.setValue(endTime - startTime);
+            metricData.setTimestampMilli(startTime);
+            metricData.addTag("operation", operation);
+            metricData.addTag("method", method.name());
+            metricData.addTag("success", String.valueOf(success));
+            metricData.addTag("system", system);
+            metricProxy.writeBinMultiDataPoint(metricData);
+        } catch (Throwable th) {
+            logger.warn("[tryMetric][{}][{}][{}] fail", operation, system, clusterName, th);
+        }
     }
 }
 
