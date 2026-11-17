@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.tfs;
 
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
@@ -9,17 +11,23 @@ import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperRemoveMetric;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import org.springframework.web.client.ResourceAccessException;
+
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -325,6 +333,93 @@ public class OrphanStoreGcTaskTest {
         task.doGcRound();
 
         verify(serviceA, times(1)).gcOrphanStores(any());
+    }
+
+    // ---- metrics ----
+
+    /** One point per shard, not per batch; replId tag keeps same-batch points apart. */
+    @Test
+    public void testMetricOnePointPerShardInBatch() throws Exception {
+        MetricProxy metricProxy = mock(MetricProxy.class);
+        task.setMetricProxy(metricProxy);
+        when(metaCache.getClusters()).thenReturn(new HashSet<>(Collections.singletonList(new ClusterMeta().setDbId(1L))));
+        KeeperContainerService serviceA = representativeListing("repl_1", "repl_2", "repl_3", "repl_4");
+        // repl_4 is missing from the response: counted as FAIL, never dropped
+        when(serviceA.gcOrphanStores(Arrays.asList(1L, 2L, 3L, 4L))).thenReturn(Arrays.asList(
+                GcOrphanStoreResult.deleted(1L), GcOrphanStoreResult.skip(2L, "too fresh"),
+                GcOrphanStoreResult.fail(3L, "delete meta failed")));
+
+        task.doGcRound();
+
+        Map<String, String> statusByReplId = captureStatusByReplId(metricProxy, 4);
+        assertEquals("SUCCESS", statusByReplId.get("1"));
+        assertEquals("SKIP", statusByReplId.get("2"));
+        assertEquals("FAIL", statusByReplId.get("3"));
+        assertEquals("FAIL", statusByReplId.get("4"));
+    }
+
+    @Test
+    public void testMetricFailedCallCountsEveryShardOfTheChunk() throws Exception {
+        MetricProxy metricProxy = mock(MetricProxy.class);
+        task.setMetricProxy(metricProxy);
+        when(config.getOrphanGcBatchSize()).thenReturn(2);
+        when(metaCache.getClusters()).thenReturn(new HashSet<>(Collections.singletonList(new ClusterMeta().setDbId(1L))));
+        KeeperContainerService serviceA = representativeListing("repl_1", "repl_2", "repl_3");
+        when(serviceA.gcOrphanStores(Arrays.asList(1L, 2L))).thenThrow(new RuntimeException("500 internal error"));
+
+        task.doGcRound();
+
+        // the group stops after the failed chunk: repl_3 is never attempted, so never counted
+        Map<String, String> statusByReplId = captureStatusByReplId(metricProxy, 2);
+        assertEquals("FAIL", statusByReplId.get("1"));
+        assertEquals("FAIL", statusByReplId.get("2"));
+    }
+
+    /** RestTemplate read timeout: every shard of the chunk is TIMEOUT, not FAIL. */
+    @Test
+    public void testMetricCallTimeoutCountsEveryShardAsTimeout() throws Exception {
+        MetricProxy metricProxy = mock(MetricProxy.class);
+        task.setMetricProxy(metricProxy);
+        when(config.getOrphanGcBatchSize()).thenReturn(2);
+        when(metaCache.getClusters()).thenReturn(new HashSet<>(Collections.singletonList(new ClusterMeta().setDbId(1L))));
+        KeeperContainerService serviceA = representativeListing("repl_1", "repl_2", "repl_3");
+        when(serviceA.gcOrphanStores(Arrays.asList(1L, 2L))).thenThrow(
+                new ResourceAccessException("I/O error on PUT", new SocketTimeoutException("Read timed out")));
+
+        task.doGcRound();
+
+        Map<String, String> statusByReplId = captureStatusByReplId(metricProxy, 2);
+        assertEquals("TIMEOUT", statusByReplId.get("1"));
+        assertEquals("TIMEOUT", statusByReplId.get("2"));
+    }
+
+    @Test
+    public void testDryRunWritesNoMetric() throws Exception {
+        MetricProxy metricProxy = mock(MetricProxy.class);
+        task.setMetricProxy(metricProxy);
+        when(config.isOrphanGcDryRun()).thenReturn(true);
+        when(metaCache.getClusters()).thenReturn(new HashSet<>(Collections.singletonList(new ClusterMeta().setDbId(1L))));
+        representativeListing("repl_1");
+
+        task.doGcRound();
+
+        verify(metricProxy, never()).writeBinMultiDataPoint(any());
+    }
+
+    private Map<String, String> captureStatusByReplId(MetricProxy metricProxy, int expectedPoints) throws Exception {
+        ArgumentCaptor<MetricData> captor = ArgumentCaptor.forClass(MetricData.class);
+        verify(metricProxy, times(expectedPoints)).writeBinMultiDataPoint(captor.capture());
+        Map<String, String> statusByReplId = new HashMap<>();
+        for (MetricData data : captor.getAllValues()) {
+            assertEquals(KeeperRemoveMetric.METRIC_ORPHAN_GC, data.getMetricType());
+            assertEquals("fs1", data.getTags().get("tfsId"));
+            String status = data.getTags().get("status");
+            // value counts real deletes only
+            assertEquals(KeeperRemoveMetric.STATUS_SUCCESS.equals(status) ? 1 : 0, data.getValue(), 0);
+            statusByReplId.put(data.getTags().get("replId"), status);
+        }
+        assertEquals(expectedPoints, statusByReplId.size());
+        return statusByReplId;
     }
 
     @Test
