@@ -52,10 +52,12 @@ public class KeeperRemoveMetric {
             MetricData metricData = new MetricData(METRIC_REMOVE_KEEPER);
             metricData.setTimestampMilli(System.currentTimeMillis());
             metricData.setValue(success ? 1 : 0);
-            metricData.setHostPort(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
+            String host = StringUtil.isEmpty(keeperMeta.getIp()) ? keeperMeta.getHostname() : keeperMeta.getIp();
+            metricData.setHostPort(new HostPort(host, keeperMeta.getPort()));
             metricData.addTag("keeperType", bm ? KEEPER_TYPE_BM : KEEPER_TYPE_TFS);
             metricData.addTag("op", release ? OP_RELEASE : OP_REMOVE);
             metricData.addTag("tfsId", StringUtil.isEmpty(tfsId) ? NONE : tfsId);
+            metricData.addTag("replId", keeperMeta.parent().getDbId()+"");
             metricProxy.writeBinMultiDataPoint(metricData);
         } catch (Throwable th) {
             logger.debug("[trackRemoveKeeper] fail", th);
@@ -79,7 +81,7 @@ public class KeeperRemoveMetric {
             long now = System.currentTimeMillis();
             for (Long replId : replIds) {
                 GcOrphanStoreResult.Status status = statusByReplId.get(replId);
-                writeOrphanGc(fsId, replId, orphanGcStatus(status), status == GcOrphanStoreResult.Status.DELETED ? 1 : 0, now);
+                writeOrphanGc(fsId, replId, orphanGcStatus(status), status == GcOrphanStoreResult.Status.FAILED ? 0 : 1, now);
             }
         } catch (Throwable th) {
             logger.debug("[trackOrphanGc] fail", th);
