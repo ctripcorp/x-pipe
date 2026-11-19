@@ -47,17 +47,16 @@ public class KeeperRemoveMetric {
     }
 
     /** One realtime release/remove of one keeper, on command completion. */
-    public void trackRemoveKeeper(KeeperMeta keeperMeta, boolean bm, boolean release, String tfsId, boolean success) {
+    public void trackRemoveKeeper(KeeperMeta keeperMeta, boolean bm, boolean release, String tfsId, boolean success,long elapseMillis) {
         try {
             MetricData metricData = new MetricData(METRIC_REMOVE_KEEPER);
             metricData.setTimestampMilli(System.currentTimeMillis());
-            metricData.setValue(success ? 1 : 0);
-            String host = StringUtil.isEmpty(keeperMeta.getIp()) ? keeperMeta.getHostname() : keeperMeta.getIp();
-            metricData.setHostPort(new HostPort(host, keeperMeta.getPort()));
+            metricData.setValue(elapseMillis);
+            metricData.setHostPort(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
             metricData.addTag("keeperType", bm ? KEEPER_TYPE_BM : KEEPER_TYPE_TFS);
             metricData.addTag("op", release ? OP_RELEASE : OP_REMOVE);
             metricData.addTag("tfsId", StringUtil.isEmpty(tfsId) ? NONE : tfsId);
-            metricData.addTag("replId", keeperMeta.parent().getDbId()+"");
+            metricData.addTag("result",success ? "SUCCESS": "FAIL");
             metricProxy.writeBinMultiDataPoint(metricData);
         } catch (Throwable th) {
             logger.debug("[trackRemoveKeeper] fail", th);
@@ -70,18 +69,21 @@ public class KeeperRemoveMetric {
      */
     public void trackOrphanGc(String fsId, List<Long> replIds, List<GcOrphanStoreResult> results) {
         try {
-            Map<Long, GcOrphanStoreResult.Status> statusByReplId = new HashMap<>();
+            Map<Long, GcOrphanStoreResult> statusByReplId = new HashMap<>();
             if (results != null) {
                 for (GcOrphanStoreResult result : results) {
                     if (result != null && result.replId != null) {
-                        statusByReplId.put(result.replId, result.status);
+                        statusByReplId.put(result.replId, result);
                     }
                 }
             }
             long now = System.currentTimeMillis();
             for (Long replId : replIds) {
-                GcOrphanStoreResult.Status status = statusByReplId.get(replId);
-                writeOrphanGc(fsId, replId, orphanGcStatus(status), status == GcOrphanStoreResult.Status.FAILED ? 0 : 1, now);
+                GcOrphanStoreResult result = statusByReplId.get(replId);
+                GcOrphanStoreResult.Status resultStatus = result == null ? null : result.status;
+                String reason = result == null || result.reason == null ? "" : result.reason;
+                writeOrphanGc(fsId, replId, orphanGcStatus(resultStatus), reason,
+                        resultStatus == GcOrphanStoreResult.Status.DELETED ? 1 : 0, now);
             }
         } catch (Throwable th) {
             logger.debug("[trackOrphanGc] fail", th);
@@ -94,14 +96,14 @@ public class KeeperRemoveMetric {
             String status = isTimeout(cause) ? STATUS_TIMEOUT : STATUS_FAIL;
             long now = System.currentTimeMillis();
             for (Long replId : replIds) {
-                writeOrphanGc(fsId, replId, status, 0, now);
+                writeOrphanGc(fsId, replId, status, "",0, now);
             }
         } catch (Throwable th) {
             logger.debug("[trackOrphanGcCallFail] fail", th);
         }
     }
 
-    private void writeOrphanGc(String fsId, Long replId, String status, double value, long timestampMilli)
+    private void writeOrphanGc(String fsId, Long replId, String status,String reason, double value, long timestampMilli)
             throws MetricProxyException {
         MetricData metricData = new MetricData(METRIC_ORPHAN_GC);
         metricData.setTimestampMilli(timestampMilli);
@@ -109,6 +111,7 @@ public class KeeperRemoveMetric {
         metricData.addTag("tfsId", fsId);
         metricData.addTag("replId", String.valueOf(replId));
         metricData.addTag("status", status);
+        metricData.addTag("reason",reason);
         metricProxy.writeBinMultiDataPoint(metricData);
     }
 

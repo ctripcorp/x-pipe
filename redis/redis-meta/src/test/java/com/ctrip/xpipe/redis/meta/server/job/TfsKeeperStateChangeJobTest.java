@@ -173,7 +173,7 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
         startKeeperServer(newTfs.getPort(), false);
 
         AtomicBoolean forceCloseCalled = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             forceCloseCalled.set(true);
             callOrder.add("FORCE_CLOSE");
             return true;

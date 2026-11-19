@@ -110,7 +110,7 @@ public class TfsForceCloseDirCommand extends AbstractCommand<Void> {
                     return;
                 }
                 try {
-                    boolean success = tfsGateway.forceCloseDir(fsId, dirPath, podIp);
+                    boolean success = tfsGateway.forceCloseDir(replId,fsId, dirPath, podIp);
                     if (completed.compareAndSet(false, true)) {
                         timeoutFuture.cancel(false);
                         if (!success) {

@@ -119,8 +119,9 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 		try {
 			KeeperMeta keeperMeta = keeperTransMeta.getKeeperMeta();
 			String tfsId = bm ? null : getTfsFsId(keeperMeta);
+			long startTime = System.currentTimeMillis();
 			command.future().addListener(commandFuture ->
-					removeMetric.trackRemoveKeeper(keeperMeta, bm, release, tfsId, commandFuture.isSuccess()));
+					removeMetric.trackRemoveKeeper(keeperMeta, bm, release, tfsId, commandFuture.isSuccess(),System.currentTimeMillis()-startTime));
 		} catch (Throwable th) {
 			logger.debug("[trackRemoveKeeper] fail", th);
 		}
