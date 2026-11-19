@@ -52,10 +52,12 @@ public class KeeperRemoveMetric {
             MetricData metricData = new MetricData(METRIC_REMOVE_KEEPER);
             metricData.setTimestampMilli(System.currentTimeMillis());
             metricData.setValue(elapseMillis);
-            metricData.setHostPort(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
+            String host = StringUtil.isEmpty(keeperMeta.getIp()) ? keeperMeta.getHostname() : keeperMeta.getIp();
+            metricData.setHostPort(new HostPort(host, keeperMeta.getPort()));
             metricData.addTag("keeperType", bm ? KEEPER_TYPE_BM : KEEPER_TYPE_TFS);
             metricData.addTag("op", release ? OP_RELEASE : OP_REMOVE);
             metricData.addTag("tfsId", StringUtil.isEmpty(tfsId) ? NONE : tfsId);
+            metricData.addTag("replId", keeperMeta.parent().getDbId()+"");
             metricData.addTag("result",success ? "SUCCESS": "FAIL");
             metricProxy.writeBinMultiDataPoint(metricData);
         } catch (Throwable th) {
