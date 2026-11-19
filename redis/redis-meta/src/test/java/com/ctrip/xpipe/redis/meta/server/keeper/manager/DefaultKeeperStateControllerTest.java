@@ -148,37 +148,44 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 	@Test
 	public void testRemoveMetricTfsRelease() throws Exception {
 		isBm = false;
-		MetricData data = removeAndCaptureMetric(false, new TestCommand("success", sleepInterval), true);
+		int commandDelayMillis = 10;
+		MetricData data = removeAndCaptureMetric(false, new TestCommand("success", commandDelayMillis), true);
 
 		Assert.assertEquals(KeeperRemoveMetric.METRIC_REMOVE_KEEPER, data.getMetricType());
 		Assert.assertEquals("TFS", data.getTags().get("keeperType"));
 		Assert.assertEquals("release", data.getTags().get("op"));
 		Assert.assertEquals("fs1", data.getTags().get("tfsId"));
+		Assert.assertEquals(KeeperRemoveMetric.STATUS_SUCCESS, data.getTags().get("result"));
 		Assert.assertFalse(data.getTags().containsKey("status"));
-		Assert.assertEquals(1, data.getValue(), 0);
+		Assert.assertTrue(data.getValue() >= commandDelayMillis);
 		Assert.assertEquals(new HostPort("127.0.0.1", 6000), data.getHostPort());
 	}
 
 	@Test
 	public void testRemoveMetricTfsPurgeFail() throws Exception {
 		isBm = false;
-		MetricData data = removeAndCaptureMetric(true, new TestCommand(new Exception("remove fail")), false);
+		int commandDelayMillis = 10;
+		MetricData data = removeAndCaptureMetric(true,
+				new TestCommand(new Exception("remove fail"), commandDelayMillis), false);
 
 		Assert.assertEquals("TFS", data.getTags().get("keeperType"));
 		Assert.assertEquals("remove", data.getTags().get("op"));
 		Assert.assertEquals("fs1", data.getTags().get("tfsId"));
-		Assert.assertEquals(0, data.getValue(), 0);
+		Assert.assertEquals(KeeperRemoveMetric.STATUS_FAIL, data.getTags().get("result"));
+		Assert.assertTrue(data.getValue() >= commandDelayMillis);
 	}
 
 	@Test
 	public void testRemoveMetricBm() throws Exception {
 		isBm = true;
-		MetricData data = removeAndCaptureMetric(false, new TestCommand("success", sleepInterval), false);
+		int commandDelayMillis = 10;
+		MetricData data = removeAndCaptureMetric(false, new TestCommand("success", commandDelayMillis), false);
 
 		Assert.assertEquals("BM", data.getTags().get("keeperType"));
 		Assert.assertEquals("remove", data.getTags().get("op"));
 		Assert.assertEquals("none", data.getTags().get("tfsId"));
-		Assert.assertEquals(1, data.getValue(), 0);
+		Assert.assertEquals(KeeperRemoveMetric.STATUS_SUCCESS, data.getTags().get("result"));
+		Assert.assertTrue(data.getValue() >= commandDelayMillis);
 	}
 
 	private MetricData removeAndCaptureMetric(boolean purge, TestCommand command, boolean release) throws Exception {

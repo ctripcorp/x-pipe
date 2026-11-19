@@ -39,7 +39,7 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
         AtomicBoolean called = new AtomicBoolean(false);
         AtomicReference<String> capturedPodIp = new AtomicReference<>();
         AtomicReference<String> capturedDirPath = new AtomicReference<>();
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             called.set(true);
             Assert.assertEquals("fs-42", fsId);
             capturedDirPath.set(dirPath);
@@ -60,7 +60,7 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
     @Test
     public void testEmptyFsIdStillSuccess() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             called.set(true);
             return true;
         };
@@ -76,7 +76,7 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
     @Test
     public void testEmptyPodIpStillSuccess() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             called.set(true);
             return true;
         };
@@ -92,7 +92,7 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
     @Test
     public void testRealModeInvalidAppIdStillSuccess() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             called.set(true);
             return true;
         };
@@ -108,7 +108,7 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
 
     @Test
     public void testGatewayFailureStillSuccess() throws Exception {
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             throw new RuntimeException("gateway down");
         };
         KeeperMeta keeperMeta = keeper(6380, 1L, "10.0.0.8");
@@ -121,7 +121,7 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
 
     @Test
     public void testGatewayBusinessFailStillSuccess() throws Exception {
-        TfsGateway gateway = (fsId, dirPath, podIp) -> false;
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> false;
         KeeperMeta keeperMeta = keeper(6380, 1L, "10.0.0.8");
         mockKeeperContainer(1L, "fs-42");
 
@@ -133,7 +133,7 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
     @Test
     public void testGatewayTimeoutStillSuccess() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             called.set(true);
             Thread.sleep(TfsCommandConstants.TFS_STEP_TIMEOUT_MILLI * 3L);
             return true;
@@ -154,7 +154,7 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
     @Test
     public void testEmptyDirPathStillSuccess() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             called.set(true);
             return true;
         };

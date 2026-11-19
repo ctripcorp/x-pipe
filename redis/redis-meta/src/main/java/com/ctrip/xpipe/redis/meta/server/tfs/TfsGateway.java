@@ -10,5 +10,5 @@ public interface TfsGateway {
      * @return true if ForceCloseDir succeeded ({@code status.error_code == 0}); false for business failure
      * @throws Exception transport / unexpected errors (HTTP layer, I/O, etc.)
      */
-    boolean forceCloseDir(String fsId, String dirPath, String podIp) throws Exception;
+    boolean forceCloseDir(long replId,String fsId, String dirPath, String podIp) throws Exception;
 }

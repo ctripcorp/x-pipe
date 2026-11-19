@@ -89,7 +89,7 @@ public class HttpTfsGateway implements TfsGateway {
     }
 
     @Override
-    public boolean forceCloseDir(String fsId, String dirPath, String podIp) throws Exception {
+    public boolean forceCloseDir(long replId,String fsId, String dirPath, String podIp) throws Exception {
         long startTime = System.currentTimeMillis();
         String host = resolveHost();
         long appId = resolveAppId();
@@ -123,15 +123,17 @@ public class HttpTfsGateway implements TfsGateway {
             long endTime = System.currentTimeMillis();
             logger.info("[forceCloseDir]url={}, fsId={}, dirPath={}, podIp={}, success={}, errorCode={}, message={}, cost={}ms",
                     url, fsId, dirPath, podIp, success, errorCode, message, endTime - startTime);
-            tryMetric(API_FORCE_CLOSE_DIR, success, startTime, endTime);
+            tryMetric(API_FORCE_CLOSE_DIR,replId,fsId, success, startTime, endTime);
         }
     }
 
-    private void tryMetric(String api, boolean isSuccess, long startTime, long endTime) {
+    private void tryMetric(String api,long replId,String fsId, boolean isSuccess, long startTime, long endTime) {
         try {
             MetricData metricData = new MetricData(METRIC_TYPE, null, null, null);
             metricData.setTimestampMilli(startTime);
             metricData.addTag("api", api);
+            metricData.addTag("replId",String.valueOf(replId));
+            metricData.addTag("tfsId",fsId);
             metricData.setValue(endTime - startTime);
             metricData.addTag("status", isSuccess ? "SUCCESS" : "FAIL");
             metricProxy.writeBinMultiDataPoint(metricData);

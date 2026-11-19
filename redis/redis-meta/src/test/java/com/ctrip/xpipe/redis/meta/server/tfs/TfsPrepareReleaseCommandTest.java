@@ -56,7 +56,7 @@ public class TfsPrepareReleaseCommandTest extends AbstractMetaServerTest {
         });
 
         AtomicBoolean forceCloseCalled = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             forceCloseCalled.set(true);
             return true;
         };
@@ -81,7 +81,7 @@ public class TfsPrepareReleaseCommandTest extends AbstractMetaServerTest {
         });
 
         AtomicBoolean forceCloseCalled = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+        TfsGateway gateway = (replId,fsId, dirPath, podIp) -> {
             forceCloseCalled.set(true);
             return true;
         };
