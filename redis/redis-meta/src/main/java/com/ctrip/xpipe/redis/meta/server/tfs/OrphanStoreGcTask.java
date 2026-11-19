@@ -158,6 +158,7 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
 
         Map<Long, KeeperContainerMeta> containersById = indexContainersById(allContainers);
         Map<String, Set<Long>> occupiedReplIdsByFsId = occupiedReplIdsByFsId(clusters, containersById);
+        logger.info("[doGcRound] occupiedReplIdsByFsId {} ", occupiedReplIdsByFsId);
 
         List<CompletableFuture<Void>> groupFutures = new ArrayList<>(containersByFsId.size());
         for (Map.Entry<String, List<KeeperContainerMeta>> entry : containersByFsId.entrySet()) {
@@ -200,6 +201,8 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
         }
 
         List<Long> candidates = new ArrayList<>();
+        logger.info("[doGcGroup] [fsId={}] occupied(s): {},dirNames: {}, after meta filter",
+                fsId, occupied,dirNames);
         for (String dirName : dirNames) {
             Long replId = parseReplId(dirName);
             if (replId != null && !occupied.contains(replId)) {

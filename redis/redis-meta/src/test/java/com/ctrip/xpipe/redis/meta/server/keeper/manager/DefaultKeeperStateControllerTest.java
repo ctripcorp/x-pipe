@@ -8,6 +8,7 @@ import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperRemoveMetric;
@@ -148,44 +149,43 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 	@Test
 	public void testRemoveMetricTfsRelease() throws Exception {
 		isBm = false;
-		int commandDelayMillis = 10;
-		MetricData data = removeAndCaptureMetric(false, new TestCommand("success", commandDelayMillis), true);
+		MetricData data = removeAndCaptureMetric(false, new TestCommand("success", sleepInterval), true);
 
 		Assert.assertEquals(KeeperRemoveMetric.METRIC_REMOVE_KEEPER, data.getMetricType());
 		Assert.assertEquals("TFS", data.getTags().get("keeperType"));
 		Assert.assertEquals("release", data.getTags().get("op"));
 		Assert.assertEquals("fs1", data.getTags().get("tfsId"));
+		Assert.assertEquals(String.valueOf(getShardDbId()), data.getTags().get("replId"));
 		Assert.assertEquals(KeeperRemoveMetric.STATUS_SUCCESS, data.getTags().get("result"));
 		Assert.assertFalse(data.getTags().containsKey("status"));
-		Assert.assertTrue(data.getValue() >= commandDelayMillis);
+		Assert.assertEquals(1, data.getValue(), 0);
 		Assert.assertEquals(new HostPort("127.0.0.1", 6000), data.getHostPort());
 	}
 
 	@Test
 	public void testRemoveMetricTfsPurgeFail() throws Exception {
 		isBm = false;
-		int commandDelayMillis = 10;
-		MetricData data = removeAndCaptureMetric(true,
-				new TestCommand(new Exception("remove fail"), commandDelayMillis), false);
+		MetricData data = removeAndCaptureMetric(true, new TestCommand(new Exception("remove fail")), false);
 
 		Assert.assertEquals("TFS", data.getTags().get("keeperType"));
 		Assert.assertEquals("remove", data.getTags().get("op"));
 		Assert.assertEquals("fs1", data.getTags().get("tfsId"));
+		Assert.assertEquals(String.valueOf(getShardDbId()), data.getTags().get("replId"));
 		Assert.assertEquals(KeeperRemoveMetric.STATUS_FAIL, data.getTags().get("result"));
-		Assert.assertTrue(data.getValue() >= commandDelayMillis);
+		Assert.assertEquals(0, data.getValue(), 0);
 	}
 
 	@Test
 	public void testRemoveMetricBm() throws Exception {
 		isBm = true;
-		int commandDelayMillis = 10;
-		MetricData data = removeAndCaptureMetric(false, new TestCommand("success", commandDelayMillis), false);
+		MetricData data = removeAndCaptureMetric(false, new TestCommand("success", sleepInterval), false);
 
 		Assert.assertEquals("BM", data.getTags().get("keeperType"));
 		Assert.assertEquals("remove", data.getTags().get("op"));
 		Assert.assertEquals("none", data.getTags().get("tfsId"));
+		Assert.assertEquals(String.valueOf(getShardDbId()), data.getTags().get("replId"));
 		Assert.assertEquals(KeeperRemoveMetric.STATUS_SUCCESS, data.getTags().get("result"));
-		Assert.assertTrue(data.getValue() >= commandDelayMillis);
+		Assert.assertEquals(1, data.getValue(), 0);
 	}
 
 	private MetricData removeAndCaptureMetric(boolean purge, TestCommand command, boolean release) throws Exception {
@@ -229,8 +229,9 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 		LifecycleHelper.startIfPossible(controller);
 		add(controller);
 
-		controller.removeKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(),
-				new KeeperMeta().setIp("127.0.0.1").setPort(6000)), purge);
+		KeeperMeta keeperMeta = new KeeperMeta().setIp("127.0.0.1").setPort(6000);
+		new ShardMeta().setDbId(getShardDbId()).addKeeper(keeperMeta);
+		controller.removeKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(), getShardDbId(), keeperMeta), purge);
 
 		ArgumentCaptor<MetricData> captor = ArgumentCaptor.forClass(MetricData.class);
 		verify(metricProxy, timeout(1000).times(1)).writeBinMultiDataPoint(captor.capture());
