@@ -336,7 +336,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
         String localIp = getLocalIp();
         if (!StringUtils.hasText(localIp) || "0.0.0.0".equals(localIp)) {
             throw new RedisKeeperRuntimeException("invalid local ip for container keeper: " + localIp
-                    + ", hostname: " + keeperMeta.getHostname());
+                    + ", hgostname: " + keeperMeta.getHostname());
         }
         keeperMeta.setIp(localIp);
     }

@@ -10,7 +10,7 @@ public class TfsDirPathResolverTest {
     public void testResolveDefaultTemplateWithoutKeeperPort() {
         String resolved = TfsDirPathResolver.resolve(
                 DefaultMetaServerConfig.DEFAULT_TFS_DIR_PATH_TEMPLATE, 6380, 42L);
-        Assert.assertEquals("/opt/data/100004376/rsd/repl_42", resolved);
+        Assert.assertEquals("/repl_42", resolved);
         Assert.assertFalse(resolved.contains("replication_store_"));
     }
 

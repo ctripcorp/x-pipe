@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import static com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult.Status.FAILED;
+
 /**
  * Metrics for keepers / TFS stores removed by the metaserver: realtime release/remove and the periodic
  * orphan-store gc. Every point is one keeper or one shard with value 1, so a sum counts shards. Points
@@ -51,13 +53,14 @@ public class KeeperRemoveMetric {
         try {
             MetricData metricData = new MetricData(METRIC_REMOVE_KEEPER);
             metricData.setTimestampMilli(System.currentTimeMillis());
-            metricData.setValue(success ? 1 : 0);
+            metricData.setValue(1);
             String host = StringUtil.isEmpty(keeperMeta.getIp()) ? keeperMeta.getHostname() : keeperMeta.getIp();
             metricData.setHostPort(new HostPort(host, keeperMeta.getPort()));
             metricData.addTag("keeperType", bm ? KEEPER_TYPE_BM : KEEPER_TYPE_TFS);
             metricData.addTag("op", release ? OP_RELEASE : OP_REMOVE);
             metricData.addTag("tfsId", StringUtil.isEmpty(tfsId) ? NONE : tfsId);
             metricData.addTag("replId", keeperMeta.parent().getDbId()+"");
+            metricData.addTag("result",success ? "SUCCESS": "FAIL");
             metricProxy.writeBinMultiDataPoint(metricData);
         } catch (Throwable th) {
             logger.debug("[trackRemoveKeeper] fail", th);
@@ -70,18 +73,19 @@ public class KeeperRemoveMetric {
      */
     public void trackOrphanGc(String fsId, List<Long> replIds, List<GcOrphanStoreResult> results) {
         try {
-            Map<Long, GcOrphanStoreResult.Status> statusByReplId = new HashMap<>();
+            Map<Long, GcOrphanStoreResult> statusByReplId = new HashMap<>();
             if (results != null) {
                 for (GcOrphanStoreResult result : results) {
                     if (result != null && result.replId != null) {
-                        statusByReplId.put(result.replId, result.status);
+                        statusByReplId.put(result.replId, result);
                     }
                 }
             }
             long now = System.currentTimeMillis();
             for (Long replId : replIds) {
-                GcOrphanStoreResult.Status status = statusByReplId.get(replId);
-                writeOrphanGc(fsId, replId, orphanGcStatus(status), status == GcOrphanStoreResult.Status.FAILED ? 0 : 1, now);
+                GcOrphanStoreResult result = statusByReplId.get(replId);
+                GcOrphanStoreResult.Status resultStatus = result == null ? null : result.status;
+                writeOrphanGc(fsId, replId, orphanGcStatus(resultStatus),now);
             }
         } catch (Throwable th) {
             logger.debug("[trackOrphanGc] fail", th);
@@ -94,18 +98,18 @@ public class KeeperRemoveMetric {
             String status = isTimeout(cause) ? STATUS_TIMEOUT : STATUS_FAIL;
             long now = System.currentTimeMillis();
             for (Long replId : replIds) {
-                writeOrphanGc(fsId, replId, status, 0, now);
+                writeOrphanGc(fsId, replId, status, now);
             }
         } catch (Throwable th) {
             logger.debug("[trackOrphanGcCallFail] fail", th);
         }
     }
 
-    private void writeOrphanGc(String fsId, Long replId, String status, double value, long timestampMilli)
+    private void writeOrphanGc(String fsId, Long replId, String status, long timestampMilli)
             throws MetricProxyException {
         MetricData metricData = new MetricData(METRIC_ORPHAN_GC);
         metricData.setTimestampMilli(timestampMilli);
-        metricData.setValue(value);
+        metricData.setValue(1);
         metricData.addTag("tfsId", fsId);
         metricData.addTag("replId", String.valueOf(replId));
         metricData.addTag("status", status);

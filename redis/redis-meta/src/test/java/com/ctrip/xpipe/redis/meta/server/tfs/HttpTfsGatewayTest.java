@@ -51,7 +51,7 @@ public class HttpTfsGatewayTest {
     public void testForceCloseDirSuccessPostsJson() throws Exception {
         enqueueStatus(webServer, 0, "ok");
 
-        Assert.assertTrue(gateway.forceCloseDir("fs-1", "/opt/data/repl_9", "10.0.0.1"));
+        Assert.assertTrue(gateway.forceCloseDir(1,"fs-1", "/opt/data/repl_9", "10.0.0.1"));
 
         RecordedRequest request = webServer.takeRequest(1, TimeUnit.SECONDS);
         Assert.assertNotNull(request);
@@ -65,7 +65,7 @@ public class HttpTfsGatewayTest {
     @Test
     public void testForceCloseDirNonZeroErrorCodeReturnsFalse() throws Exception {
         enqueueStatus(webServer, 7, "busy");
-        Assert.assertFalse(gateway.forceCloseDir("fs-1", "/path", "10.0.0.1"));
+        Assert.assertFalse(gateway.forceCloseDir(1,"fs-1", "/path", "10.0.0.1"));
         assertMetric("FAIL");
     }
 
@@ -75,7 +75,7 @@ public class HttpTfsGatewayTest {
                 .setHeader("Content-Type", HttpTfsGateway.CONTENT_TYPE_JSON)
                 .setBody("{}"));
 
-        Assert.assertFalse(gateway.forceCloseDir("fs-1", "/path", "10.0.0.1"));
+        Assert.assertFalse(gateway.forceCloseDir(1,"fs-1", "/path", "10.0.0.1"));
         assertMetric("FAIL");
     }
 
@@ -83,7 +83,7 @@ public class HttpTfsGatewayTest {
     public void testForceCloseDirHttpFailureThrows() throws Exception {
         webServer.enqueue(new MockResponse().setResponseCode(500));
         try {
-            gateway.forceCloseDir("fs-1", "/path", "10.0.0.1");
+            gateway.forceCloseDir(1,"fs-1", "/path", "10.0.0.1");
             Assert.fail("expected exception");
         } catch (Exception e) {
             Assert.assertNotNull(e);
@@ -99,7 +99,7 @@ public class HttpTfsGatewayTest {
         shortGateway.setMetricProxy(metricProxy);
         webServer.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE));
         try {
-            shortGateway.forceCloseDir("fs-1", "/path", "10.0.0.1");
+            shortGateway.forceCloseDir(1,"fs-1", "/path", "10.0.0.1");
             Assert.fail("expected timeout");
         } catch (Exception e) {
             Assert.assertNotNull(e);
@@ -110,7 +110,7 @@ public class HttpTfsGatewayTest {
     @Test
     public void testHostAndAppIdHotReloadOnNextCall() throws Exception {
         enqueueStatus(webServer, 0, "ok");
-        Assert.assertTrue(gateway.forceCloseDir("fs-a", "/p1", "10.0.0.1"));
+        Assert.assertTrue(gateway.forceCloseDir(1,"fs-a", "/p1", "10.0.0.1"));
         RecordedRequest first = webServer.takeRequest(1, TimeUnit.SECONDS);
         Assert.assertNotNull(first);
         Assert.assertEquals("/tfs/app/100004376/fs/fs-a/TFSGateway/ForceCloseDir", first.getPath());
@@ -121,7 +121,7 @@ public class HttpTfsGatewayTest {
             enqueueStatus(hostB, 0, "ok");
             config.setTfsGatewayHost(baseUrl(hostB)).setTfsGatewayAppId(42L);
 
-            Assert.assertTrue(gateway.forceCloseDir("fs-b", "/p2", "10.0.0.2"));
+            Assert.assertTrue(gateway.forceCloseDir(1,"fs-b", "/p2", "10.0.0.2"));
 
             RecordedRequest second = hostB.takeRequest(1, TimeUnit.SECONDS);
             Assert.assertNotNull(second);
