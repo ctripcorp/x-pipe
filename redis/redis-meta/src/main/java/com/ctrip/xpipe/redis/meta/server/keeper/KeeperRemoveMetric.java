@@ -53,7 +53,7 @@ public class KeeperRemoveMetric {
         try {
             MetricData metricData = new MetricData(METRIC_REMOVE_KEEPER);
             metricData.setTimestampMilli(System.currentTimeMillis());
-            metricData.setValue(success ? 1 : 0);
+            metricData.setValue(1);
             String host = StringUtil.isEmpty(keeperMeta.getIp()) ? keeperMeta.getHostname() : keeperMeta.getIp();
             metricData.setHostPort(new HostPort(host, keeperMeta.getPort()));
             metricData.addTag("keeperType", bm ? KEEPER_TYPE_BM : KEEPER_TYPE_TFS);
@@ -85,8 +85,7 @@ public class KeeperRemoveMetric {
             for (Long replId : replIds) {
                 GcOrphanStoreResult result = statusByReplId.get(replId);
                 GcOrphanStoreResult.Status resultStatus = result == null ? null : result.status;
-                writeOrphanGc(fsId, replId, orphanGcStatus(resultStatus),
-                        resultStatus == GcOrphanStoreResult.Status.DELETED ? 1 : 0, now);
+                writeOrphanGc(fsId, replId, orphanGcStatus(resultStatus),now);
             }
         } catch (Throwable th) {
             logger.debug("[trackOrphanGc] fail", th);
@@ -99,18 +98,18 @@ public class KeeperRemoveMetric {
             String status = isTimeout(cause) ? STATUS_TIMEOUT : STATUS_FAIL;
             long now = System.currentTimeMillis();
             for (Long replId : replIds) {
-                writeOrphanGc(fsId, replId, status,0, now);
+                writeOrphanGc(fsId, replId, status, now);
             }
         } catch (Throwable th) {
             logger.debug("[trackOrphanGcCallFail] fail", th);
         }
     }
 
-    private void writeOrphanGc(String fsId, Long replId, String status, double value, long timestampMilli)
+    private void writeOrphanGc(String fsId, Long replId, String status, long timestampMilli)
             throws MetricProxyException {
         MetricData metricData = new MetricData(METRIC_ORPHAN_GC);
         metricData.setTimestampMilli(timestampMilli);
-        metricData.setValue(value);
+        metricData.setValue(1);
         metricData.addTag("tfsId", fsId);
         metricData.addTag("replId", String.valueOf(replId));
         metricData.addTag("status", status);
