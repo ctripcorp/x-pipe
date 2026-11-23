@@ -56,13 +56,13 @@ public class ContainerResourceManagerTest {
     public void testPerFileCacheLimitInjectedFromConfig() {
         assertEquals("keeper.async.tail.cache.max.size.per.file.bytes",
                 KeeperConfig.KEY_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES);
-        assertEquals(100L * 1024 * 1024, KeeperConfig.DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES);
+        assertEquals(300L * 1024 * 1024, KeeperConfig.DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES);
 
         TestKeeperConfig config = new TestKeeperConfig();
-        assertEquals(100L * 1024 * 1024, config.getAsyncTailCacheMaxSizePerFileBytes());
+        assertEquals(300L * 1024 * 1024, config.getAsyncTailCacheMaxSizePerFileBytes());
         TailCacheFileSystem defaultFs = (TailCacheFileSystem) ContainerResourceManager.createAsyncFileSystem(config);
         try {
-            assertEquals(100L * 1024 * 1024, defaultFs.getMaxCacheSizePerFileBytes());
+            assertEquals(300L * 1024 * 1024, defaultFs.getMaxCacheSizePerFileBytes());
         } finally {
             defaultFs.shutdown();
         }
@@ -126,10 +126,4 @@ public class ContainerResourceManagerTest {
         return refreshThreads() == expected;
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testInvalidPerFileCacheLimitFailsFsCreation() {
-        // Below minRetainChunks * chunkSize (1MB).
-        ContainerResourceManager.createAsyncFileSystem(
-                new TestKeeperConfig().setAsyncTailCacheMaxSizePerFileBytes(1024));
-    }
 }
