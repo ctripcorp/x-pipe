@@ -1,0 +1,21 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/container/ContainerResourceManagerTest.java
+  s_a72c908828d977::t_eb826006362adb 59,62,65
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_a72c908828d977::t_69f13c79ac6bfb 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "65979d38c4ed7337d6913e54e7157555525075f6",
+  "prompts": {},
+  "sessions": {
+    "s_a72c908828d977": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_ac7bc3cb-643f-4169-b96c-763f77110077",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
