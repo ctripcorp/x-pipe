@@ -271,25 +271,31 @@ public class KeeperContainerServiceTest extends AbstractTest {
 
     /** A backup keeper must publish its own health state too, or the metaserver could promote it. */
     @Test
-    public void testTfsHealthResetsNonLeaderKeeper() {
+    public void testTfsHealthPublishesNonLeaderKeeperData() {
         keeperContainerService.setRedisKeeperServers(Collections.singletonMap("repl_1", redisKeeperServer));
         when(redisKeeperServer.isLeader()).thenReturn(false);
         when(redisKeeperServer.getLastElectionResetTime()).thenReturn(0L);
+        when(redisKeeperServer.publishElectionData()).thenReturn(true);
+        TfsHealthChecker checker = mock(TfsHealthChecker.class);
+        ReflectionTestUtils.setField(keeperContainerService, "tfsHealthChecker", checker);
 
-        keeperContainerService.update("repl_1", mock(TfsHealthChecker.class));
+        keeperContainerService.update("repl_1", checker);
 
-        verify(redisKeeperServer, times(1)).resetElection();
+        verify(redisKeeperServer, times(1)).publishElectionData();
+        verify(redisKeeperServer, never()).resetElection();
+        verify(checker).onElectionReset("repl_1");
     }
 
     @Test
-    public void testTfsHealthSkipsUnknownKeeperAndThrottledReset() {
+    public void testTfsHealthSkipsUnknownKeeperAndThrottledPublish() {
         keeperContainerService.setRedisKeeperServers(Collections.singletonMap("repl_1", redisKeeperServer));
         keeperContainerService.update("repl_2", mock(TfsHealthChecker.class));
-        verify(redisKeeperServer, never()).resetElection();
+        verify(redisKeeperServer, never()).publishElectionData();
 
         when(redisKeeperServer.isLeader()).thenReturn(false);
         when(redisKeeperServer.getLastElectionResetTime()).thenReturn(System.currentTimeMillis() / 1000);
         keeperContainerService.update("repl_1", mock(TfsHealthChecker.class));
+        verify(redisKeeperServer, never()).publishElectionData();
         verify(redisKeeperServer, never()).resetElection();
     }
 

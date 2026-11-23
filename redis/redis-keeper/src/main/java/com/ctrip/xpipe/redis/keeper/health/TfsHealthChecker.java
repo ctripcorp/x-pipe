@@ -52,7 +52,7 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
     MetricProxy metricProxy = MetricProxy.DEFAULT;
 
     private final Map<String, HealthState> states = new ConcurrentHashMap<>();
-    /** Last state we know reached zk (confirmed by a successful resetElection). Drives retry. */
+    /** Last state we know reached zk (confirmed by a successful election-data publication). Drives retry. */
     private final Map<String, HealthState> publishedStates = new ConcurrentHashMap<>();
 
     IoRuleEvaluator evaluator = IoRuleEvaluator.defaults();
@@ -164,7 +164,7 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
                 || published == HealthState.RECOVERED_PENDING);
     }
 
-    /** Called by KeeperContainerService once a resetElection succeeded, so we stop retrying this state. */
+    /** Called by KeeperContainerService once election data reached zk, so we stop retrying this state. */
     public void onElectionReset(String tenant) {
         HealthState decided = states.get(tenant);
         if (decided != null) {

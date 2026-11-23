@@ -259,6 +259,32 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				() -> new ElectContext(leaderElectionZKPath, MetaZkConfig.getKeeperLeaderElectionId(currentKeeperMeta)));
 	}
 
+	/** Publish the latest KeeperMeta in place so the latch sequence is preserved. */
+	@Override
+	public boolean publishElectionData() {
+		if (!electionLifecycleLock.tryLock()) {
+			logger.info("[publishElectionData][skip, keeper lifecycle changing][{}]", replId);
+			return false;
+		}
+		try {
+			if (!getLifecycleState().isStarted()) {
+				logger.info("[publishElectionData][skip, keeper not started][{}]", replId);
+				return false;
+			}
+			LeaderElector elector = this.leaderElector;
+			if (elector == null || !elector.publishElectionData()) {
+				return false;
+			}
+			this.lastResetElectionTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+			return true;
+		} catch (Throwable th) {
+			logger.info("[publishElectionData][fail][{}]", replId, th);
+			return false;
+		} finally {
+			electionLifecycleLock.unlock();
+		}
+	}
+
 	/** Stop/start the same elector so it re-creates the latch with the current meta. */
 	@Override
 	public boolean resetElection() {
