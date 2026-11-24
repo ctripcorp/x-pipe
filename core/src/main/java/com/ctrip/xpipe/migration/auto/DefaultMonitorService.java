@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorForceFailoverResult;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.endpoint.HostPort;
 
 import java.util.Collections;
 import java.util.Map;
@@ -81,6 +83,13 @@ public class DefaultMonitorService implements MonitorService {
     @Override
     public Map<String, Set<String>> getAllClusterWithDc(String system) {
         return Collections.emptyMap();
+    }
+
+    @Override
+    public MonitorForceFailoverResult forceFailoverShardMaster(String system, String clusterName, String shardName,
+                                                               HostPort target, int timeoutMilli) {
+        // do nothing
+        return null;
     }
 
 }

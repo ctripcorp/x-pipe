@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.api.migration.auto;
 
+import com.ctrip.xpipe.api.migration.auto.data.MonitorForceFailoverResult;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
+import com.ctrip.xpipe.endpoint.HostPort;
 
 import java.util.Map;
 import java.util.Set;
@@ -48,5 +50,8 @@ public interface MonitorService {
     Map<String, String> getBeaconClusterExtra(String system, String clusterName);
 
     Map<String,Set<String>> getAllClusterWithDc(String system);
+
+    MonitorForceFailoverResult forceFailoverShardMaster(String system, String clusterName, String shardName,
+                                                        HostPort target, int timeoutMilli);
 
 }

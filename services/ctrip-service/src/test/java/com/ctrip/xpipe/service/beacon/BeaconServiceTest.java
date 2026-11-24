@@ -2,6 +2,7 @@ package com.ctrip.xpipe.service.beacon;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorForceFailoverResult;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
@@ -22,6 +23,8 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestOperations;
 
 import java.net.InetAddress;
 import java.util.Collections;
@@ -256,6 +259,66 @@ public class BeaconServiceTest extends AbstractServiceTest {
         webServer.enqueue(new MockResponse()
                 .setResponseCode(404).setBody("<html><body><h1>Whitelabel Error Page</h1></body></html>"));
         beaconService.getBeaconClusterExtra(system, cluster);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testForceFailoverShardMaster() throws Exception {
+        webServer.enqueue(new MockResponse().setBody("{\"code\":0,\"msg\":\"success\",\"data\":\"FIXED\"}")
+                .setHeader("Content-Type", "application/json"));
+
+        MonitorForceFailoverResult result = beaconService.forceFailoverShardMaster(system, cluster, "shard1",
+                new HostPort("10.0.0.2", 6379), 3000);
+
+        Assert.assertTrue(result.isSuccess());
+        Assert.assertEquals("FIXED", result.getData());
+        RecordedRequest request = webServer.takeRequest();
+        Assert.assertEquals("/api/v1/failover/xpipe/cluster/cluster1", request.getPath());
+        Assert.assertEquals("POST", request.getMethod());
+        Map<String, Object> body = Codec.DEFAULT.decode(request.getBody().readByteArray(), Map.class);
+        Assert.assertEquals(Collections.singletonMap("shard1", "10.0.0.2:6379"), body.get("forcedShardMasters"));
+        assertBeaconMetric("forceFailover", "POST", true, system, cluster);
+    }
+
+    @Test
+    public void testForceFailoverShardMasterShouldReturnBeaconFailureCode() {
+        webServer.enqueue(new MockResponse()
+                .setBody("{\"code\":5002,\"msg\":\"force failover is still running\",\"data\":{\"taskId\":\"t-1\"}}")
+                .setHeader("Content-Type", "application/json"));
+
+        MonitorForceFailoverResult result = beaconService.forceFailoverShardMaster(system, cluster, "shard1",
+                new HostPort("10.0.0.2", 6379), 3000);
+
+        Assert.assertEquals(5002, result.getCode());
+        Assert.assertEquals("force failover is still running", result.getMsg());
+        Assert.assertEquals(Collections.singletonMap("taskId", "t-1"), result.getData());
+        assertBeaconMetric("forceFailover", "POST", false, system, cluster);
+    }
+
+    @Test
+    public void testForceFailoverShardMasterShouldNotRetryOnReadTimeout() {
+        webServer.enqueue(new MockResponse().setBody("{\"code\":0,\"msg\":\"success\"}")
+                .setHeader("Content-Type", "application/json")
+                .setBodyDelay(2, TimeUnit.SECONDS));
+        webServer.enqueue(new MockResponse().setBody("{\"code\":0,\"msg\":\"success\"}")
+                .setHeader("Content-Type", "application/json"));
+
+        try {
+            beaconService.forceFailoverShardMaster(system, cluster, "shard1", new HostPort("10.0.0.2", 6379), 300);
+            Assert.fail("expected ResourceAccessException");
+        } catch (ResourceAccessException ignored) {
+        }
+
+        Assert.assertEquals(1, webServer.getRequestCount());
+        assertBeaconMetric("forceFailover", "POST", false, system, cluster);
+    }
+
+    @Test
+    public void testForceFailoverRestTemplateRebuiltOnlyWhenTimeoutChanged() {
+        RestOperations first = beaconService.getForceFailoverRestTemplate(1000);
+        Assert.assertSame(first, beaconService.getForceFailoverRestTemplate(1000));
+        Assert.assertNotSame(first, beaconService.getForceFailoverRestTemplate(2000));
+        Assert.assertNotSame(beaconService.restTemplate, first);
     }
 
     private MetricData assertBeaconMetric(String operation, String method, boolean success, String metricSystem, String metricCluster) {
