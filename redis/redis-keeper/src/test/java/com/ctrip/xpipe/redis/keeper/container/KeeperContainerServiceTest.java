@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.container;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.api.lifecycle.LifecycleState;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.meta.HealthState;
@@ -267,6 +268,27 @@ public class KeeperContainerServiceTest extends AbstractTest {
         when(redisKeeperServer.getLastElectionResetTime()).thenReturn(0L);
         keeperContainerService.update(HealthState.DOWN, null);
         verify(redisKeeperServer, times(1)).resetElection();
+    }
+
+    @Test
+    public void testRecoverTfsHealthPublishesHealthyStateImmediately() {
+        ReplId replId = ReplId.from(1L);
+        TfsHealthChecker checker = mock(TfsHealthChecker.class);
+        LifecycleState lifecycleState = mock(LifecycleState.class);
+        keeperContainerService.setRedisKeeperServers(Collections.singletonMap(replId.toString(), redisKeeperServer));
+        ReflectionTestUtils.setField(keeperContainerService, "tfsHealthChecker", checker);
+        when(redisKeeperServer.getLifecycleState()).thenReturn(lifecycleState);
+        when(lifecycleState.isStarted()).thenReturn(true);
+        when(redisKeeperServer.isTfsMode()).thenReturn(true);
+        when(checker.recoverToHealthy(redisKeeperServer)).thenReturn(true);
+        when(redisKeeperServer.publishElectionData()).thenReturn(true);
+
+        keeperContainerService.recoverHealthState(replId);
+
+        verify(checker).recoverToHealthy(redisKeeperServer);
+        verify(redisKeeperServer).publishElectionData();
+        verify(checker).onElectionReset(replId.toString());
+        verify(redisKeeperServer, never()).resetElection();
     }
 
     /** A backup keeper must publish its own health state too, or the metaserver could promote it. */

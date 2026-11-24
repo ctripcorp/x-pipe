@@ -252,6 +252,41 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
         return diskHealthChecker.getResult();
     }
 
+    public void recoverHealthState(ReplId replId) {
+        String keeperServerKey = replId.toString();
+        RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
+
+        if (keeperServer == null) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_NOT_EXIST,
+                            String.format("Recover health for %s failed since keeper doesn't exist", replId)), null);
+        }
+        if (!keeperServer.getLifecycleState().isStarted()) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_NOT_STARTED,
+                            String.format("Keeper for %s has not started", replId)), null);
+        }
+        if (!keeperServer.isTfsMode()) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
+                            String.format("Recover health for %s failed since keeper is not in TFS mode", replId)), null);
+        }
+        if (!tfsHealthChecker.recoverToHealthy(keeperServer)) {
+            String state = keeperServer.getCurrentKeeperMeta() == null
+                    ? null : keeperServer.getCurrentKeeperMeta().getHealthState();
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
+                            String.format("Recover health for %s rejected in state %s", replId, state)), null);
+        }
+        // Manual recovery bypasses reset throttling. A failed publication remains pending in the checker.
+        if (!keeperServer.publishElectionData()) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
+                            String.format("Recover health for %s failed to publish election data", replId)), null);
+        }
+        tfsHealthChecker.onElectionReset(keeperServerKey);
+    }
+
     public void resetElection(ReplId replId) {
         String keeperServerKey = replId.toString();
 
