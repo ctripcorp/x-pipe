@@ -40,6 +40,7 @@ public class TailCacheFileSystemConfig {
     // if the restore is timeout, all step will be executed again on the next call.
     private long restoreWaitTimeoutMs = 20_000;
     private long writeBatchBytes = 1 * 1024 * 1024;
+    private long writeBatchIntervalMs = 1000;
     private int maxWriteChunkThreshold = 32;
     private int eioRetryMaxAttempts = 1;
 
@@ -112,6 +113,10 @@ public class TailCacheFileSystemConfig {
 
     public static void validateWriteBatchBytes(long writeBatchBytes) {
         if (writeBatchBytes <= 0) throw new IllegalArgumentException("writeBatchBytes must be positive");
+    }
+
+    public static void validateWriteBatchIntervalMs(long writeBatchIntervalMs) {
+        if (writeBatchIntervalMs <= 0) throw new IllegalArgumentException("writeBatchIntervalMs must be positive");
     }
 
     public static void validateMaxWriteChunkThreshold(int maxWriteChunkThreshold) {
@@ -293,6 +298,16 @@ public class TailCacheFileSystemConfig {
     public TailCacheFileSystemConfig setWriteBatchBytes(long writeBatchBytes) {
         validateWriteBatchBytes(writeBatchBytes);
         this.writeBatchBytes = writeBatchBytes;
+        return this;
+    }
+
+    public long getWriteBatchIntervalMs() {
+        return writeBatchIntervalMs;
+    }
+
+    public TailCacheFileSystemConfig setWriteBatchIntervalMs(long writeBatchIntervalMs) {
+        validateWriteBatchIntervalMs(writeBatchIntervalMs);
+        this.writeBatchIntervalMs = writeBatchIntervalMs;
         return this;
     }
 

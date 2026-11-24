@@ -72,6 +72,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile long ioWaitTimeoutMs;
     private volatile long restoreWaitTimeoutMs;
     private volatile long writeBatchBytes;
+    private volatile long writeBatchIntervalMs;
     private volatile int maxWriteChunkThreshold;
     private volatile int eioRetryMaxAttempts;
     private final ExecutorService ioExecutor;
@@ -112,6 +113,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.ioWaitTimeoutMs = config.getIoWaitTimeoutMs();
         this.restoreWaitTimeoutMs = config.getRestoreWaitTimeoutMs();
         this.writeBatchBytes = config.getWriteBatchBytes();
+        this.writeBatchIntervalMs = config.getWriteBatchIntervalMs();
         this.maxWriteChunkThreshold = config.getMaxWriteChunkThreshold();
         this.eioRetryMaxAttempts = config.getEioRetryMaxAttempts();
         this.ioExecutor = ioExecutor;
@@ -307,6 +309,15 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.writeBatchBytes = writeBatchBytes;
     }
 
+    public long getWriteBatchIntervalMs() {
+        return writeBatchIntervalMs;
+    }
+
+    public void setWriteBatchIntervalMs(long writeBatchIntervalMs) {
+        TailCacheFileSystemConfig.validateWriteBatchIntervalMs(writeBatchIntervalMs);
+        this.writeBatchIntervalMs = writeBatchIntervalMs;
+    }
+
     public int getMaxWriteChunkThreshold() {
         return maxWriteChunkThreshold;
     }
@@ -484,6 +495,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             writeBuf.release();
             return;
         }
+        final long dispatchTimeMs = System.currentTimeMillis();
         CompletableFuture<Long> flushFuture = StorageUtil.supply(ioExecutor, file, () -> {
             if (file.closed) {
                 writeBuf.release();
@@ -506,6 +518,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                         entry.writtenToFsOffset = written;
                     } else {
                         entry.writtenToFsOffset += written;
+                    }
+                    if (hasWriteData) {
+                        entry.updateLastWrittenToFsTime(dispatchTimeMs);
                     }
                     entry.pendingFsyncBytes = file.pendingFsyncBytes;
                 }
@@ -1294,6 +1309,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                         if (!entry.isInitialized()) {
                             entry.cacheStartOffset = 0;
                             entry.fsInconsistent = true;
+                            entry.updateLastWrittenToFsTime(System.currentTimeMillis());
                         }
                     }
                     return;
@@ -1318,6 +1334,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             entry.cacheStartOffset = endOffset;
             entry.cacheEndOffset = endOffset;
             entry.writtenToFsOffset = endOffset;
+            entry.updateLastWrittenToFsTime(System.currentTimeMillis());
         }
     }
 
@@ -1439,6 +1456,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             entry.cacheStartOffset = 0;
             entry.cacheEndOffset = actualSize;
             entry.writtenToFsOffset = actualSize;
+            entry.updateLastWrittenToFsTime(System.currentTimeMillis());
         }
     }
 
@@ -1641,10 +1659,18 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     // Must be called only when there is no in-flight IO for this file.
     private ByteBuf buildWriteBufAfterInFlight(FileCacheEntry entry) {
         long pending = Math.max(0, entry.cacheEndOffset - entry.writtenToFsOffset);
-        if (pending < writeBatchBytes) {
+        if (!reachWriteBatch(entry, pending)) {
             return Unpooled.buffer(0);
         }
         return entry.buildWriteBufFromCache(maxWriteChunkThreshold * chunkSize, chunkSize);
+    }
+
+    private boolean reachWriteBatch(FileCacheEntry entry, long pending) {
+        if (pending <= 0) {
+            return false;
+        }
+        return pending >= writeBatchBytes
+                || System.currentTimeMillis() - entry.lastWrittenToFsTimeMs >= writeBatchIntervalMs;
     }
 
     @Override
@@ -1778,7 +1804,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             } else {
                 long pending = entry.cacheEndOffset - entry.writtenToFsOffset;
                 if (pending == writeSize) {
-                    if (pending >= writeBatchBytes) {
+                    if (reachWriteBatch(entry, pending)) {
                         writeBuf = data;
                     } else {
                         data.release();
@@ -1802,6 +1828,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             writeBuf.release();
             return CompletableFuture.completedFuture(writeSize);
         }
+        final long dispatchTimeMs = System.currentTimeMillis();
         CompletableFuture<Long> ioFuture = StorageUtil.supplyIgnoringSideFailures(ioExecutor,file, () -> {
             if (file.closed) {
                 writeBuf.release();
@@ -1820,6 +1847,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                         } else {
                             entry.writtenToFsOffset += written;
                         }
+                        entry.updateLastWrittenToFsTime(dispatchTimeMs);
                         entry.pendingFsyncBytes = file.pendingFsyncBytes;
                     }
                 }

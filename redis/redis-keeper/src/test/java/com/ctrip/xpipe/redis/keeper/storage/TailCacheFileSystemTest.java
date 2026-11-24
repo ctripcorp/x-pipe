@@ -295,6 +295,44 @@ public class TailCacheFileSystemTest {
     }
 
     @Test
+    public void testWriteBatchingByInterval() throws Exception {
+        // Below writeBatchBytes(128), a write still reaches the delegate once writeBatchIntervalMs
+        // has passed since the last FS write (or since cache init).
+        tcf.setWriteBatchIntervalMs(200);
+        String p = path("fileInterval");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertTrue("init sets the write time", entry.lastWrittenToFsTimeMs > 0);
+
+        // Within the interval right after init → no IO
+        delegate.reset();
+        int tasksBefore = ioExecutor.submittedCount();
+        writeTcfSync(writer, new byte[50]);
+        assertEquals("no task submitted", tasksBefore, ioExecutor.submittedCount());
+        assertEquals(0, entry.writtenToFsOffset);
+
+        // Interval elapsed → the pending 60 bytes are written although 60 < 128
+        Thread.sleep(250);
+        long timeBefore = entry.lastWrittenToFsTimeMs;
+        tasksBefore = ioExecutor.submittedCount();
+        writeTcfSync(writer, new byte[10]);
+        assertEquals("one task submitted", tasksBefore + 1, ioExecutor.submittedCount());
+        awaitAll();
+        assertEquals(1, delegate.fileWriteCount);
+        assertEquals(60, entry.writtenToFsOffset);
+        assertTrue("completion records the dispatch time", entry.lastWrittenToFsTimeMs > timeBefore);
+
+        // Interval restarts from that write → no IO
+        delegate.reset();
+        tasksBefore = ioExecutor.submittedCount();
+        writeTcfSync(writer, new byte[10]);
+        assertEquals("no task submitted", tasksBefore, ioExecutor.submittedCount());
+        assertEquals(60, entry.writtenToFsOffset);
+
+        tcf.close(writer).get();
+    }
+
+    @Test
     public void testReadAfterWriteAndFsync() throws Exception {
         String p = path("file5");
         AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();

@@ -28,6 +28,8 @@ class FileCacheEntry {
     volatile long cacheEndOffset = 0;
     // Exclusive upper bound of data written to the backing FS.
     volatile long writtenToFsOffset = 0;
+    // Wall-clock time (ms) when the latest completed write to the backing FS was dispatched.
+    volatile long lastWrittenToFsTimeMs = 0;
     // Bytes written to FS but not yet fsynced.
     volatile long pendingFsyncBytes = 0;
     // Atomic FULL_CACHE content version, used to track dirty state.
@@ -167,6 +169,13 @@ class FileCacheEntry {
 
     boolean isInitialized() {
         return cacheStartOffset >= 0;
+    }
+
+    // Must be called under synchronized(this).
+    void updateLastWrittenToFsTime(long timeMs) {
+        if (timeMs > lastWrittenToFsTimeMs) {
+            lastWrittenToFsTimeMs = timeMs;
+        }
     }
 
     boolean isCacheDirty(boolean atomicReplace) {
