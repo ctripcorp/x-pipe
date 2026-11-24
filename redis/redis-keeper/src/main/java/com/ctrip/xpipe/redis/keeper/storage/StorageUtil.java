@@ -310,6 +310,16 @@ class StorageUtil {
         return message != null && message.contains("No space left on device");
     }
 
+    // ENOENT is a NoSuchFileException from path operations, but a plain IOException carrying the
+    // errno message from operations on an open channel (e.g. FileChannel.size).
+    static boolean isNoSuchFile(IOException e) {
+        if (e instanceof NoSuchFileException) {
+            return true;
+        }
+        String message = e.getMessage();
+        return message != null && message.contains("No such file or directory");
+    }
+
     // target is supplied only by transferTo: ClosedChannelException does not identify which side
     // closed, so distinguish a closed socket target from a closed persistent file channel here.
     static RuntimeException wrapIOException(IOException e, WritableByteChannel target) {
@@ -319,7 +329,7 @@ class StorageUtil {
             }
             return new StorageIOException(e);
         }
-        if (e instanceof NoSuchFileException
+        if (isNoSuchFile(e)
                 || e instanceof FileAlreadyExistsException
                 || e instanceof DirectoryNotEmptyException) {
             return new StaleStateException(e);

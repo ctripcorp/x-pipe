@@ -777,6 +777,17 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     @Test
+    public void testNoSuchFileIsRecognizedFromChannelMessage() {
+        // Path operations throw NoSuchFileException; operations on an open channel (e.g. size)
+        // report ENOENT as a plain IOException with the errno message.
+        IOException channelEnoent = new IOException("No such file or directory");
+        assertTrue(StorageUtil.isNoSuchFile(channelEnoent));
+        assertTrue(StorageUtil.isNoSuchFile(new java.nio.file.NoSuchFileException("/a/b")));
+        assertFalse(StorageUtil.isNoSuchFile(new IOException("Input/output error")));
+        assertTrue(StorageUtil.wrapIOException(channelEnoent) instanceof StaleStateException);
+    }
+
+    @Test
     public void testWriteAndFlushForceFailureStillReturnsWritten() throws Exception {
         // One batch: the whole write lands before the only force.
         fs.setFsyncIntervalBytes(5);

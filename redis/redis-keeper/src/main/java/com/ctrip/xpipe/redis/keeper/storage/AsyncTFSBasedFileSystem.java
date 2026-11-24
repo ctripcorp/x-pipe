@@ -843,7 +843,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             if (buf != null) {
                 buf.release();
             }
-            if (e instanceof NoSuchFileException) {
+            if (StorageUtil.isNoSuchFile(e)) {
                 StorageUtil.closeChannelQuietly(file.currentSegmentChannel);
                 file.currentSegmentChannel = null;
                 return Unpooled.buffer(0);
@@ -1126,7 +1126,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             maybeSwitchSegment(file, s, n, offset + n);
             return n;
         } catch (IOException e) {
-            if (e instanceof NoSuchFileException) {
+            if (StorageUtil.isNoSuchFile(e)) {
                 StorageUtil.closeChannelQuietly(file.currentSegmentChannel);
                 file.currentSegmentChannel = null;
                 return n;
