@@ -3928,8 +3928,9 @@ public class TailCacheFileSystemTest {
     public void testWriteReportsOpportunisticForceSideFailures() throws Exception {
         // The write bytes are present, but the opportunistic force failure is now the primary
         // IoTask failure so health telemetry can observe it.
+        // One batch of 5 bytes, so the whole write lands before the failing force.
         AsyncTFSBasedFileSystem forceFs = new AsyncTFSBasedFileSystem(
-                ioExecutor, 1L, Long.MAX_VALUE / 2_000_000L, FileChannelFactory.DEFAULT);
+                ioExecutor, 5L, Long.MAX_VALUE / 2_000_000L, FileChannelFactory.DEFAULT);
         TailCacheFileSystem forceTcf = newTcf(forceFs,
                 baseConfig()
                         .setWriteBatchBytes(1)

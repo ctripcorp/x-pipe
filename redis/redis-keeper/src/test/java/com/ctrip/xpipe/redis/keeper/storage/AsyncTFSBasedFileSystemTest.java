@@ -778,7 +778,8 @@ public class AsyncTFSBasedFileSystemTest {
 
     @Test
     public void testWriteAndFlushForceFailureStillReturnsWritten() throws Exception {
-        fs.setFsyncIntervalBytes(1);
+        // One batch: the whole write lands before the only force.
+        fs.setFsyncIntervalBytes(5);
         String p = path("file_force_fail");
         AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         FileChannel real = file.channel;
@@ -792,6 +793,94 @@ public class AsyncTFSBasedFileSystemTest {
         // force failed, so the opportunistic fsync did not clear the counter
         assertEquals(5, file.pendingFsyncBytes);
         assertEquals(5, Files.size(Paths.get(p)));
+
+        file.channel = real;
+        StorageUtil.closeChannels(fs.closeSync(file));
+    }
+
+    @Test
+    public void testWriteAndFlushForcesEachBatchAndMergesShortTail() throws Exception {
+        fs.setFsyncIntervalBytes(10);
+        String p = path("file_batch_force");
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
+        FileChannel real = file.channel;
+        ForceFailingFileChannel counting = new ForceFailingFileChannel(real, Integer.MAX_VALUE);
+        file.channel = counting;
+
+        // 25 bytes: a 10-byte batch, then the 15-byte rest since a 5-byte tail joins the last batch.
+        Pair<Long, RuntimeException> outcome = fs.writeSync(file, bufOf(new byte[25]));
+        assertEquals(Long.valueOf(25L), outcome.getKey());
+        assertNull(outcome.getValue());
+        assertEquals(Arrays.asList(10, 15), counting.writeSizes);
+        assertEquals(Arrays.asList(10L, 25L), counting.forcedPositions);
+        assertEquals(0, file.pendingFsyncBytes);
+        assertEquals(25, Files.size(Paths.get(p)));
+
+        file.channel = real;
+        StorageUtil.closeChannels(fs.closeSync(file));
+    }
+
+    @Test
+    public void testWriteAndFlushBatchesWithoutForceWhenNotFlushing() throws Exception {
+        fs.setFsyncIntervalBytes(10);
+        String p = path("file_batch_no_force");
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
+        FileChannel real = file.channel;
+        ForceFailingFileChannel counting = new ForceFailingFileChannel(real, Integer.MAX_VALUE);
+        file.channel = counting;
+
+        // 9 bytes stays below the threshold: one write, no force.
+        assertEquals(Long.valueOf(9L), fs.writeSync(file, bufOf(new byte[9])).getKey());
+        assertEquals(Collections.singletonList(9), counting.writeSizes);
+        assertTrue(counting.forcedPositions.isEmpty());
+        assertEquals(9, file.pendingFsyncBytes);
+
+        // The flush decision is made once for the whole write, so with the byte threshold out of
+        // reach even a large write is only split, never forced.
+        fs.setFsyncIntervalBytes(4);
+        file.pendingFsyncBytes = Long.MIN_VALUE / 2;
+        counting.writeSizes.clear();
+        assertEquals(Long.valueOf(13L), fs.writeSync(file, bufOf(new byte[13])).getKey());
+        assertEquals("a tail smaller than one batch joins the last batch", Arrays.asList(4, 4, 5), counting.writeSizes);
+        assertTrue(counting.forcedPositions.isEmpty());
+        assertEquals(22, Files.size(Paths.get(p)));
+
+        file.channel = real;
+        StorageUtil.closeChannels(fs.closeSync(file));
+    }
+
+    @Test
+    public void testFsyncIntervalBytesMustBePositive() {
+        try {
+            fs.setFsyncIntervalBytes(0);
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            // a non-positive batch size would never make progress
+        }
+        try {
+            new AsyncTFSBasedFileSystem(ioExecutor, 0, 1);
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            // validated at construction too
+        }
+    }
+
+    @Test
+    public void testWriteAndFlushStopsAtForceFailure() throws Exception {
+        fs.setFsyncIntervalBytes(10);
+        String p = path("file_batch_force_fail");
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
+        FileChannel real = file.channel;
+        ForceFailingFileChannel failing = new ForceFailingFileChannel(real, 2);
+        file.channel = failing;
+
+        // Batches of 10, 10, 15: the second force fails, so the last batch is never written.
+        Pair<Long, RuntimeException> outcome = fs.writeSync(file, bufOf(new byte[35]));
+        assertEquals(Long.valueOf(20L), outcome.getKey());
+        assertTrue(outcome.getValue() instanceof StorageIOException);
+        assertEquals(Collections.singletonList(10L), failing.forcedPositions);
+        assertEquals("the batch after the last good force is not durable", 10, file.pendingFsyncBytes);
+        assertEquals(20, Files.size(Paths.get(p)));
 
         file.channel = real;
         StorageUtil.closeChannels(fs.closeSync(file));
@@ -1942,9 +2031,21 @@ public class AsyncTFSBasedFileSystemTest {
      */
     static final class ForceFailingFileChannel extends FileChannel {
         private final FileChannel delegate;
+        // 1-based force call from which every force fails.
+        private final int failFromForce;
+        private int forceCalls;
+        // Channel position at each force that succeeded.
+        final List<Long> forcedPositions = new ArrayList<>();
+        // Bytes handed to each write call.
+        final List<Integer> writeSizes = new ArrayList<>();
 
         ForceFailingFileChannel(FileChannel delegate) {
+            this(delegate, 1);
+        }
+
+        ForceFailingFileChannel(FileChannel delegate, int failFromForce) {
             this.delegate = delegate;
+            this.failFromForce = failFromForce;
         }
 
         @Override
@@ -1959,11 +2060,15 @@ public class AsyncTFSBasedFileSystemTest {
 
         @Override
         public int write(ByteBuffer src) throws IOException {
+            writeSizes.add(src.remaining());
             return delegate.write(src);
         }
 
         @Override
         public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
+            int size = 0;
+            for (int i = offset; i < offset + length; i++) size += srcs[i].remaining();
+            writeSizes.add(size);
             return delegate.write(srcs, offset, length);
         }
 
@@ -1991,7 +2096,11 @@ public class AsyncTFSBasedFileSystemTest {
 
         @Override
         public void force(boolean metaData) throws IOException {
-            throw new IOException("force failed");
+            if (++forceCalls >= failFromForce) {
+                throw new IOException("force failed");
+            }
+            delegate.force(metaData);
+            forcedPositions.add(delegate.position());
         }
 
         @Override

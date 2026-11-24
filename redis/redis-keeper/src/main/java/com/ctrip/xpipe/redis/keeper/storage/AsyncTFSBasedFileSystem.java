@@ -63,6 +63,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             FileChannelFactory channelFactory) {
         this.channelFactory = Objects.requireNonNull(channelFactory, "channelFactory");
         this.ioExecutor = ioExecutor;
+        validateFsyncIntervalBytes(fsyncIntervalBytes);
         this.fsyncIntervalBytes = fsyncIntervalBytes;
         this.fsyncIntervalNanos = fsyncIntervalMillis * 1_000_000L;
         for (int i = 0; i < LOCK_STRIPES; i++) openCloseLocks[i] = new Object();
@@ -73,7 +74,13 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     public void setFsyncIntervalBytes(long fsyncIntervalBytes) {
+        validateFsyncIntervalBytes(fsyncIntervalBytes);
         this.fsyncIntervalBytes = fsyncIntervalBytes;
+    }
+
+    // Also the per-write batch size, so it must be positive for writeAndFlush to make progress.
+    private static void validateFsyncIntervalBytes(long fsyncIntervalBytes) {
+        if (fsyncIntervalBytes <= 0) throw new IllegalArgumentException("fsyncIntervalBytes must be positive");
     }
 
     public long getFsyncIntervalMillis() {
@@ -658,20 +665,31 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return length;
     }
 
+    // Data is always written in fsyncIntervalBytes batches to cap each single write, and a tail
+    // smaller than one batch joins the last batch. Whether to flush is decided once up front for the
+    // whole write; when flushing, every batch is forced. A force failure stops the write, and the
+    // bytes written so far are returned beside the failure.
     private Pair<Long, RuntimeException> writeAndFlush(AbstractStorageFile file, ByteBuf data) throws IOException {
-        long written = writeFully(file.currentWriteChannel(), data);
-        file.pendingFsyncBytes += written;
-        RuntimeException sideFailure = null;
-        if (file.pendingFsyncBytes >= fsyncIntervalBytes
-                || System.nanoTime() - file.lastFsyncNanos >= fsyncIntervalNanos) {
-            try {
-                forceCurrentChannel(file);
-            } catch (IOException e) {
-                logger.error("fsync failed for {}", file.path, e);
-                sideFailure = StorageUtil.wrapIOException(e);
+        FileChannel ch = file.currentWriteChannel();
+        final boolean flush = file.pendingFsyncBytes + data.readableBytes() >= fsyncIntervalBytes
+                || System.nanoTime() - file.lastFsyncNanos >= fsyncIntervalNanos;
+        final long batchBytes = fsyncIntervalBytes;
+        long written = 0;
+        while (data.isReadable()) {
+            int remaining = data.readableBytes();
+            int length = remaining - batchBytes < batchBytes ? remaining : (int) batchBytes;
+            written += writeFully(ch, data.readSlice(length));
+            file.pendingFsyncBytes += length;
+            if (flush) {
+                try {
+                    forceCurrentChannel(file);
+                } catch (IOException e) {
+                    logger.error("fsync failed for {}", file.path, e);
+                    return Pair.from(written, StorageUtil.wrapIOException(e));
+                }
             }
         }
-        return Pair.from(written, sideFailure);
+        return Pair.from(written, null);
     }
 
     void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead, long offset)

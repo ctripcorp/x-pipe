@@ -82,7 +82,7 @@ public interface AsyncFileSystem {
         throw new UnsupportedOperationException();
     }
     // Key: bytes written. Value: opportunistic force failure, wrapped like any IO failure; null if none.
-    // Write success still updates written bytes even when force failure.
+    // A force failure stops the write, so Key may be less than the data; the bytes before it still count.
     default Pair<Long, RuntimeException> writeSync(AsyncFile file, ByteBuf data) {
         throw new UnsupportedOperationException();
     }
@@ -212,7 +212,7 @@ public interface AsyncFileSystem {
         throw new UnsupportedOperationException();
     }
     // Key: bytes written. Value: opportunistic force failure, wrapped like any IO failure; null if none.
-    // Write success still updates written bytes even when force failure.
+    // A force failure stops the write, so Key may be less than the data; the bytes before it still count.
     default Pair<Long, RuntimeException> writeSync(AsyncSegmentFile file, ByteBuf data) {
         throw new UnsupportedOperationException();
     }
