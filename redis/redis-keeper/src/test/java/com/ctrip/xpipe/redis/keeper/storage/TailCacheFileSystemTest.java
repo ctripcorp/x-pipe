@@ -439,26 +439,27 @@ public class TailCacheFileSystemTest {
         try {
             FileCacheEntry entry = writer.getCacheEntry();
             delegate.reset();
-            // 5 chunks accumulate: the guard checks before appending, so 4*CHUNK_SIZE is still allowed.
-            for (int i = 0; i < 5; i++) {
+            // The guard counts this write plus two chunks of alignment slack against the 4-chunk
+            // budget: the second write is still within it (64 + 64 + 128 = 256).
+            for (int i = 0; i < 2; i++) {
                 boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
             }
             awaitAll();
-            assertEquals(5 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals(2 * CHUNK_SIZE, entry.cacheEndOffset);
             assertEquals(0, entry.writtenToFsOffset);
-            assertEquals(5 * CHUNK_SIZE, entry.unDurableBytes());
+            assertEquals(2 * CHUNK_SIZE, entry.unDurableBytes());
             assertEquals("batching never triggered", 0, delegate.fileWriteCount);
 
-            // 5*CHUNK_SIZE > 4*CHUNK_SIZE → drain before caching anything new.
+            // 128 + 64 + 128 = 320 > 4*CHUNK_SIZE → drain before caching anything new.
             boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
             awaitAll();
 
             assertEquals("the guard wrote the whole undurable tail once", 1, delegate.fileWriteCount);
-            assertEquals(5 * CHUNK_SIZE, delegate.fileWrittenData.get(0).length);
+            assertEquals(2 * CHUNK_SIZE, delegate.fileWrittenData.get(0).length);
             assertEquals("and fsynced it", 1, delegate.fileFsyncCount);
-            assertEquals(5 * CHUNK_SIZE, readFileSync(p).length);
-            assertEquals(6 * CHUNK_SIZE, entry.cacheEndOffset);
-            assertEquals(5 * CHUNK_SIZE, entry.writtenToFsOffset);
+            assertEquals(2 * CHUNK_SIZE, readFileSync(p).length);
+            assertEquals(3 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals(2 * CHUNK_SIZE, entry.writtenToFsOffset);
             assertEquals("only the new payload is undurable again", CHUNK_SIZE, entry.unDurableBytes());
         } finally {
             boundedTcf.close(writer).get(5, TimeUnit.SECONDS);
@@ -474,26 +475,25 @@ public class TailCacheFileSystemTest {
         AsyncFile writer = boundedTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             FileCacheEntry entry = writer.getCacheEntry();
-            for (int i = 0; i < 3; i++) {
-                boundedTcf.write(writer, bufOf(new byte[128])).get(5, TimeUnit.SECONDS);
-                awaitAll();
-            }
-            assertEquals(384, entry.cacheEndOffset);
-            assertEquals(384, entry.writtenToFsOffset);
-            assertEquals(384, entry.pendingFsyncBytes);
+            boundedTcf.write(writer, bufOf(new byte[128])).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertEquals(128, entry.cacheEndOffset);
+            assertEquals(128, entry.writtenToFsOffset);
+            assertEquals(128, entry.pendingFsyncBytes);
             assertFalse("the cache owes no write back", entry.isCacheDirty(false));
-            assertEquals(384, entry.unDurableBytes());
+            assertEquals(128, entry.unDurableBytes());
             delegate.reset();
 
-            // 384 > 4*CHUNK_SIZE(256) → drain. There is nothing to write, only to fsync.
+            // 128 + 128 + 2 chunks(128) = 384 > 4*CHUNK_SIZE(256) → drain. There is nothing to
+            // write, only to fsync.
             boundedTcf.write(writer, bufOf(new byte[128])).get(5, TimeUnit.SECONDS);
             awaitAll();
 
             assertEquals("the guard fsynced", 1, delegate.fileFsyncCount);
             assertEquals("the only write is the new payload's own batch", 1, delegate.fileWriteCount);
             assertEquals(128, delegate.fileWrittenData.get(0).length);
-            assertEquals(512, entry.cacheEndOffset);
-            assertEquals(512, entry.writtenToFsOffset);
+            assertEquals(256, entry.cacheEndOffset);
+            assertEquals(256, entry.writtenToFsOffset);
             assertEquals("back within budget", 128, entry.unDurableBytes());
         } finally {
             boundedTcf.close(writer).get(5, TimeUnit.SECONDS);
@@ -511,11 +511,11 @@ public class TailCacheFileSystemTest {
         AsyncFile writer = boundedTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             FileCacheEntry entry = writer.getCacheEntry();
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 2; i++) {
                 boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
             }
             awaitAll();
-            assertEquals(5 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals(2 * CHUNK_SIZE, entry.cacheEndOffset);
 
             faulty.failOn(new IOException("boom"), Op.FILE_WRITE);
             for (int attempt = 1; attempt <= 2; attempt++) {
@@ -525,7 +525,7 @@ public class TailCacheFileSystemTest {
                 } catch (Exception expected) {
                     // the drain could not make room
                 }
-                assertEquals("the payload was not cached", 5 * CHUNK_SIZE, entry.cacheEndOffset);
+                assertEquals("the payload was not cached", 2 * CHUNK_SIZE, entry.cacheEndOffset);
                 assertEquals(0, entry.writtenToFsOffset);
             }
 
@@ -533,11 +533,103 @@ public class TailCacheFileSystemTest {
             faulty.release();
             boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
             awaitAll();
-            assertEquals(6 * CHUNK_SIZE, entry.cacheEndOffset);
-            assertEquals(5 * CHUNK_SIZE, entry.writtenToFsOffset);
+            assertEquals(3 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals(2 * CHUNK_SIZE, entry.writtenToFsOffset);
         } finally {
             faulty.release();
             boundedTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testPreWriteDrainFlushesOnlyOneBatch() throws Exception {
+        // 16-chunk budget so the backlog outgrows one batch before the guard fires.
+        TailCacheFileSystem boundedTcf = newTcf(baseConfig()
+                .setPerFileCacheLimits(16 * CHUNK_SIZE, 1, CHUNK_SIZE)
+                .setMaxWriteChunkThreshold(8)
+                .setWriteBatchBytes(1024 * 1024)
+                .setWriteBatchIntervalMs(60_000));
+        String p = path("undurable_limit_batch");
+        AsyncFile writer = boundedTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            delegate.reset();
+            // 14 chunks: 832 + 64 + 128 = 1024 is still within the 16-chunk budget.
+            for (int i = 0; i < 14; i++) {
+                boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            }
+            awaitAll();
+            assertEquals(0, delegate.fileWriteCount);
+            assertEquals(14 * CHUNK_SIZE, entry.unDurableBytes());
+
+            // 896 + 64 + 128 > 1024 → drain one batch: 8 chunks plus this write's size.
+            boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertEquals("a single bounded write", 1, delegate.fileWriteCount);
+            assertEquals(9 * CHUNK_SIZE, delegate.fileWrittenData.get(0).length);
+            assertEquals("and its fsync", 1, delegate.fileFsyncCount);
+            assertEquals(9 * CHUNK_SIZE, entry.writtenToFsOffset);
+            assertEquals(15 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertTrue("the rest stays in cache without failing the write", entry.isCacheDirty(false));
+            assertEquals(6 * CHUNK_SIZE, entry.unDurableBytes());
+        } finally {
+            boundedTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testHighWatermarkDrainKeepsAppendOffReserve() throws Exception {
+        // Same tight memory as testUndurableCacheGrowthFailsReserveInsteadOfLosingData, but with
+        // its watermarks left at 0.3/0.5: above high with two undurable chunks, the write drains
+        // first and its own append then evicts what just became durable, so reserve never runs dry.
+        TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0).setIoWaitTimeoutMs(50));
+        String p = path("high_watermark_drain");
+        AsyncFile writer = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            delegate.reset();
+            for (int i = 0; i < 4; i++) {
+                tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            }
+            awaitAll();
+
+            // The third write saw 128/200 >= 0.5 with 2 undurable chunks and drained them.
+            assertEquals(1, delegate.fileWriteCount);
+            assertEquals(2 * CHUNK_SIZE, delegate.fileWrittenData.get(0).length);
+            assertEquals(1, delegate.fileFsyncCount);
+            assertEquals(2 * CHUNK_SIZE, entry.writtenToFsOffset);
+            assertEquals(4 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertFalse(entry.fsInconsistent);
+            assertEquals(2 * CHUNK_SIZE, readFileSync(p).length);
+        } finally {
+            tightTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testHighWatermarkDrainNeedsTwoUndurableChunks() throws Exception {
+        // High watermark at 0.3, so memory is already high after the first chunk (64/200).
+        TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0).setWatermarkRatios(0.1, 0.3));
+        String p = path("high_watermark_two_chunks");
+        AsyncFile writer = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            delegate.reset();
+            for (int i = 0; i < 2; i++) {
+                tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            }
+            awaitAll();
+            assertEquals("one undurable chunk is not behind yet", 0, delegate.fileWriteCount);
+            assertEquals(0, entry.writtenToFsOffset);
+
+            tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertEquals("two undurable chunks drain", 1, delegate.fileWriteCount);
+            assertEquals(1, delegate.fileFsyncCount);
+            assertEquals(2 * CHUNK_SIZE, entry.writtenToFsOffset);
+        } finally {
+            tightTcf.close(writer).get(5, TimeUnit.SECONDS);
         }
     }
 
@@ -1434,7 +1526,9 @@ public class TailCacheFileSystemTest {
         // The minEvict loop is skipped entirely when durableLimit is set, so nothing is dropped.
         // Kept at 3 chunks (192B) so the reserve stays under maxCacheSizeBytes(200) — a 4th chunk
         // would block for ioWaitTimeoutMs and fail with CacheMemoryReserveException instead.
-        TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0));
+        // High watermark raised so the pre-write drain (high watermark + 2 undurable chunks) stays
+        // out of the way; this test is about eviction refusing undurable chunks.
+        TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0).setWatermarkRatios(0.3, 0.9));
         String p = path("file_evict_undurable");
         AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = file.getCacheEntry();
@@ -3812,7 +3906,11 @@ public class TailCacheFileSystemTest {
         // Nothing is flushed, so the durableLimit check refuses to evict; the cache therefore hits
         // maxCacheSizeBytes. reserve waits ioWaitTimeoutMs and then fails the write rather than
         // silently dropping a chunk.
-        TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0).setIoWaitTimeoutMs(50));
+        // High watermark at 1.0 so the pre-write drain never fires (192/200 stays below it): this
+        // covers memory running out where draining does not apply. With a lower high watermark the
+        // drain resolves it, see testHighWatermarkDrainKeepsAppendOffReserve.
+        TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0).setIoWaitTimeoutMs(50)
+                .setWatermarkRatios(0.3, 1.0));
         String p = path("reserve_timeout");
         AsyncFile writer = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {

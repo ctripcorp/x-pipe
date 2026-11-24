@@ -465,6 +465,19 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private void flushPendingWriteAndAwait(AbstractStorageFile file,
             java.util.function.Function<ByteBuf, Pair<Long, RuntimeException>> fsWrite,
             Runnable fsFsync, boolean failIfStillDirty) {
+        flushPendingWriteAndAwait(file, fsWrite, fsFsync, failIfStillDirty, Long.MAX_VALUE);
+    }
+
+    /**
+     * @param maxBytes upper bound of cached bytes written by this flush. Long.MAX_VALUE flushes
+     *        everything and requires nothing to be left dirty. A bounded flush leaves the rest in
+     *        cache on purpose, so it succeeds as soon as its own write and fsync do; any IO failure
+     *        is still thrown.
+     */
+    private void flushPendingWriteAndAwait(AbstractStorageFile file,
+            java.util.function.Function<ByteBuf, Pair<Long, RuntimeException>> fsWrite,
+            Runnable fsFsync, boolean failIfStillDirty, long maxBytes) {
+        final boolean partial = maxBytes != Long.MAX_VALUE;
         if (!file.canWrite() || file.getCacheEntry() == null) {
             return;
         }
@@ -487,7 +500,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             writeBuf = atomic.getValue();
             ioGen = atomic.getKey();
         } else {
-            writeBuf = entry.buildWriteBufFromCache(Long.MAX_VALUE, chunkSize);
+            writeBuf = entry.buildWriteBufFromCache(maxBytes, chunkSize);
             ioGen = 0;
         }
         final boolean hasWriteData = writeBuf.isReadable();
@@ -539,6 +552,16 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         // throw even if failIfStillDirty = false as this method is also io task barrier.
         if (incomplete) {
             throw new OperationNotExecutedException(path, flushError);
+        }
+
+        if (partial) {
+            if (retryableFailure) {
+                throw new OperationNotExecutedException(path, flushError);
+            }
+            if (flushError != null) {
+                throw new IllegalStateException("bounded flush failed for " + path, flushError);
+            }
+            return;
         }
 
         boolean stillDirty = entry.isCacheDirty(file.isAtomicReplace())
@@ -1749,12 +1772,33 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     // Must be called only when there is no in-flight IO for this file.
-    private ByteBuf buildWriteBufAfterInFlight(FileCacheEntry entry) {
+    private ByteBuf buildWriteBufAfterInFlight(FileCacheEntry entry, long writeSize) {
         long pending = Math.max(0, entry.cacheEndOffset - entry.writtenToFsOffset);
         if (!reachWriteBatch(entry, pending)) {
             return Unpooled.buffer(0);
         }
-        return entry.buildWriteBufFromCache(maxWriteChunkThreshold * chunkSize, chunkSize);
+        return entry.buildWriteBufFromCache(writeBatchCapBytes(writeSize), chunkSize);
+    }
+
+    // A batch covers this write on top of the usual chunk budget, so the backlog does not grow.
+    private long writeBatchCapBytes(long writeSize) {
+        return maxWriteChunkThreshold * chunkSize + writeSize;
+    }
+
+    /**
+     * Drains part of the backlog before appending, so the write cannot get stuck on memory:
+     * eviction only frees durable chunks. Two chunks cover the partial chunks at both ends of the
+     * undurable range. Above the high watermark, a file holding two chunks of undurable data is
+     * behind: normal small writes are flushed every writeBatchBytes or interval, and large writes
+     * are forced as they go.
+     */
+    private boolean needDrainBeforeAppend(FileCacheEntry entry, long writeSize) {
+        long unDurable = entry.unDurableBytes();
+        if (unDurable + writeSize + 2 * chunkSize > maxCacheSizePerFileBytes) {
+            return true;
+        }
+        double ratio = (double) memoryTracker.committedBytes() / maxCacheSizeBytes;
+        return ratio >= highWatermarkRatio && unDurable >= 2 * chunkSize;
     }
 
     private boolean reachWriteBatch(FileCacheEntry entry, long pending) {
@@ -1822,10 +1866,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
         // prevent cache from growing too large
         if (useCache && !noFs && file.cacheMode == CacheMode.TAIL_CACHE
-                && entry.unDurableBytes() > maxCacheSizePerFileBytes) {
+                && needDrainBeforeAppend(entry, writeSize)) {
             try {
                 prepareBackingFsForWrite(file, true, restoreBackingFs);
-                flushPendingWriteAndAwait(file, fsWrite, fsFsync, true);
+                flushPendingWriteAndAwait(file, fsWrite, fsFsync, true, writeBatchCapBytes(writeSize));
             } catch (RuntimeException e) {
                 data.release();
                 throw e;
@@ -1901,7 +1945,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     }
                 } else {
                     try {
-                        writeBuf = buildWriteBufAfterInFlight(entry);
+                        writeBuf = buildWriteBufAfterInFlight(entry, writeSize);
                     } catch (CacheChunksNotContinuousException e) {
                         // Should be unreachable. if it happens, it means the cache is corrupted and memory will grow until reserve fails.
                         logger.error("cache chunks are not continuous for {}, data remains in cache", file.path, e);
