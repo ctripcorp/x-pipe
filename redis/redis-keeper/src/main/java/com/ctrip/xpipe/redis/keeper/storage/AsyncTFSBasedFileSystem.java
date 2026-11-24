@@ -433,7 +433,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
+    public Pair<Long, RuntimeException> writeSync(AsyncFile file, ByteBuf data) {
         try {
             StorageUtil.requireOpen(file);
             if (file.isAtomicReplace()) {
@@ -592,13 +592,16 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     private void fsyncInternal(AbstractStorageFile file) {
         try {
-            FileChannel ch = file.currentWriteChannel();
-            if (ch != null) ch.force(true);
-            file.pendingFsyncBytes = 0;
-            file.lastFsyncNanos = System.nanoTime();
+            forceCurrentChannel(file);
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }
+    }
+
+    private static void forceCurrentChannel(AbstractStorageFile file) throws IOException {
+        FileChannel ch = file.currentWriteChannel();
+        if (ch != null) ch.force(true);
+        file.markFsynced();
     }
 
     @Override
@@ -655,22 +658,20 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return length;
     }
 
-    private Pair<Long, List<Exception>> writeAndFlush(AbstractStorageFile file, ByteBuf data) throws IOException {
+    private Pair<Long, RuntimeException> writeAndFlush(AbstractStorageFile file, ByteBuf data) throws IOException {
         long written = writeFully(file.currentWriteChannel(), data);
         file.pendingFsyncBytes += written;
-        List<Exception> sideFailures = null;
+        RuntimeException sideFailure = null;
         if (file.pendingFsyncBytes >= fsyncIntervalBytes
                 || System.nanoTime() - file.lastFsyncNanos >= fsyncIntervalNanos) {
             try {
-                file.currentWriteChannel().force(true);
-                file.pendingFsyncBytes = 0;
-                file.lastFsyncNanos = System.nanoTime();
-            } catch (Exception e) {
+                forceCurrentChannel(file);
+            } catch (IOException e) {
                 logger.error("fsync failed for {}", file.path, e);
-                sideFailures = Collections.singletonList(e);
+                sideFailure = StorageUtil.wrapIOException(e);
             }
         }
-        return Pair.from(written, sideFailures);
+        return Pair.from(written, sideFailure);
     }
 
     void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead, long offset)
@@ -835,7 +836,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public Pair<Long, List<Exception>> writeSync(AsyncSegmentFile file, ByteBuf data) {
+    public Pair<Long, RuntimeException> writeSync(AsyncSegmentFile file, ByteBuf data) {
         try {
             StorageUtil.requireOpen(file);
             return writeAndFlush(file, data);

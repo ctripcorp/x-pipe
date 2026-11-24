@@ -3965,7 +3965,7 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
+        public Pair<Long, RuntimeException> writeSync(AsyncFile file, ByteBuf data) {
             int cap = Math.min(3, data.readableBytes());
             ByteBuf head = data.readRetainedSlice(cap);
             data.release();
@@ -4035,7 +4035,7 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
+        public Pair<Long, RuntimeException> writeSync(AsyncFile file, ByteBuf data) {
             if (eioMode) {
                 throw new EIOException(new IOException("Input/output error"));
             }
@@ -4215,13 +4215,13 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
+        public Pair<Long, RuntimeException> writeSync(AsyncFile file, ByteBuf data) {
             faultWrite(Op.FILE_WRITE, file.path, data);
             return super.writeSync(file, data);
         }
 
         @Override
-        public Pair<Long, List<Exception>> writeSync(AsyncSegmentFile file, ByteBuf data) {
+        public Pair<Long, RuntimeException> writeSync(AsyncSegmentFile file, ByteBuf data) {
             faultWrite(Op.SEG_WRITE, file.path, data);
             return super.writeSync(file, data);
         }
@@ -4295,7 +4295,7 @@ public class TailCacheFileSystemTest {
         // ---- AsyncFile ----
 
         @Override
-        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
+        public Pair<Long, RuntimeException> writeSync(AsyncFile file, ByteBuf data) {
             fileWriteCount++;
             byte[] copy = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), copy);
@@ -4330,7 +4330,7 @@ public class TailCacheFileSystemTest {
         // ---- AsyncSegmentFile ----
 
         @Override
-        public Pair<Long, List<Exception>> writeSync(AsyncSegmentFile file, ByteBuf data) {
+        public Pair<Long, RuntimeException> writeSync(AsyncSegmentFile file, ByteBuf data) {
             segWriteCount++;
             byte[] copy = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), copy);

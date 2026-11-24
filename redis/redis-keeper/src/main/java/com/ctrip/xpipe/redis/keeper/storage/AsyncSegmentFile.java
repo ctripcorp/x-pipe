@@ -321,8 +321,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             }
         }
         currentIndexFiles.clear();
-        pendingFsyncBytes = 0;
-        lastFsyncNanos = System.nanoTime();
+        markFsynced();
         return pending;
     }
 
@@ -479,8 +478,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         currentSegmentChannel.truncate(newSegmentSize);
         currentSegmentChannel.position(newSegmentSize);
         currentSegmentChannel.force(true);
-        pendingFsyncBytes = 0;
-        lastFsyncNanos = System.nanoTime();
+        markFsynced();
     }
 
     // ---- Reader metadata-only methods ----

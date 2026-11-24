@@ -110,6 +110,11 @@ public abstract class AbstractStorageFile {
         }
     }
 
+    void markFsynced() {
+        pendingFsyncBytes = 0;
+        lastFsyncNanos = System.nanoTime();
+    }
+
     String getKey() {
         return key;
     }

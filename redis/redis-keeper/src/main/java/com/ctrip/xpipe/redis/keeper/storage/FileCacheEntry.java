@@ -171,6 +171,14 @@ class FileCacheEntry {
         return cacheStartOffset >= 0;
     }
 
+    void syncPendingFsyncBytes(long filePendingFsyncBytes) {
+        synchronized (this) {
+            if (!fsInconsistent) {
+                pendingFsyncBytes = filePendingFsyncBytes;
+            }
+        }
+    }
+
     // Must be called under synchronized(this).
     void updateLastWrittenToFsTime(long timeMs) {
         if (timeMs > lastWrittenToFsTimeMs) {

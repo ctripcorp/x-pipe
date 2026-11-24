@@ -147,6 +147,11 @@ public class TailCacheFileSystemModeAndRetryTest {
         }
     }
 
+    private void awaitIo(TailCacheFileSystem target, AbstractStorageFile file) throws Exception {
+        Map<?, ?> inFlight = (Map<?, ?>) org.springframework.test.util.ReflectionTestUtils.getField(target, "inFlightIo");
+        waitUntil("in-flight io must finish for " + file.path, () -> !inFlight.containsKey(file.ioKey));
+    }
+
     private void waitUntil(String message, BooleanSupplier condition) throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while (!condition.getAsBoolean() && System.nanoTime() < deadline) {
@@ -521,6 +526,126 @@ public class TailCacheFileSystemModeAndRetryTest {
         assertArrayEquals(bytes(1, 2, 3, 4), Files.readAllBytes(Paths.get(p)));
         assertEquals(4, writer.getCacheEntry().writtenToFsOffset);
         assertEquals("the logical append is not replayed", 2, delegate.count(Op.FILE_WRITE));
+        target.close(writer).get();
+    }
+
+    @Test
+    public void testCachedWriteSideEioRecoversChannelWithoutDoubleCounting() throws Exception {
+        TailCacheFileSystem target = newFileSystem(baseConfig().setWriteBatchBytes(1));
+        String p = path("side-eio-cached");
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        FileChannel before = writer.channel;
+        delegate.sideFailOnce(Op.FILE_WRITE, Failure.EIO);
+
+        write(target, writer, bytes(1, 2, 3, 4));
+        waitUntil("side-failed write must finish", () -> writer.channel != before);
+        awaitIo(target, writer);
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertEquals("recovery aligns to the backing size, not size + written", 4, entry.writtenToFsOffset);
+        assertEquals(0, entry.pendingFsyncBytes);
+        assertEquals(0, writer.pendingFsyncBytes);
+
+        write(target, writer, bytes(5, 6));
+        target.fsync(writer).get(5, TimeUnit.SECONDS);
+        assertArrayEquals(bytes(1, 2, 3, 4, 5, 6), Files.readAllBytes(Paths.get(p)));
+        assertEquals(6, entry.writtenToFsOffset);
+        target.close(writer).get();
+    }
+
+    @Test
+    public void testCachedWriteSideNoSpaceMarksFileAndLeavesEntry() throws Exception {
+        TailCacheFileSystem target = newFileSystem(baseConfig().setWriteBatchBytes(1));
+        String p = path("side-nospace-cached");
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        FileChannel before = writer.channel;
+        delegate.sideFailOnce(Op.FILE_WRITE, Failure.NO_SPACE);
+
+        write(target, writer, bytes(1, 2, 3, 4));
+        waitUntil("ENOSPC must be marked", () -> writer.noSpaceFailure != null);
+        awaitIo(target, writer);
+        assertSame("ENOSPC never replaces the channel", before, writer.channel);
+        assertEquals("ENOSPC is thrown before the entry records the write", 0,
+                writer.getCacheEntry().writtenToFsOffset);
+        assertTrue(writer.getCacheEntry().isCacheDirty(false));
+        expectFailure(() -> target.write(writer, buf(bytes(5), true)));
+        target.close(writer).get();
+    }
+
+    @Test
+    public void testFlushSideEioSkipsFsyncAndReturnsOnceFullyLanded() throws Exception {
+        // writeBatchBytes far above payloads: only the fsync-driven flush reaches the delegate.
+        TailCacheFileSystem target = newFileSystem(baseConfig().setWriteBatchBytes(1024));
+        String p = path("side-eio-flush");
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        write(target, writer, bytes(1, 2, 3, 4));
+        assertEquals(0, delegate.count(Op.FILE_WRITE));
+        FileChannel before = writer.channel;
+        delegate.sideFailOnce(Op.FILE_WRITE, Failure.EIO);
+        delegate.resetCounts();
+
+        target.fsync(writer).get(5, TimeUnit.SECONDS);
+        assertNotSame(before, writer.channel);
+        assertEquals("a failed force is never papered over by fsync", 0, delegate.count(Op.FILE_FSYNC));
+        assertEquals(4, writer.getCacheEntry().writtenToFsOffset);
+        assertFalse(writer.getCacheEntry().isCacheDirty(false));
+        assertFalse(writer.getCacheEntry().isFsyncDirty());
+        assertArrayEquals(bytes(1, 2, 3, 4), Files.readAllBytes(Paths.get(p)));
+        target.close(writer).get();
+    }
+
+    @Test
+    public void testFlushSideEioPartiallyLandedFailsThenRetryCompletes() throws Exception {
+        TailCacheFileSystem target = newFileSystem(baseConfig().setWriteBatchBytes(1024));
+        String p = path("side-eio-flush-partial");
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        write(target, writer, bytes(1, 2, 3, 4));
+        FileChannel before = writer.channel;
+        // Only 2 of the 4 written bytes reach the backing FS before the force fails.
+        delegate.sideFailOnce(Op.FILE_WRITE, Failure.EIO, 2);
+        delegate.resetCounts();
+
+        expectFailure(() -> target.fsync(writer).get(5, TimeUnit.SECONDS));
+        assertNotSame(before, writer.channel);
+        assertEquals(0, delegate.count(Op.FILE_FSYNC));
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertEquals("aligned to what actually landed", 2, entry.writtenToFsOffset);
+        assertEquals(0, entry.pendingFsyncBytes);
+        assertTrue("the unlanded tail stays dirty in cache", entry.isCacheDirty(false));
+
+        target.fsync(writer).get(5, TimeUnit.SECONDS);
+        assertEquals(4, entry.writtenToFsOffset);
+        assertFalse(entry.isCacheDirty(false));
+        assertFalse(entry.isFsyncDirty());
+        assertArrayEquals(bytes(1, 2, 3, 4), Files.readAllBytes(Paths.get(p)));
+        target.close(writer).get();
+    }
+
+    @Test
+    public void testNoCacheWriteSideEioIsSurfacedWithoutRecovery() throws Exception {
+        TailCacheFileSystem target = newFileSystem(baseConfig()
+                .setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_CACHE));
+        String p = path("side-eio-nocache");
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        FileChannel before = writer.channel;
+        delegate.sideFailOnce(Op.FILE_WRITE, Failure.EIO);
+
+        expectFailure(() -> target.write(writer, buf(bytes(1, 2, 3, 4), true)).get(5, TimeUnit.SECONDS));
+        assertSame("the user owns recovery without cache", before, writer.channel);
+        assertEquals("pending stays as left by the delegate", 4, writer.pendingFsyncBytes);
+        target.close(writer).get();
+    }
+
+    @Test
+    public void testNoCacheWriteEioIsSurfacedWithoutRecovery() throws Exception {
+        TailCacheFileSystem target = newFileSystem(baseConfig()
+                .setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_CACHE));
+        String p = path("main-eio-nocache");
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        FileChannel before = writer.channel;
+        delegate.failOnce(Op.FILE_WRITE, Failure.EIO);
+
+        expectFailure(() -> target.write(writer, buf(bytes(1, 2, 3, 4), true)).get(5, TimeUnit.SECONDS));
+        assertSame("the user owns recovery without cache", before, writer.channel);
         target.close(writer).get();
     }
 
@@ -937,6 +1062,9 @@ public class TailCacheFileSystemModeAndRetryTest {
         private volatile Failure failure;
         private volatile boolean hang;
         private volatile boolean partialUnlink;
+        private volatile Op sideFaultOp;
+        private volatile Failure sideFailure;
+        private volatile long sideLandedBytes = -1;
         private volatile CountDownLatch entered = new CountDownLatch(0);
         private volatile CountDownLatch gate = new CountDownLatch(0);
 
@@ -1024,16 +1152,52 @@ public class TailCacheFileSystemModeAndRetryTest {
             }
         }
 
-        @Override
-        public Pair<Long, List<Exception>> writeSync(AsyncFile file, ByteBuf data) {
-            beforeWrite(file instanceof AsyncIndexFile ? Op.INDEX_WRITE : Op.FILE_WRITE, data);
-            return super.writeSync(file, data);
+        // The write itself succeeds; the opportunistic force reports failure as a side failure.
+        void sideFailOnce(Op op, Failure failure) {
+            sideFailOnce(op, failure, -1);
+        }
+
+        // landedBytes >= 0 truncates the backing file to that size, as if only part of it landed.
+        void sideFailOnce(Op op, Failure failure, long landedBytes) {
+            this.sideLandedBytes = landedBytes;
+            this.sideFaultOp = op;
+            this.sideFailure = failure;
+        }
+
+        private Pair<Long, RuntimeException> withSideFailure(Op op, AbstractStorageFile file,
+                Pair<Long, RuntimeException> outcome) {
+            Failure selected = sideFailure;
+            if (sideFaultOp != op || selected == null) {
+                return outcome;
+            }
+            sideFaultOp = null;
+            sideFailure = null;
+            if (sideLandedBytes >= 0) {
+                try (FileChannel ch = FileChannel.open(Paths.get(file.path), java.nio.file.StandardOpenOption.WRITE)) {
+                    ch.truncate(sideLandedBytes);
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+            if (selected != Failure.EIO && selected != Failure.NO_SPACE) {
+                throw new IllegalArgumentException("force only fails with EIO or ENOSPC: " + selected);
+            }
+            IOException cause = selected == Failure.EIO ? new IOException("Input/output error")
+                    : new IOException("No space left on device");
+            return Pair.from(outcome.getKey(), StorageUtil.wrapIOException(cause));
         }
 
         @Override
-        public Pair<Long, List<Exception>> writeSync(AsyncSegmentFile file, ByteBuf data) {
+        public Pair<Long, RuntimeException> writeSync(AsyncFile file, ByteBuf data) {
+            Op op = file instanceof AsyncIndexFile ? Op.INDEX_WRITE : Op.FILE_WRITE;
+            beforeWrite(op, data);
+            return withSideFailure(op, file, super.writeSync(file, data));
+        }
+
+        @Override
+        public Pair<Long, RuntimeException> writeSync(AsyncSegmentFile file, ByteBuf data) {
             beforeWrite(Op.SEG_WRITE, data);
-            return super.writeSync(file, data);
+            return withSideFailure(Op.SEG_WRITE, file, super.writeSync(file, data));
         }
 
         @Override

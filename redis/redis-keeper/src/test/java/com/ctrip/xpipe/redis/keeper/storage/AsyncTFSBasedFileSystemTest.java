@@ -785,11 +785,10 @@ public class AsyncTFSBasedFileSystemTest {
         ForceFailingFileChannel failing = new ForceFailingFileChannel(real);
         file.channel = failing;
 
-        Pair<Long, List<Exception>> outcome = fs.writeSync(file, bufOf(new byte[]{1, 2, 3, 4, 5}));
+        Pair<Long, RuntimeException> outcome = fs.writeSync(file, bufOf(new byte[]{1, 2, 3, 4, 5}));
         assertEquals(Long.valueOf(5L), outcome.getKey());
-        assertNotNull(outcome.getValue());
-        assertEquals(1, outcome.getValue().size());
-        assertTrue(outcome.getValue().get(0).getMessage().contains("force failed"));
+        assertTrue("force failure is wrapped like any IO failure", outcome.getValue() instanceof StorageIOException);
+        assertTrue(outcome.getValue().getCause().getMessage().contains("force failed"));
         // force failed, so the opportunistic fsync did not clear the counter
         assertEquals(5, file.pendingFsyncBytes);
         assertEquals(5, Files.size(Paths.get(p)));
@@ -804,7 +803,7 @@ public class AsyncTFSBasedFileSystemTest {
         AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE,
                 AbstractStorageFile.ReplaceMode.ATOMIC, false);
         byte[] data = new byte[]{9, 8, 7};
-        Pair<Long, List<Exception>> outcome = fs.writeSync(writer, bufOf(data));
+        Pair<Long, RuntimeException> outcome = fs.writeSync(writer, bufOf(data));
         assertEquals(Long.valueOf(3L), outcome.getKey());
         assertNull(outcome.getValue());
         assertArrayEquals(data, Files.readAllBytes(Paths.get(p)));

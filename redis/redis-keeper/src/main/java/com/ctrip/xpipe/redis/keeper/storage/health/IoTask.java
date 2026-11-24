@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.keeper.storage.health;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -20,40 +19,14 @@ public final class IoTask<T> implements Runnable {
     /** Set when a pool thread picks the task up; 0 while it is still queued. */
     volatile long startNanos;
 
-    public static final class Result<T> {
-        private final T value;
-        private final List<Exception> sideFailures;
-
-        private Result(T value, List<Exception> sideFailures) {
-            this.value = value;
-            this.sideFailures = sideFailures;
-        }
-
-        public static <T> Result<T> success(T value) {
-            return new Result<>(value, null);
-        }
-
-        public static <T> Result<T> withSideFailures(T value, List<Exception> sideFailures) {
-            return new Result<>(value, sideFailures);
-        }
-
-        public T value() {
-            return value;
-        }
-
-        public List<Exception> sideFailures() {
-            return sideFailures;
-        }
-    }
-
-    private final Supplier<Result<T>> task;
+    private final Supplier<T> task;
     private final CompletableFuture<T> future = new CompletableFuture<>();
 
-    public IoTask(String tenant, String path, long submitNanos, Supplier<Result<T>> task) {
+    public IoTask(String tenant, String path, long submitNanos, Supplier<T> task) {
         this(tenant, path, submitNanos, IoSource.BUSINESS, task);
     }
 
-    public IoTask(String tenant, String path, long submitNanos, IoSource source, Supplier<Result<T>> task) {
+    public IoTask(String tenant, String path, long submitNanos, IoSource source, Supplier<T> task) {
         this.tenant = tenant;
         this.path = path;
         this.submitNanos = submitNanos;
@@ -81,13 +54,7 @@ public final class IoTask<T> implements Runnable {
         Throwable error = null;
 
         try {
-            Result<T> result = task.get();
-            if (result.sideFailures() == null) {
-                future.complete(result.value());
-            } else if(!result.sideFailures().isEmpty()) {
-                error = result.sideFailures().getFirst();
-                future.completeExceptionally(error);
-            }
+            future.complete(task.get());
         } catch (Throwable t) {
             error = t;
             future.completeExceptionally(t);

@@ -12,8 +12,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -27,7 +25,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,31 +137,11 @@ class StorageUtil {
     }
 
 
-    // Like supply(..., data), but the task may attach side-path failures (e.g. opportunistic force)
-    // beside the primary result. The returned future only exposes the primary value.
-    static <T> CompletableFuture<T> supplyIgnoringSideFailures(
-            ExecutorService executor,
-            AbstractStorageFile file,
-            Supplier<Pair<T, List<Exception>>> task,
-            ByteBuf data) {
-        return submit(
-                executor,
-                file == null ? null : file.tenant,
-                file == null ? null : file.path,
-                () -> {
-                    Pair<T, List<Exception>> result = task.get();
-                    return IoTask.Result.withSideFailures(
-                            result.getKey(), result.getValue());
-                },
-                data);
-    }
-
-
     static <T> CompletableFuture<T> supply(
             ExecutorService executor,
             Supplier<T> task) {
         return submit(executor, null, null,
-                () -> IoTask.Result.success(task.get()), null);
+                task, null);
     }
 
     // ---- IO health instrumentation ----
@@ -187,7 +164,7 @@ class StorageUtil {
                 executor,
                 file == null ? null : file.tenant,
                 file == null ? null : file.path,
-                () -> IoTask.Result.success(task.get()),
+                task,
                 data);
     }
 
@@ -205,7 +182,7 @@ class StorageUtil {
             String path,
             java.util.function.Supplier<T> task) {
         return submit(executor, tenant, path,
-                () -> IoTask.Result.success(task.get()), null);
+                task, null);
     }
 
     static CompletableFuture<Void> run(
@@ -214,7 +191,7 @@ class StorageUtil {
             String path,
             Runnable task) {
         return submit(executor, tenant, path,
-                () -> IoTask.Result.success(runAndReturn(task)), null);
+                () -> runAndReturn(task), null);
     }
 
     private static Void runAndReturn(Runnable task) {
@@ -226,7 +203,7 @@ class StorageUtil {
             ExecutorService executor,
             String tenant,
             String path,
-            Supplier<IoTask.Result<T>> task,
+            Supplier<T> task,
             ByteBuf data) {
         IoTask<T> ioTask = new IoTask<>(tenant, path, System.nanoTime(),IoTelemetryContext.currentSource(), wrapSupplier(task));
         try {
