@@ -37,6 +37,8 @@ public interface KeeperConfig extends CoreConfig{
 
 	String KEY_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES = "keeper.async.tail.cache.max.size.per.file.bytes";
 	long DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES = 300L * 1024 * 1024;
+	String KEY_ASYNC_TAIL_CACHE_EXPECTED_MIN_RETENTION_MS = "keeper.async.tail.cache.expected.min.retention.ms";
+	long DEFAULT_ASYNC_TAIL_CACHE_EXPECTED_MIN_RETENTION_MS = 15L * 1000;
 	String KEY_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI = "keeper.unclosed.handle.flush.retry.window.milli";
 	long DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI = 5L * 60 * 1000;
 	// keeper-tfs-m6 §17.3: debug file channel fault injection.
@@ -196,6 +198,9 @@ public interface KeeperConfig extends CoreConfig{
 
 	/** keeper-tfs-m6 §7: TailCache cap for a single file; read at FS creation only. */
 	long getAsyncTailCacheMaxSizePerFileBytes();
+
+	/** TailCache expected min retention (ms) for cached data; read at FS creation only. */
+	long getAsyncTailCacheExpectedMinRetentionMs();
 
 	/**
 	 * keeper-tfs-m6 §2.3: how long the deferred closer keeps flushing a write handle whose close

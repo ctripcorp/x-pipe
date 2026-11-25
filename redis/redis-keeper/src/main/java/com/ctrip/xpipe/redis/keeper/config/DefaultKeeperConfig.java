@@ -421,6 +421,12 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
+	public long getAsyncTailCacheExpectedMinRetentionMs() {
+		return getLongProperty(KEY_ASYNC_TAIL_CACHE_EXPECTED_MIN_RETENTION_MS,
+				DEFAULT_ASYNC_TAIL_CACHE_EXPECTED_MIN_RETENTION_MS);
+	}
+
+	@Override
 	public long getUnclosedHandleFlushRetryWindowMilli() {
 		return getLongProperty(KEY_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI,
 				DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI);

@@ -108,6 +108,7 @@ public class ContainerResourceManager {
                 .setMaxCacheSizeBytes(keeperConfig.getAsyncTailCacheMaxSizeBytes());
         cacheConfig.setPerFileCacheLimits(keeperConfig.getAsyncTailCacheMaxSizePerFileBytes(),
                 cacheConfig.getMinRetainChunks(), cacheConfig.getChunkSize());
+        cacheConfig.setExpectedMinRetentionMs(keeperConfig.getAsyncTailCacheExpectedMinRetentionMs());
         return createAsyncFileSystem(keeperConfig.getAsyncIoThreads(), keeperConfig.getAsyncFsyncIntervalBytes(),
                 keeperConfig.getAsyncFsyncIntervalMillis(), cacheConfig, createChannelFactory(keeperConfig));
     }
