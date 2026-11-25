@@ -41,8 +41,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -973,6 +977,39 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer));
 
 		waitConditionUntilTimeOut(() -> !slave.isOpen());
+	}
+
+
+	@Test(timeout = 30000)
+	public void testCreateCallbackDoesNotNeedServerLock() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			redisKeeperServer.setRedisKeeperServerState(
+					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
+			ReplicationStoreManager manager = redisKeeperServer.getReplicationStoreManager();
+			ReplicationStore oldStore = redisKeeperServer.getOrCreateReplicationStore();
+
+			synchronized (redisKeeperServer) {
+				Future<ReplicationStore> created = executor.submit(manager::create);
+				ReplicationStore newStore;
+				try {
+					newStore = created.get(10, TimeUnit.SECONDS);
+				} catch (TimeoutException e) {
+					throw new AssertionError("Manager.create() blocked on DefaultRedisKeeperServer lock", e);
+				}
+				Assert.assertNotSame(oldStore, newStore);
+				Assert.assertEquals(KeeperState.ACTIVE,
+						newStore.getMetaStore().dupReplicationStoreMeta().getKeeperState());
+				Assert.assertSame(newStore, manager.getCurrent());
+			}
+		} finally {
+			executor.shutdownNow();
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
 	}
 
 }

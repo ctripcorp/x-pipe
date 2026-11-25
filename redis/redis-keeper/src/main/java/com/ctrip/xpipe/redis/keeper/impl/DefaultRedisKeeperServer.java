@@ -1493,7 +1493,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	 * Stamps the current keeper role onto a freshly created UUID dir.
 	 * Role changes (including PREPARE re-entry) go through {@code MetaStore.becomeActive/becomeBackup}, not here.
 	 */
-	public synchronized void initReplicationStore(ReplicationStore replicationStore) {
+	public void initReplicationStore(ReplicationStore replicationStore) {
 
 		logger.info("[initReplicationStore]{}", replicationStore);
 		RedisKeeperServerState redisKeeperServerState = getRedisKeeperServerState();
