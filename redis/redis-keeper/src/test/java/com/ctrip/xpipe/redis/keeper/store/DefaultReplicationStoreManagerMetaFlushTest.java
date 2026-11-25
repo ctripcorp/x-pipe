@@ -72,8 +72,8 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
     }
 
     @Test
-    public void testFlushWritesCurrentStoreDir() throws Exception {
-        startWithStore();
+    public void testGcFlushWritesCurrentStoreDir() throws Exception {
+        ReplicationStore store = startWithStore();
         String dir = latestDir();
         writeViaHandle("unpublished");
         Properties diverged = new Properties();
@@ -81,14 +81,16 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         diverged.setProperty("extra", "kept");
         currentMetaRef().set(diverged);
 
-        manager.flushMetaPeriodically();
+        manager.gc();
         assertEquals(dir, readViaHandle());
         assertEquals(dir, latestDir());
         assertEquals("kept", manager.getCurrentMetaCache().getProperty("extra"));
+        verify(store).flushMeta();
+        verify(store).gc();
     }
 
     @Test
-    public void testFlushRestoresDirAfterRecordLatestStoreFailure() throws Exception {
+    public void testGcRestoresDirAfterRecordLatestStoreFailure() throws Exception {
         ReplicationStore published = startWithStore();
         String dir = latestDir();
         AtomicInteger calls = new AtomicInteger();
@@ -108,7 +110,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
             manager.create();
             fail("expected recordLatestStore to fail");
         } catch (IOException expected) {
-            logger.info("[testFlushRestoresDirAfterRecordLatestStoreFailure] {}", expected.getMessage());
+            logger.info("[testGcRestoresDirAfterRecordLatestStoreFailure] {}", expected.getMessage());
         }
         assertSame(published, manager.getOpenedStore());
         assertEquals(dir, latestDir());
@@ -121,42 +123,43 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         manager.gc();
         verify(fs, never()).read(same(handle), anyLong(), anyLong());
         assertEquals(dir, latestDir());
+        assertEquals(dir, readViaHandle());
         assertTrue("gc keeps the published store dir", new File(manager.getBaseDir(), dir).isDirectory());
 
-        manager.flushMetaPeriodically();
-        assertEquals(dir, readViaHandle());
         LifecycleHelper.stopIfPossible(manager);
         manager.release();
         assertEquals(dir, readFromFreshFs());
     }
 
     @Test
-    public void testFlushDoesNotOpenMissingHandle() throws Exception {
+    public void testGcDoesNotOpenMissingHandle() throws Exception {
         ReplicationStore store = startWithStore();
         fs.close(managerHandle()).get();
         ReflectionTestUtils.setField(manager, "managerMetaAsyncFile", null);
         clearInvocations(fs);
 
-        manager.flushMetaPeriodically();
+        manager.gc();
         assertNoWriteNorOpen();
         assertFalse(manager.isManagerMetaHandleOpen());
-        verify(store).flushMeta();
+        verify(store, never()).flushMeta();
     }
 
     @Test
-    public void testNoCurrentStoreWritesNothing() throws Exception {
+    public void testGcWithoutUsableStoreWritesNothing() throws Exception {
         ReplicationStore store = startWithStore();
         when(store.checkOk()).thenReturn(false);
         clearInvocations(fs);
-        manager.flushMetaPeriodically();
+        manager.gc();
         assertNoWriteNorOpen();
         verify(store, never()).flushMeta();
+        verify(store, never()).gc();
 
         manager.releaseCurrentStore();
         clearInvocations(fs);
-        manager.flushMetaPeriodically();
+        manager.gc();
         assertNoWriteNorOpen();
         verify(store, never()).flushMeta();
+        verify(store, never()).gc();
     }
 
     @Test
@@ -167,7 +170,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         String path = new File(manager.getBaseDir(), "store_manager_meta.properties").getAbsolutePath();
 
         try (LogCapture logs = new LogCapture(manager.getClass())) {
-            manager.flushMetaPeriodically();
+            manager.gc();
             List<LogEvent> warns = logs.withTag("[flushManagerMeta][fail]");
             assertEquals(1, warns.size());
             String message = LogCapture.message(warns.get(0));
@@ -176,10 +179,11 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
             assertNull("no stack trace", warns.get(0).getThrown());
         }
         verify(store).flushMeta();
+        verify(store).gc();
     }
 
     @Test
-    public void testStopWaitsForTickInManagerMetaWrite() throws Exception {
+    public void testStopWaitsForGcInManagerMetaWrite() throws Exception {
         startWithStore();
         AsyncFile handle = managerHandle();
         CountDownLatch entered = new CountDownLatch(1);
@@ -197,7 +201,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
             return inv.callRealMethod();
         }).when(fs).close(same(handle));
 
-        Thread tick = new Thread(manager::flushMetaPeriodically);
+        Thread tick = new Thread(this::runGc);
         tick.start();
         assertTrue(entered.await(5, TimeUnit.SECONDS));
         Thread stopper = new Thread(() -> {
@@ -219,12 +223,12 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         assertEquals(Arrays.asList("write-done", "close"), events);
 
         clearInvocations(fs);
-        manager.flushMetaPeriodically();
+        manager.gc();
         assertNoWriteNorOpen();
     }
 
     @Test
-    public void testStoreCloseWaitsForTickInStoreMetaWrite() throws Exception {
+    public void testStoreCloseWaitsForGcInStoreMetaWrite() throws Exception {
         realStores = true;
         DefaultReplicationStore store = (DefaultReplicationStore) startWithStore();
         AsyncFile metaHandle = (AsyncFile) ReflectionTestUtils.getField(store.getMetaStore(), "metaAsyncFile");
@@ -237,7 +241,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
             return inv.callRealMethod();
         }).when(fs).write(same(metaHandle), any(ByteBuf.class));
 
-        Thread tick = new Thread(manager::flushMetaPeriodically);
+        Thread tick = new Thread(this::runGc);
         tick.start();
         assertTrue(entered.await(5, TimeUnit.SECONDS));
         Thread releaser = new Thread(() -> {
@@ -249,7 +253,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         });
         releaser.start();
         sleep(200);
-        assertTrue("store close waits for the in-lock flush", releaser.isAlive());
+        assertTrue("store close waits for the in-flight store meta flush", releaser.isAlive());
 
         release.countDown();
         tick.join(5000);
@@ -258,15 +262,15 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         assertFalse(store.checkOk());
 
         clearInvocations(fs);
-        manager.flushMetaPeriodically();
+        manager.gc();
         store.flushMeta();
         assertNoWriteNorOpen();
     }
 
     @Test
-    public void testTickWaitingOutsideLockSkipsAfterSwitchToReadOnly() throws Exception {
+    public void testGcWaitingForLockSkipsAfterSwitchToReadOnly() throws Exception {
         startWithStore();
-        Thread tick = new Thread(manager::flushMetaPeriodically);
+        Thread tick = new Thread(this::runGc);
         synchronized (manager) {
             tick.start();
             waitConditionUntilTimeOut(() -> tick.getState() == Thread.State.BLOCKED, 2000);
@@ -282,11 +286,11 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         assertTrue(manager.isReadOnly() && manager.getLifecycleState().isStarted());
         assertNoWriteNorOpen();
         verify(manager.getOpenedStore(), never()).flushMeta();
+        verify(manager.getOpenedStore(), never()).gc();
     }
 
-    /** destroy before dispose is refused, so a running manager keeps its store; after dispose the tick never runs. */
     @Test
-    public void testDestroyBeforeDisposeIsSkippedAndTickSkipsAfterDispose() throws Exception {
+    public void testDestroyBeforeDisposeIsSkippedAndGcSkipsAfterDispose() throws Exception {
         ReplicationStore store = startWithStore();
         manager.destroy();
         assertSame("destroy before dispose must not touch the store", store, manager.getOpenedStore());
@@ -294,26 +298,64 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         LifecycleHelper.stopIfPossible(manager);
         LifecycleHelper.disposeIfPossible(manager);
         clearInvocations(fs);
-        manager.flushMetaPeriodically();
+        manager.gc();
         assertNoWriteNorOpen();
         verify(store, never()).flushMeta();
+        verify(store, never()).gc();
         manager.release();
     }
 
     @Test
-    public void testCreateReplacesStoreThenFlushesNewOnly() throws Exception {
+    public void testGcCreatesNewStoreThenFlushesNewOnly() throws Exception {
         ReplicationStore old = startWithStore();
         ReplicationStore replaced = manager.create();
         assertNotSame(old, replaced);
         String newDir = latestDir();
         writeViaHandle("stale");
 
-        manager.flushMetaPeriodically();
+        manager.gc();
         verify(replaced).flushMeta();
         verify(old, never()).flushMeta();
         assertEquals(newDir, readViaHandle());
     }
 
+    @Test
+    public void testStoreGcDoesNotHoldManagerMonitor() throws Exception {
+        ReplicationStore store = startWithStore();
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        doAnswer(inv -> {
+            entered.countDown();
+            Uninterruptibles.awaitUninterruptibly(release);
+            return true;
+        }).when(store).gc();
+
+        Thread tick = new Thread(this::runGc);
+        tick.start();
+        try {
+            assertTrue(entered.await(5, TimeUnit.SECONDS));
+            CompletableFuture<ReplicationStore> current = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return manager.createIfNotExist();
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            });
+            assertSame(store, current.get(2, TimeUnit.SECONDS));
+        } finally {
+            release.countDown();
+            tick.join(5000);
+        }
+        assertFalse(tick.isAlive());
+    }
+
+    private void runGc() {
+        try {
+            manager.gc();
+        } catch (Throwable th) {
+            logger.info("[runGc]", th);
+        }
+    }
 
     private ReplicationStore startWithStore() throws Exception {
         manager = newManager(config);

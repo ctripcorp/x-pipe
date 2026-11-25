@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -175,35 +176,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }, keeperConfig.getReplicationStoreGcIntervalSeconds(), keeperConfig.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
     }
 
-    void flushMetaPeriodically() {
-        ReplicationStore store = flushManagerMeta();
-        if (store == null || !store.checkOk()) {
-            return;
-        }
-        try {
-            store.flushMeta();
-        } catch (Throwable th) {
-            logger.warn("[flushMetaPeriodically][store meta fail] repl_id={} store={} cause: {}", replId, store,
-                    ExceptionUtils.getTypeAndMessage(th));
-        }
-    }
-
-    /**
-     * Rewrites manager meta from {@code currentStore} through the already-open handle only.
-     *
-     * @return {@code currentStore} read under the monitor, or null when the whole tick must be skipped
-     */
-    synchronized ReplicationStore flushManagerMeta() {
+    synchronized Pair<String, ReplicationStore> reflushManagerMeta() {
         if (readOnly || !getLifecycleState().isStarted()) {
             return null;
         }
         ReplicationStore store = currentStore.get();
-        if (store == null || !store.checkOk()) {
-            return null;
-        }
         AsyncFile asyncFile = managerMetaAsyncFile;
-        if (asyncFile == null || currentStoreDirName == null) {
-            return store;
+        if (store == null || !store.checkOk() || asyncFile == null || currentStoreDirName == null) {
+            return null;
         }
         String path = metaFile.getAbsolutePath();
         try {
@@ -221,7 +201,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             logger.warn("[flushManagerMeta][fail] repl_id={} path={} cause: {}", replId, path,
                     ExceptionUtils.getTypeAndMessage(th));
         }
-        return store;
+        return Pair.of(currentStoreDirName, store);
     }
 
     /** Cancel GC, which also performs periodic meta flushes, then best-effort flush the store. */
@@ -541,66 +521,68 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return replId;
     }
 
-    protected synchronized void gc() throws IOException {
+    protected void gc() throws IOException {
 
         checkNotReadOnly();
         logger.debug("[gc]{}", this);
 
-        if (!getLifecycleState().isStarted()) {
-            logger.info("[gc][not started][skip]{}", this);
+        Pair<String, ReplicationStore> snapshot = null;
+        List<String> children = null;
+        gcCount.incrementAndGet();
+        synchronized (this) {
+            if (!getLifecycleState().isStarted()) {
+                logger.info("[gc][not started][skip]{}", this);
+                return;
+            }
+            snapshot = reflushManagerMeta();
+            if (null != snapshot) {
+                children = AsyncFileSystemHelper.awaitList(() -> asyncFileSystem.list(baseDir.getAbsolutePath()),
+                        "list replication store manager baseDir " + baseDir);
+            }
+        }
+
+        if (snapshot == null) {
+            logger.debug("[gc][skip for empty]");
             return;
         }
 
-        flushMetaPeriodically();
+        String currentDirName = snapshot.getKey();
+        ReplicationStore replicationStore = snapshot.getValue();
+        if (children != null && !children.isEmpty()) {
 
-        gcCount.incrementAndGet();
-        // keeper-tfs-m6 §11.5: no force load
-        Properties meta = currentMeta();
-        if (meta != null) {
-            if (managerMetaAsyncFile != null) {
-                AsyncFileSystemHelper.writeAllBytes(
-                        asyncFileSystem,
-                        managerMetaAsyncFile,
-                        encodeMeta(meta),
-                        "flush meta"
-                );
-            }
-            final String currentDirName = meta.getProperty(LATEST_STORE_DIR);
-            List<String> children = AsyncFileSystemHelper.awaitList(() -> asyncFileSystem.list(baseDir.getAbsolutePath()),
-                    "list replication store manager baseDir " + baseDir);
-
-            if (children != null && !children.isEmpty()) {
-
-                logger.debug("[GC][old replicationstore]newest:{}", currentDirName);
-                for (String name : children) {
-                    if (currentDirName != null && currentDirName.equals(name)) {
-                        continue;
-                    }
-                    String childPath = new File(baseDir, name).getAbsolutePath();
-                    boolean isDir = AsyncFileSystemHelper.await(() -> asyncFileSystem.isDirectory(childPath),
-                            "isDirectory " + childPath);
-                    if (!isDir) {
-                        continue;
-                    }
-                    long lastModified = AsyncFileSystemHelper.getLatestDirectChildLastModified(asyncFileSystem, childPath);
-                    if (lastModified == 0) {
-                        lastModified = AsyncFileSystemHelper.await(() -> asyncFileSystem.lastModified(childPath),
-                                "lastModified empty replication store " + childPath);
-                    }
-                    if (System.currentTimeMillis() - lastModified > keeperConfig.getReplicationStoreMinTimeMilliToGcAfterCreate()) {
-                        logger.info("[GC] directory {}", childPath);
-                        AsyncFileSystemHelper.await(() -> asyncFileSystem.rmdir(childPath, true),
-                                "rmdir " + childPath);
-                    } else {
-                        logger.warn("[GC][directory is created too short, do not gc]{}, {}", childPath, new Date(lastModified));
-                    }
+            logger.debug("[GC][old replicationstore]newest:{}", currentDirName);
+            for (String name : children) {
+                if (currentDirName != null && currentDirName.equals(name)) {
+                    continue;
+                }
+                String childPath = new File(baseDir, name).getAbsolutePath();
+                boolean isDir = AsyncFileSystemHelper.await(() -> asyncFileSystem.isDirectory(childPath),
+                        "isDirectory " + childPath);
+                if (!isDir) {
+                    continue;
+                }
+                long lastModified = AsyncFileSystemHelper.getLatestDirectChildLastModified(asyncFileSystem, childPath);
+                if (lastModified == 0) {
+                    lastModified = AsyncFileSystemHelper.await(() -> asyncFileSystem.lastModified(childPath),
+                            "lastModified empty replication store " + childPath);
+                }
+                if (System.currentTimeMillis() - lastModified > keeperConfig.getReplicationStoreMinTimeMilliToGcAfterCreate()) {
+                    logger.info("[GC] directory {}", childPath);
+                    AsyncFileSystemHelper.await(() -> asyncFileSystem.rmdir(childPath, true),
+                            "rmdir " + childPath);
+                } else {
+                    logger.warn("[GC][directory is created too short, do not gc]{}, {}", childPath, new Date(lastModified));
                 }
             }
         }
 
-        // gc the opened store only: GC must never reopen latest.store.dir (m6 spec §9.3)
-        ReplicationStore replicationStore = currentStore.get();
-        if (replicationStore != null && replicationStore.checkOk()) {
+        if (replicationStore.checkOk()) {
+            try {
+                replicationStore.flushMeta();
+            } catch (Throwable th) {
+                logger.warn("[gc][flushMetaPeriodically][store meta fail] repl_id={} store={} cause: {}", replId, replicationStore,
+                        ExceptionUtils.getTypeAndMessage(th));
+            }
             replicationStore.gc();
         }
     }
