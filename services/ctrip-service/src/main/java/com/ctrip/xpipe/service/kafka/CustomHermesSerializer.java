@@ -4,7 +4,10 @@ import com.ctrip.framework.ckafka.codec.entity.HermesCodecException;
 import com.ctrip.framework.ckafka.codec.entity.ProducerMessage;
 import com.ctrip.framework.ckafka.codec.entity.PropertiesHolder;
 import com.ctrip.framework.ckafka.codec.payload.PayloadCodec;
-import com.ctrip.framework.ckafka.codec.util.*;
+import com.ctrip.framework.ckafka.codec.util.ChecksumUtil;
+import com.ctrip.framework.ckafka.codec.util.CodecTypeUtil;
+import com.ctrip.framework.ckafka.codec.util.HermesPrimitiveCodec;
+import com.ctrip.framework.ckafka.codec.util.MagicUtil;
 import com.ctrip.framework.foundation.Foundation;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -13,6 +16,7 @@ import org.unidal.helper.Inets;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author TB
@@ -26,14 +30,24 @@ public class CustomHermesSerializer<T> implements Serializer<T> {
     private volatile String producerIp;
     private final Object lock = new Object();
     private static PayloadCodec payloadCodec = new CustomAvroPayloadCodec();
-    private String codecType;
+    private static final String KEY_TOPIC = "bbz.fx.xpipe.ck.gtid";
+    private static final String TIMESTAMP_TOPIC = "bbz.fx.xpipe.ck.gtid.timestamp";
+
+    // 进程内共享，避免每个 producer、每次发送重复远程解析
+    private static final Map<String, String> CODEC_TYPES = new ConcurrentHashMap<>();
 
     public void configure(Map<String, ?> configs, boolean isKey) {
         this.hermesCodecType = (String)configs.get("hermes.codecType");
         try {
-            this.codecType = CodecTypeUtil.getCodecType("bbz.fx.xpipe.ck.gtid");
+            // 保持原有行为：key topic 解析失败时 producer 创建失败
+            codecType(KEY_TOPIC);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+        try {
+            // 在 producer 初始化线程预先解析时间表 topic，失败不影响 key 发送，发送时再重试
+            codecType(TIMESTAMP_TOPIC);
+        } catch (Throwable ignore) {
         }
     }
 
@@ -54,7 +68,7 @@ public class CustomHermesSerializer<T> implements Serializer<T> {
             codec.writeString(message.getKey());
             codec.writeLong(message.getBornTime());
             codec.writeInt(0);
-            codec.writeString(this.codecType);
+            codec.writeString(codecType(topic));
             if (this.producerIp == null) {
                 synchronized(this.lock) {
                     if (this.producerIp == null) {
@@ -88,6 +102,16 @@ public class CustomHermesSerializer<T> implements Serializer<T> {
         } catch (Exception e) {
             throw new HermesCodecException("Error serializing hermes message", e);
         }
+    }
+
+    private String codecType(String topic) throws IOException {
+        String codecType = CODEC_TYPES.get(topic);
+        if (codecType != null) {
+            return codecType;
+        }
+        String resolved = CodecTypeUtil.getCodecType(topic);
+        String existing = CODEC_TYPES.putIfAbsent(topic, resolved);
+        return existing == null ? resolved : existing;
     }
 
     public void close() {

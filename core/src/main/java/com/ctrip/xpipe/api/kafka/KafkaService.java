@@ -14,6 +14,8 @@ public interface KafkaService extends Ordered {
 
     void sendKafka(GtidKeyItem gtidKeyItem);
 
+    void sendTimestampKafka(GtidTimestampItem gtidTimestampItem);
+
     void startProducer();
 
     void forceStopProducer();

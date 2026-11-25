@@ -7,11 +7,21 @@ public class MessageEvent {
 
     private IRedisOpItem redisOpItem;
 
+    private long timestamp;
+
     public IRedisOpItem getRedisOpItem() {
         return redisOpItem;
     }
 
     public void setRedisOpItem(IRedisOpItem redisOpItem) {
         this.redisOpItem = redisOpItem;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 }

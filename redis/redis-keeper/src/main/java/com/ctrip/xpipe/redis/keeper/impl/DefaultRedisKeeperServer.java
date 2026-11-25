@@ -48,7 +48,9 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcher;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
-import com.ctrip.xpipe.utils.*;
+import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -58,7 +60,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.internal.ConcurrentSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,10 +70,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.FULLSYNC_PROGRESS_NOT_SUPPORTED;
-import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
 
 /**
  * @author wenchao.meng
@@ -254,6 +253,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		replicationStoreManager.initialize();
+		// 只读取已存在的 store，不在初始化阶段新建；没有 store 时跳过播种
+		ckStore.setExecutedGtidSetSupplier(() -> {
+			ReplicationStore store = replicationStoreManager.getCurrent();
+			return store == null ? null : store.getGtidSet().getKey();
+		});
 
 
 		try {

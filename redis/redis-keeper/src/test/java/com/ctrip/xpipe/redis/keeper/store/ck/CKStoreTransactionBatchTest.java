@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store.ck;
 
+import com.ctrip.xpipe.api.kafka.GtidKeyItem;
+import com.ctrip.xpipe.api.kafka.GtidTimestampItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -15,10 +17,12 @@ import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +51,9 @@ public class CKStoreTransactionBatchTest {
         Field field = CKStore.class.getDeclaredField("kafkaService");
         field.setAccessible(true);
         KafkaService kafkaService = (KafkaService) field.get(ckStore);
+        List<GtidKeyItem> keyItems = Collections.synchronizedList(new ArrayList<>());
         Mockito.doAnswer(invocation -> {
+            keyItems.add(invocation.getArgument(0));
             latch.countDown();
             return null;
         }).when(kafkaService).sendKafka(Mockito.any());
@@ -61,6 +67,17 @@ public class CKStoreTransactionBatchTest {
 
         Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
         ckStore.dispose();
+
+        Assert.assertEquals(2, keyItems.size());
+        Assert.assertEquals(keyItems.get(0).getTimestamp(), keyItems.get(1).getTimestamp());
+
+        ArgumentCaptor<GtidTimestampItem> timestampCaptor = ArgumentCaptor.forClass(GtidTimestampItem.class);
+        Mockito.verify(kafkaService).sendTimestampKafka(timestampCaptor.capture());
+        GtidTimestampItem timestampItem = timestampCaptor.getValue();
+        Assert.assertEquals(keyItems.get(0).getTimestamp().longValue() / 60 * 60, timestampItem.getTimestamp());
+        Assert.assertEquals(1L, timestampItem.getEndSeq());
+        Assert.assertEquals(1, timestampItem.getShardid());
+        Assert.assertEquals("000000000000000000000000000000000000000A", timestampItem.getUuid().toString());
     }
 
     private RedisOpItem parse(String... args) throws Exception {

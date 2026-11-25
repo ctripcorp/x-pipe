@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.api.kafka;
 
 import org.apache.avro.io.BinaryData;
-import org.apache.avro.specific.SpecificData;
-import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.SchemaStore;
+import org.apache.avro.specific.SpecificData;
 
 /**
  * @author TB
@@ -1109,11 +1109,17 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
     }
 
     public static GtidKeyItem buildGtidKeyItem(String cmd, String uuid, String seq, byte[] key, byte[] subkey, String dbId, long shardId, String address){
+        return buildGtidKeyItem(cmd, uuid, seq, key, subkey, dbId, shardId, address,
+                System.currentTimeMillis() / 1000);
+    }
+
+    public static GtidKeyItem buildGtidKeyItem(String cmd, String uuid, String seq, byte[] key, byte[] subkey,
+                                                String dbId, long shardId, String address, long timestamp) {
         int[] subIntKey = null;
         if(subkey != null){
             subIntKey = getKey(subkey);
         }
-        return new GtidKeyItem(uuid,cmd,address,seq,getKey(key),subIntKey,dbId,System.currentTimeMillis()/1000,(int)shardId);
+        return new GtidKeyItem(uuid, cmd, address, seq, getKey(key), subIntKey, dbId, timestamp, (int) shardId);
     }
 }
 

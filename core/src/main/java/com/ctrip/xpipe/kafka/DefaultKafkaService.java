@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.kafka;
 
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
+import com.ctrip.xpipe.api.kafka.GtidTimestampItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 
 /**
@@ -12,6 +13,11 @@ public class DefaultKafkaService implements KafkaService {
 
     @Override
     public void sendKafka(GtidKeyItem gtidKeyItem) {
+
+    }
+
+    @Override
+    public void sendTimestampKafka(GtidTimestampItem gtidTimestampItem) {
 
     }
 
