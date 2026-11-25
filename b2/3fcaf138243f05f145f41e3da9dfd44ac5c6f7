@@ -1,0 +1,21 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerTest.java
+  s_2ad35592b036f3::t_fc831a9261d25a 44-46,49,982-1012
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_2ad35592b036f3::t_ea20e77cc7288a 1496
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "b23fcaf138243f05f145f41e3da9dfd44ac5c6f7",
+  "prompts": {},
+  "sessions": {
+    "s_2ad35592b036f3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "69ae0df5-bb79-4c5f-b7eb-d9e18443e745",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
