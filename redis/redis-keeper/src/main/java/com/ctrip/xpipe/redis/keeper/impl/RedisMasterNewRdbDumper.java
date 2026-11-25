@@ -5,7 +5,9 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.exception.psync.GapAllowedSyncRdbNotContinuousRuntimeException;
@@ -29,6 +31,8 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
     private final Logger logger = LoggerFactory.getLogger(RedisMasterNewRdbDumper.class);
 
     private DumpedRdbStore dumpedRdbStore;
+
+    private ReplicationStore dumpedFromStore;
 
     private final RedisMaster redisMaster;
 
@@ -70,6 +74,7 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
             public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
                 releaseResource();
                 if (!commandFuture.isSuccess()) {
+                    discardDumpedRdb();
                     if (commandFuture.cause() instanceof PsyncMasterRdbOffsetNotContinuousRuntimeException ||
                             commandFuture.cause() instanceof  GapAllowedSyncRdbNotContinuousRuntimeException) {
                         redisKeeperServer.resetDefaultReplication();
@@ -118,11 +123,28 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
     }
 
     @Override
-    public DumpedRdbStore prepareRdbStore() throws IOException {
+    public synchronized DumpedRdbStore prepareRdbStore() throws IOException {
 
-        dumpedRdbStore = redisMaster.getCurrentReplicationStore().prepareNewRdb();
+        ReplicationStore replicationStore = redisMaster.getCurrentReplicationStore();
+        dumpedRdbStore = replicationStore.prepareNewRdb();
+        dumpedFromStore = replicationStore;
         logger.info("[prepareRdbStore]{}", dumpedRdbStore);
         return dumpedRdbStore;
+    }
+
+    private synchronized void discardDumpedRdb() {
+        DumpedRdbStore toDiscard = dumpedRdbStore;
+        ReplicationStore owner = dumpedFromStore;
+        dumpedRdbStore = null;
+        dumpedFromStore = null;
+        if (toDiscard == null) {
+            return;
+        }
+        if (owner instanceof DefaultReplicationStore) {
+            ((DefaultReplicationStore) owner).discardDumpedRdb(toDiscard);
+        } else {
+            logger.info("[discardDumpedRdb][unsupported store, skip] {}, {}", owner, toDiscard);
+        }
     }
 
     @Override

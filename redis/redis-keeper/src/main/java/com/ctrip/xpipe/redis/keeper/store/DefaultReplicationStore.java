@@ -58,6 +58,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private ConcurrentMap<RdbStore, Boolean> previousRdbStores = new ConcurrentHashMap<>();
 
+	private final AtomicReference<RdbStore> dumpingRdbRef = new AtomicReference<>();
+
 	protected volatile CommandStore cmdStore;
 
 	protected MetaStore metaStore;
@@ -161,10 +163,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			if (null != meta && null != meta.getCmdFilePrefix()) {
 				cmdStore = openCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
 						metaStore.generateGtidCmdFilter());
-			}
-
-			if (!readOnly) {
-				removeUnusedRdbFiles();
 			}
 		} catch (Throwable t) {
 			closeCreatedStoresOnConstructFail();
@@ -442,23 +440,94 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	private void removeUnusedRdbFiles() {
-
-		@SuppressWarnings("resource")
-		RdbStore rdbStore = rdbStoreRef.get();
-		RdbStore rordbStore = rordbStoreRef.get();
-
+		long minTimeToGc = config.getReplicationStoreMinTimeMilliToGcAfterCreate();
 		for (String rdbFileName : rdbFilesOnFS()) {
 			File rdbFile = new File(baseDir, rdbFileName);
-			if (rdbStore != null && rdbStore.sameRdbFile(rdbFile)) continue;
-			if (rordbStore != null && rordbStore.sameRdbFile(rdbFile)) continue;
+			if (isRdbFileInUse(rdbFile)) continue;
 
-			getLogger().info("[removeUnusedRdbFile] {}", rdbFile);
+			String path = rdbFile.getAbsolutePath();
 			try {
-				AsyncFileSystemHelper.await(() -> asyncFileSystem.delete(rdbFile.getAbsolutePath()),
-						"delete unused rdb " + rdbFile);
+				long lastModified = AsyncFileSystemHelper.await(() -> asyncFileSystem.lastModified(path),
+						"lastModified unused rdb " + rdbFile);
+				if (System.currentTimeMillis() - lastModified <= minTimeToGc) {
+					getLogger().info("[removeUnusedRdbFile][modified too recently, skip] {}, {}", rdbFile, lastModified);
+					continue;
+				}
+				if (isRdbFileInUse(rdbFile)) continue;
+				getLogger().info("[removeUnusedRdbFile] {}", rdbFile);
+				AsyncFileSystemHelper.await(() -> asyncFileSystem.delete(path), "delete unused rdb " + rdbFile);
 			} catch (IOException e) {
 				getLogger().error("[removeUnusedRdbFile][{}]", rdbFile, e);
 			}
+		}
+	}
+
+	private boolean isRdbFileInUse(File rdbFile) {
+		if (sameRdbFile(rdbStoreRef.get(), rdbFile)) return true;
+		if (sameRdbFile(rordbStoreRef.get(), rdbFile)) return true;
+		if (sameRdbFile(dumpingRdbRef.get(), rdbFile)) return true;
+		for (RdbStore previous : previousRdbStores.keySet()) {
+			if (previous.sameRdbFile(rdbFile)) return true;
+		}
+		return false;
+	}
+
+	private static boolean sameRdbFile(RdbStore rdbStore, File rdbFile) {
+		return rdbStore != null && rdbStore.sameRdbFile(rdbFile);
+	}
+
+	/** The file gets no data until master bgsave ends, so mtime alone cannot keep gc from deleting it. */
+	protected <T extends RdbStore> T startDumpingRdb(T dumpedRdbStore) {
+		synchronized (lock) {
+			RdbStore replaced = dumpingRdbRef.getAndSet(dumpedRdbStore);
+			if (replaced != null) {
+				getLogger().info("[startDumpingRdb][replace, to previous] {}", replaced);
+				previousRdbStores.put(replaced, Boolean.TRUE);
+			}
+		}
+		return dumpedRdbStore;
+	}
+
+	/** A cancelled dumper may discard its rdb before its event loop adopts it. */
+	private void checkNotDiscarded(RdbStore rdbStore) {
+		if (previousRdbStores.containsKey(rdbStore)) {
+			throw new IllegalStateException("dumped rdb already discarded: " + rdbStore);
+		}
+	}
+
+	private void adoptRdb(AtomicReference<RdbStore> storeRef, RdbStore rdbStore) {
+		RdbStore oldRdbStore = storeRef.getAndSet(rdbStore);
+		dumpingRdbRef.compareAndSet(rdbStore, null);
+		if (null != oldRdbStore) previousRdbStores.put(oldRdbStore, Boolean.TRUE);
+	}
+
+	/** A dump is adopted at aux end, so a failed one may already be the current rdb. */
+	public void discardDumpedRdb(RdbStore dumpedRdbStore) {
+		if (dumpedRdbStore == null) {
+			return;
+		}
+		synchronized (lock) {
+			if (dumpingRdbRef.compareAndSet(dumpedRdbStore, null)) {
+				getLogger().info("[discardDumpedRdb][dumping, to previous] {}", dumpedRdbStore);
+				previousRdbStores.put(dumpedRdbStore, Boolean.TRUE);
+				return;
+			}
+			AtomicReference<RdbStore> storeRef = dumpedRdbStore == rdbStoreRef.get() ? rdbStoreRef
+					: dumpedRdbStore == rordbStoreRef.get() ? rordbStoreRef : null;
+			if (storeRef == null) {
+				getLogger().info("[discardDumpedRdb][not held, skip] {}", dumpedRdbStore);
+				return;
+			}
+			try {
+				metaStore.releaseRdbFile(dumpedRdbStore.getRdbFileName());
+			} catch (Throwable th) {
+				getLogger().warn("[discardDumpedRdb][release meta fail, keep current] {} cause: {}", dumpedRdbStore,
+						ExceptionUtils.getTypeAndMessage(th));
+				return;
+			}
+			storeRef.compareAndSet(dumpedRdbStore, null);
+			getLogger().info("[discardDumpedRdb][current, released to previous] {}", dumpedRdbStore);
+			previousRdbStores.put(dumpedRdbStore, Boolean.TRUE);
 		}
 	}
 
@@ -644,6 +713,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		synchronized (lock) {
 			rdbUpdateCount.incrementAndGet();
+			checkNotDiscarded(rdbStore);
 
 			File dumpedRdbFile = rdbStore.getRdbFile();
 			if (!baseDir.equals(dumpedRdbFile.getParentFile())) {
@@ -701,9 +771,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			// meta write failure throws above → storeRef keeps the old RDB. The steps between the meta save
 			// and storeRef.set are non-throwing (in-memory setter/listener/atomic set), so meta-success ⟺ ref-switched.
 			getLogger().info("[checkReplIdAndUpdateRdbGapAllowed] new file:{}, type:{} eofType:{}, rdbOffset:{}", dumpedRdbFile, rdbType, eofType, rdbOffset);
-			RdbStore oldRdbStore = storeRef.get();
-			storeRef.set(rdbStore);
-			if (null!= oldRdbStore) previousRdbStores.put(oldRdbStore, Boolean.TRUE);
+			adoptRdb(storeRef, rdbStore);
 			return UPDATE_RDB_RESULT.OK;
 		}
 	}
@@ -714,6 +782,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		synchronized (lock) {
 			rdbUpdateCount.incrementAndGet();
+			checkNotDiscarded(rdbStore);
 
 			File dumpedRdbFile = rdbStore.getRdbFile();
 			if (!baseDir.equals(dumpedRdbFile.getParentFile())) {
@@ -735,9 +804,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			// T-H2.D1: meta persisted first (disk-first via T-H2.0); only after that do we switch storeRef.
 			// meta write failure throws above → storeRef keeps the old RDB.
 			getLogger().info("[checkReplIdAndUpdateRdb] new file:{}, type:{} eofType:{}, rdbOffset:{}", dumpedRdbFile, rdbType, eofType, rdbOffset);
-			RdbStore oldRdbStore = storeRef.get();
-			storeRef.set(rdbStore);
-			if (null!= oldRdbStore) previousRdbStores.put(oldRdbStore, Boolean.TRUE);
+			adoptRdb(storeRef, rdbStore);
 		}
 	}
 
@@ -908,7 +975,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		DefaultDumpedRdbStore rdbStore = new DefaultDumpedRdbStore(new File(baseDir, newRdbFileName()), asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
 		initializeRdbStore(rdbStore);
 		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
-		return rdbStore;
+		return startDumpingRdb(rdbStore);
 	}
 
 	public RdbStore getRdbStore() {
@@ -1004,7 +1071,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	private List<String> rdbFilesOnFS() {
 		List<String> entries;
 		try {
-			entries = AsyncFileSystemHelper.await(() -> asyncFileSystem.list(baseDir.getAbsolutePath()),
+			entries = AsyncFileSystemHelper.awaitList(() -> asyncFileSystem.list(baseDir.getAbsolutePath()),
 					"list rdb files in " + baseDir);
 		} catch (IOException e) {
 			getLogger().error("[rdbFilesOnFS][{}]", baseDir, e);
@@ -1104,7 +1171,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	protected void ensureBaseDir() throws IOException {
-		AsyncFileSystemHelper.await(() -> asyncFileSystem.mkdir(baseDir.getAbsolutePath(), true), "mkdir " + baseDir);
+		AsyncFileSystemHelper.mkdir(asyncFileSystem, baseDir.getAbsolutePath(), true, "mkdir " + baseDir);
 	}
 
 	@Override
@@ -1397,6 +1464,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			}
 		}
 		previousRdbStores.clear();
+		dumpingRdbRef.set(null);
 		if (!errors.isEmpty()) {
 			IOException first = errors.getFirst();
 			errors.subList(1, errors.size()).forEach(first::addSuppressed);
@@ -1525,6 +1593,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				previousRdbStores.remove(rdbStore);
 			}
 		}
+
+		removeUnusedRdbFiles();
 
 		// delete old command file
 		if (cmdStore != null) {

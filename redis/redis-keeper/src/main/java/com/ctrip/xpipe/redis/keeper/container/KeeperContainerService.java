@@ -428,7 +428,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
         String root = StringUtils.trimTrailingCharacter(keeperContainerConfig.getReplicationStoreDir(), '/');
         AsyncFileSystem fs = containerResourceManager.getAsyncFileSystem();
         try {
-            List<String> names = AsyncFileSystemHelper.await(() -> fs.list(root), "gc list store root " + root);
+            List<String> names = AsyncFileSystemHelper.awaitList(() -> fs.list(root), "gc list store root " + root);
             return names == null ? Collections.emptyList() : names;
         } catch (IOException e) {
             throw new RedisKeeperRuntimeException(new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,

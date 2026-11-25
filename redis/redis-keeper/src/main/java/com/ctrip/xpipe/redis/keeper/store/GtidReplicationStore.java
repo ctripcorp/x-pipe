@@ -185,7 +185,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         DumpedGtidRdbStore rdbStore = new DumpedGtidRdbStore(new File(getBaseDir(), newRdbFileName()), asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
         initializeRdbStore(rdbStore);
         rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
-        return rdbStore;
+        return startDumpingRdb(rdbStore);
     }
 
     @Override

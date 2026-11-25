@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Test;
 
@@ -54,6 +56,43 @@ public class RedisMasterNewRdbDumperTest {
         verify(redisKeeperServer).clearRdbDumper(eq(dumper), eq(false));
         assertTrue(dumper.future().isDone());
         assertFalse(dumper.future().isSuccess());
+    }
+
+    @Test
+    public void dumpFailDiscardsPreparedRdb() throws Exception {
+        DefaultReplicationStore store = mock(DefaultReplicationStore.class);
+        DumpedRdbStore dumped = mock(DumpedRdbStore.class);
+        when(store.prepareNewRdb()).thenReturn(dumped);
+        RedisMaster redisMaster = mock(RedisMaster.class);
+        when(redisMaster.getCurrentReplicationStore()).thenReturn(store);
+
+        RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(redisMaster, mock(RedisKeeperServer.class), false, false,
+                mock(NioEventLoopGroup.class), mock(ScheduledExecutorService.class), mock(KeeperResourceManager.class)));
+        doNothing().when(dumper).startRdbOnlyReplication();
+
+        dumper.execute();
+        dumper.prepareRdbStore();
+        dumper.future().setFailure(new IOException("dump fail"));
+
+        verify(store, times(1)).discardDumpedRdb(dumped);
+    }
+
+    @Test
+    public void dumpSuccessKeepsPreparedRdb() throws Exception {
+        DefaultReplicationStore store = mock(DefaultReplicationStore.class);
+        when(store.prepareNewRdb()).thenReturn(mock(DumpedRdbStore.class));
+        RedisMaster redisMaster = mock(RedisMaster.class);
+        when(redisMaster.getCurrentReplicationStore()).thenReturn(store);
+
+        RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(redisMaster, mock(RedisKeeperServer.class), false, false,
+                mock(NioEventLoopGroup.class), mock(ScheduledExecutorService.class), mock(KeeperResourceManager.class)));
+        doNothing().when(dumper).startRdbOnlyReplication();
+
+        dumper.execute();
+        dumper.prepareRdbStore();
+        dumper.future().setSuccess();
+
+        verify(store, never()).discardDumpedRdb(any());
     }
 
     @Test

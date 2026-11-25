@@ -48,8 +48,11 @@ public final class AsyncFileSystemHelper {
     public static final String CASE_NOT_EXECUTED = "NotExecuted";
     public static final String CASE_MEMORY_RESERVE_FAIL = "MemoryReserveFail";
     public static final String CASE_UNKNOWN_FAIL = "UnknownFail";
+    public static final String CASE_MKDIR_RETRY = "MkdirRetry";
 
     public static final long DEFAULT_IO_TIMEOUT_MILLIS = 1000L;
+
+    public static final long LIST_IO_TIMEOUT_MILLIS = 3000L;
 
     public static final String KEY_TRANSFER_MAX_BYTES = "keeper.fs.transfer.max.bytes";
 
@@ -130,13 +133,35 @@ public final class AsyncFileSystemHelper {
      * Prefer this overload over {@link #await(CompletableFuture, String)} so sync ONE can be retried.
      */
     public static <T> T await(FsCall<T> call, String operation) throws IOException {
+        return awaitWithNotExecutedRetry(call, operation, currentTimeoutMillis());
+    }
+
+    /** TFS lists about 2000 entries/s, so list needs a longer timeout than single-file IO. */
+    public static <T> T awaitList(FsCall<T> call, String operation) throws IOException {
+        return awaitWithNotExecutedRetry(call, operation, Math.max(currentTimeoutMillis(), LIST_IO_TIMEOUT_MILLIS));
+    }
+
+    /** A timed-out mkdir may have succeeded; retrying is safe since mkdir of an existing dir succeeds. */
+    public static boolean mkdir(AsyncFileSystem fs, String path, boolean recursive, String operation)
+            throws IOException {
         try {
-            return awaitFuture(call.call(), operation);
+            return Boolean.TRUE.equals(await(() -> fs.mkdir(path, recursive), operation));
+        } catch (IOException | RuntimeException first) {
+            logger.warn("[mkdir][retry] {} cause: {}", operation, ExceptionUtils.getTypeAndMessage(first));
+            logCase(CASE_MKDIR_RETRY);
+            return Boolean.TRUE.equals(await(() -> fs.mkdir(path, recursive), operation));
+        }
+    }
+
+    private static <T> T awaitWithNotExecutedRetry(FsCall<T> call, String operation, long timeoutMillis)
+            throws IOException {
+        try {
+            return awaitFuture(call.call(), operation, timeoutMillis);
         } catch (OperationNotExecutedException first) {
             logger.warn("[await][not-executed][retry] {}", operation, first);
             logCase(CASE_NOT_EXECUTED_RETRY);
             try {
-                return awaitFuture(call.call(), operation);
+                return awaitFuture(call.call(), operation, timeoutMillis);
             } catch (OperationNotExecutedException second) {
                 logCase(CASE_NOT_EXECUTED);
                 throw second;
@@ -202,7 +227,7 @@ public final class AsyncFileSystemHelper {
      * per-entry filesystem I/O. A failed list or stat propagates as {@link IOException}.</p>
      */
     public static long getLatestDirectChildLastModified(AsyncFileSystem fs, String directory) throws IOException {
-        List<String> children = await(() -> fs.list(directory), "list directory " + directory);
+        List<String> children = awaitList(() -> fs.list(directory), "list directory " + directory);
         if (children == null || children.isEmpty()) {
             return 0L;
         }
@@ -377,7 +402,12 @@ public final class AsyncFileSystemHelper {
     }
 
     private static <T> T awaitFuture(CompletableFuture<T> future, String operation) throws IOException {
-        return doAwait(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS,
+        return awaitFuture(future, operation, currentTimeoutMillis());
+    }
+
+    private static <T> T awaitFuture(CompletableFuture<T> future, String operation, long timeoutMillis)
+            throws IOException {
+        return doAwait(future, operation, timeoutMillis, TimeUnit.MILLISECONDS,
                 () -> logLateFailure(future, operation));
     }
 

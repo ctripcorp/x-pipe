@@ -320,7 +320,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         keeperMonitor.getReplicationStoreStats().increateReplicationStoreCreateCount();
 
         File storeBaseDir = new File(baseDir, UUID.randomUUID().toString());
-        AsyncFileSystemHelper.await(() -> asyncFileSystem.mkdir(storeBaseDir.getAbsolutePath(), true),
+        AsyncFileSystemHelper.mkdir(asyncFileSystem, storeBaseDir.getAbsolutePath(), true,
                 "mkdir replication store " + storeBaseDir.getAbsolutePath());
 
         logger.info("[create]{}", storeBaseDir);
@@ -463,7 +463,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             return managerMetaAsyncFile;
         }
         // Parent dir may not exist before first create(); open(CREATE) needs it.
-        AsyncFileSystemHelper.await(() -> asyncFileSystem.mkdir(baseDir.getAbsolutePath(), true),
+        AsyncFileSystemHelper.mkdir(asyncFileSystem, baseDir.getAbsolutePath(), true,
                 "mkdir manager baseDir for meta " + baseDir.getAbsolutePath());
         AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE,
                         AbstractStorageFile.ReplaceMode.ATOMIC, true,
@@ -566,7 +566,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 );
             }
             final String currentDirName = meta.getProperty(LATEST_STORE_DIR);
-            List<String> children = AsyncFileSystemHelper.await(() -> asyncFileSystem.list(baseDir.getAbsolutePath()),
+            List<String> children = AsyncFileSystemHelper.awaitList(() -> asyncFileSystem.list(baseDir.getAbsolutePath()),
                     "list replication store manager baseDir " + baseDir);
 
             if (children != null && !children.isEmpty()) {
