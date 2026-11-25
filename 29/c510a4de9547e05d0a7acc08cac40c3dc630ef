@@ -1,0 +1,20 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerMetaFlushTest.java
+  s_cec9959c68fe74::t_cab880ab2c0f9c 75-76,84,88-89,93,113,126,135,141,144,148,152,155,159,162,173,182,186,204,226,231,244,256,265,271,273,289,309,316,322-358
+  s_cec9959c68fe74::t_d81e2dd707ad7b 293,301,304
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "29c510a4de9547e05d0a7acc08cac40c3dc630ef",
+  "prompts": {},
+  "sessions": {
+    "s_cec9959c68fe74": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "11cf9726-f293-4404-99c5-f1f51c511fa8",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
