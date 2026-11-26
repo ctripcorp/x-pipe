@@ -32,6 +32,8 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.impl.ProgressiveSyncRateLimiterTes
 import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManagerTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerControllerUnclosedHandlesTest;
 import com.ctrip.xpipe.redis.keeper.container.UnclosedHandleMetricReporterTest;
+import com.ctrip.xpipe.redis.keeper.container.TailCacheMemoryMetricReporterTest;
+import com.ctrip.xpipe.redis.keeper.container.TfsControllerTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperDeferredCloseTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperReopenReportTest;
 import com.ctrip.xpipe.redis.keeper.storage.StoreCloseUnclosedHandleTest;
@@ -50,6 +52,7 @@ import com.ctrip.xpipe.redis.keeper.storage.DebugFileChannelTest;
 import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloserTest;
 import com.ctrip.xpipe.redis.keeper.storage.FileFaultInjectorTest;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemTest;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemMemoryStatsTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTransactionBatchTest;
@@ -213,6 +216,8 @@ import org.junit.runners.Suite.SuiteClasses;
         ContainerResourceManagerTest.class,
         UnclosedHandleMetricReporterTest.class,
         KeeperContainerControllerUnclosedHandlesTest.class,
+        TailCacheMemoryMetricReporterTest.class,
+        TfsControllerTest.class,
         AsyncTFSBasedFileSystemTest.class,
         AsyncTFSBasedFileSystemChannelFactoryTest.class,
         FileFaultInjectorTest.class,
@@ -221,6 +226,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DebugFileChannelEndToEndTest.class,
         DeferredHandleCloserTest.class,
         TailCacheFileSystemTest.class,
+        TailCacheFileSystemMemoryStatsTest.class,
 
         XsyncForKeeperAndKeeperTest.class,
         XsyncForKeeperSlaveTest.class,
