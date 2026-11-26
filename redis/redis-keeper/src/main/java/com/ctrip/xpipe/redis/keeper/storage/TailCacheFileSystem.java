@@ -252,6 +252,70 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return memoryTracker.committedBytes();
     }
 
+    // Approximate, no locks, no IO.
+    public TailCacheMemoryStats getMemoryStats() {
+        long unDurableBytes = visitCacheEntries(null);
+        return new TailCacheMemoryStats(System.currentTimeMillis(), maxCacheSizeBytes,
+                memoryTracker.committedBytes(), unDurableBytes);
+    }
+
+    // One unsorted row per file, segment and index entry.
+    public List<TailCacheFileMemoryStats> listFileMemoryStats() {
+        List<TailCacheFileMemoryStats> rows = new ArrayList<>();
+        visitCacheEntries(rows);
+        return Collections.unmodifiableList(rows);
+    }
+
+    // Returns unDurableBytes sum; rows may be null.
+    private long visitCacheEntries(List<TailCacheFileMemoryStats> rows) {
+        long unDurableBytes = 0;
+        for (Map.Entry<String, FileCacheEntry> e : fileCacheEntries.entrySet()) {
+            unDurableBytes += visitCacheEntry(rows, TailCacheFileMemoryStats.Kind.FILE, e.getKey(), null, 0,
+                    e.getValue());
+        }
+        for (Map.Entry<String, SegmentFileCacheEntry> e : segmentCacheEntries.entrySet()) {
+            String segmentKey = e.getKey();
+            SegmentFileCacheEntry segment = e.getValue();
+            unDurableBytes += visitCacheEntry(rows, TailCacheFileMemoryStats.Kind.SEGMENT, segmentKey, null, 0,
+                    segment);
+            for (Map.Entry<Long, ConcurrentHashMap<String, FileCacheEntry>> byStart : segment.indexFiles.entrySet()) {
+                for (Map.Entry<String, FileCacheEntry> index : byStart.getValue().entrySet()) {
+                    unDurableBytes += visitCacheEntry(rows, TailCacheFileMemoryStats.Kind.INDEX, segmentKey,
+                            index.getKey(), byStart.getKey(), index.getValue());
+                }
+            }
+        }
+        return unDurableBytes;
+    }
+
+    private long visitCacheEntry(List<TailCacheFileMemoryStats> rows, TailCacheFileMemoryStats.Kind kind,
+            String key, String indexPrefix, long segmentStartOffset, FileCacheEntry entry) {
+        try {
+            long unDurableBytes = entry.unDurableBytes();
+            if (rows != null) {
+                rows.add(new TailCacheFileMemoryStats(kind,
+                        memoryStatsPath(kind, key, indexPrefix, segmentStartOffset),
+                        entry.ownCacheSizeBytes(), unDurableBytes));
+            }
+            return unDurableBytes;
+        } catch (RuntimeException ex) {
+            logger.warn("[memoryStats] skip {} entry {} {}", kind, key.replace('\0', ':'), indexPrefix, ex);
+            return 0;
+        }
+    }
+
+    private static String memoryStatsPath(TailCacheFileMemoryStats.Kind kind, String key, String indexPrefix,
+            long segmentStartOffset) {
+        switch (kind) {
+            case FILE:
+                return StorageUtil.pathOfFileKey(key);
+            case SEGMENT:
+                return StorageUtil.pathOfSegmentKey(key);
+            default:
+                return StorageUtil.indexPathOfSegmentKey(key, indexPrefix, segmentStartOffset);
+        }
+    }
+
     private CacheMode resolveFileCacheMode(AbstractStorageFile.ReplaceMode replaceMode, CacheMode override) {
         boolean atomicReplace = replaceMode.isAtomicReplace();
         if (override != null) {

@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -268,12 +269,30 @@ class StorageUtil {
                 .orElse("unknown"));
     }
 
+    private static final String FILE_KEY_PREFIX = "f\0";
+    private static final String SEGMENT_KEY_PREFIX = "s\0";
+    private static final char KEY_SEPARATOR = '\0';
+
     static String asyncFileKey(String path) {
-        return "f\0" + path;
+        return FILE_KEY_PREFIX + path;
     }
 
     static String segmentKey(String path, String prefix) {
-        return "s\0" + path + "\0" + prefix;
+        return SEGMENT_KEY_PREFIX + path + KEY_SEPARATOR + prefix;
+    }
+
+    static String pathOfFileKey(String key) {
+        return key.substring(FILE_KEY_PREFIX.length());
+    }
+
+    static String pathOfSegmentKey(String key) {
+        int sep = key.lastIndexOf(KEY_SEPARATOR);
+        return Paths.get(key.substring(SEGMENT_KEY_PREFIX.length(), sep), key.substring(sep + 1)).toString();
+    }
+
+    static String indexPathOfSegmentKey(String key, String indexPrefix, long segmentStartOffset) {
+        int sep = key.lastIndexOf(KEY_SEPARATOR);
+        return Paths.get(key.substring(SEGMENT_KEY_PREFIX.length(), sep), indexPrefix + segmentStartOffset).toString();
     }
 
     static long chunkCapacityForBytes(long bytes, long chunkSize) {

@@ -340,4 +340,9 @@ class FileCacheEntry {
     long cacheSizeBytes() {
         return bodySizeBytes;
     }
+
+    // Excludes segment index entries.
+    final long ownCacheSizeBytes() {
+        return bodySizeBytes;
+    }
 }
