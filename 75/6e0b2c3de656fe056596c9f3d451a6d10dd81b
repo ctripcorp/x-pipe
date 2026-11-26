@@ -1,0 +1,27 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/resp/TailCacheFileMemoryListResp.java
+  s_97469a66694c0a::t_55604f5252c793 1-88
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/TfsController.java
+  s_97469a66694c0a::t_ce9afcc866f88e 1-106
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/resp/TailCacheMemoryResp.java
+  s_97469a66694c0a::t_80cc163bc9622d 1-50
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_97469a66694c0a::t_e811b0332bfa2a 35-36,55,219-220,229
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/container/TfsControllerTest.java
+  s_97469a66694c0a::t_50c317811345b5 1-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "756e0b2c3de656fe056596c9f3d451a6d10dd81b",
+  "prompts": {},
+  "sessions": {
+    "s_97469a66694c0a": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_2a7ac043-18d2-431d-b3dc-fd95dab29cc0",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
