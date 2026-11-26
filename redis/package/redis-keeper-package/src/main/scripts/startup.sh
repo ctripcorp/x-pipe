@@ -185,6 +185,21 @@ export JAVA_OPTS="$JAVA_OPTS -Djdk.attach.allowAttachSelf=true --add-exports jdk
 
 echo $JAVA_OPTS
 
+JEMALLOC_LIB=/usr/local/lib/libjemalloc.so
+if [ ! -f "$JEMALLOC_LIB" ]; then
+    JEMALLOC_LIB=/opt/container/lib/libjemalloc.so
+fi
+if [ -f "$JEMALLOC_LIB" ]; then
+    export LD_PRELOAD=$JEMALLOC_LIB
+    CPU_NUM=${CDOS_CPUS:-${LIBSYSCONFCPUS:-$(nproc 2>/dev/null)}}
+    if [[ "$CPU_NUM" =~ ^[1-9][0-9]*$ ]]; then
+        export MALLOC_CONF=narenas:$((CPU_NUM * 4))
+        echo "LD_PRELOAD: $LD_PRELOAD, CPU_NUM: $CPU_NUM, MALLOC_CONF: $MALLOC_CONF"
+    else
+        echo "WARN: invalid jemalloc CPU_NUM: $CPU_NUM, skip MALLOC_CONF"
+    fi
+fi
+
 PATH_TO_JAR=$SERVICE_NAME".jar"
 SERVER_URL="http://localhost:$SERVER_PORT"
 STARTUP_LOG=$LOG_DIR"/startup.logger"
