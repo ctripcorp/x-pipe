@@ -41,6 +41,22 @@ public class ContainerResourceManagerTest {
     }
 
     @Test
+    public void testGetExistingTailCacheFileSystemNeverCreates() {
+        ContainerResourceManager manager = new ContainerResourceManager();
+        ReflectionTestUtils.setField(manager, "keeperConfig", new TestKeeperConfig());
+        assertFalse(manager.getExistingTailCacheFileSystem().isPresent());
+        assertNull("not created by the lookup", ReflectionTestUtils.getField(manager, "asyncFileSystem"));
+
+        AsyncFileSystem fs = manager.getAsyncFileSystem();
+        try {
+            assertSame(fs, manager.getExistingTailCacheFileSystem().get());
+        } finally {
+            manager.shutdownAsyncFileSystem();
+        }
+        assertFalse(manager.getExistingTailCacheFileSystem().isPresent());
+    }
+
+    @Test
     public void testFlushRetryWindowConfig() {
         assertEquals(300_000L, KeeperConfig.DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI);
         assertEquals("keeper.unclosed.handle.flush.retry.window.milli",

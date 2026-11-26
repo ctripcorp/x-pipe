@@ -30,6 +30,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.TfsStoreDeleter;
 import com.ctrip.xpipe.redis.keeper.store.searcher.CmdKeyItem;
 import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcher;
@@ -90,6 +91,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     private ExecutorService searcherExecutor;
 
     private ExecutorService gcExecutor;
+    private volatile TailCacheMemoryMetricReporter tailCacheMemoryMetricReporter;
 
     private Logger logger = LoggerFactory.getLogger(KeeperContainerService.class);
 
@@ -105,6 +107,29 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     }
 
     @Override
+    protected void doStart() throws Exception {
+        super.doStart();
+        TailCacheMemoryMetricReporter reporter = new TailCacheMemoryMetricReporter(
+                () -> containerResourceManager.getExistingTailCacheFileSystem().map(TailCacheFileSystem::getMemoryStats));
+        reporter.start();
+        this.tailCacheMemoryMetricReporter = reporter;
+    }
+
+    @Override
+    protected void doStop() throws Exception {
+        stopTailCacheMemoryMetricReporter();
+        super.doStop();
+    }
+
+    private void stopTailCacheMemoryMetricReporter() {
+        TailCacheMemoryMetricReporter reporter = tailCacheMemoryMetricReporter;
+        if (reporter != null) {
+            reporter.stop();
+            tailCacheMemoryMetricReporter = null;
+        }
+    }
+
+    @Override
     protected void doDispose() throws Exception {
         // process exit: registry has stopped every keeper, nothing writes; free stores before the FS goes down
         for (RedisKeeperServer keeperServer : redisKeeperServers.values()) {
@@ -116,6 +141,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
         }
         this.searcherExecutor.shutdown();
         this.gcExecutor.shutdown();
+        stopTailCacheMemoryMetricReporter();
         containerResourceManager.shutdownAsyncFileSystem();
     }
 

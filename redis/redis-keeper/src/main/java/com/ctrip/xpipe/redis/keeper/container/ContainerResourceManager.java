@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,6 +73,12 @@ public class ContainerResourceManager {
             }
             return asyncFileSystem;
         }
+    }
+
+    // Never creates the FS.
+    public Optional<TailCacheFileSystem> getExistingTailCacheFileSystem() {
+        AsyncFileSystem fs = asyncFileSystem;
+        return fs instanceof TailCacheFileSystem ? Optional.of((TailCacheFileSystem) fs) : Optional.empty();
     }
 
     /** The container FS's deferred closer; null until the FS is created or after it is shut down. */
