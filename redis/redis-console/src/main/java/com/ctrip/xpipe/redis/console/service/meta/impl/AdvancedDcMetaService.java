@@ -132,6 +132,10 @@ public class AdvancedDcMetaService implements DcMetaService {
     @Autowired
     private ConsoleConfig consoleConfig;
 
+    @Autowired
+    @Lazy
+    private LogicalBuKeeperPriorityOverrider logicalBuKeeperPriorityOverrider;
+
     @Resource(name=SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
@@ -215,6 +219,7 @@ public class AdvancedDcMetaService implements DcMetaService {
                 throw th;
             }
 
+            logicalBuKeeperPriorityOverrider.override(dcMeta);
             return HeteroDcMetaProcessor.postProcessHeteroClusters(dcMeta, allowTypes);
         } finally {
             semaphore.release();
@@ -256,6 +261,10 @@ public class AdvancedDcMetaService implements DcMetaService {
             throw th;
         }
 
+        Map<Long, Integer> priorityOverrides = logicalBuKeeperPriorityOverrider.loadOverrides();
+        for (DcMeta dcMeta : dcMetaMap.values()) {
+            LogicalBuKeeperPriorityOverrider.apply(dcMeta, priorityOverrides);
+        }
         return dcMetaMap;
     }
 

@@ -276,6 +276,7 @@ CREATE TABLE `LOGICAL_BU_TBL` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT primary key,
   `name` varchar(128) NOT NULL DEFAULT '',
   `tfs_fs_id` varchar(128) NOT NULL DEFAULT '',
+  `priority` int DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT 1,
   `description` varchar(1024) NOT NULL DEFAULT '',
   `DataChange_LastTime` datetime default CURRENT_TIMESTAMP,

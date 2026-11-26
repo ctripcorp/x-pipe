@@ -209,7 +209,7 @@ function router($stateProvider, $urlRouterProvider) {
         })
         .state('logical_bu_list', {
             url: '/logical_bu_list',
-            templateUrl: 'views/index/logical_bu_list.html',
+            templateUrl: 'views/index/logical_bu_list.html?v=2026112617',
             controller: 'LogicalBuListCtl',
         })
         .state('keepercontainer_list', {

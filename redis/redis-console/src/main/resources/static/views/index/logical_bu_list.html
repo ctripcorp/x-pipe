@@ -1,3 +1,64 @@
+<meta charset="UTF-8">
+<style>
+    .logical-bu-header-actions .btn { margin-left: 5px; }
+    .logical-bu-operation-summary { margin: 18px 0; }
+    .logical-bu-operation-summary .well { margin-bottom: 0; text-align: center; }
+    .logical-bu-operation-summary .count { display: block; margin-top: 5px; font-size: 30px; font-weight: 600; }
+    .logical-bu-operation-scope { padding: 12px; margin-bottom: 15px; background: #f7f8fa; border: 1px solid #e5e8ec; border-radius: 4px; }
+    .logical-bu-operation-scope .checkbox-inline { margin-right: 15px; margin-left: 0; }
+    .logical-bu-operation-scope .scope-result { margin-top: 10px; color: #555; }
+    .logical-bu-multi-filter { width: 100%; box-sizing: border-box; }
+    .logical-bu-multi-filter > .dropdown-toggle { display: flex; align-items: center; color: #555; background: #fff !important; background-image: none !important; border-color: #d5d5d5; }
+    .logical-bu-multi-filter .filter-label { min-width: 0; flex: 1; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+    .logical-bu-multi-filter .dropdown-menu { min-width: 230px; max-height: 300px; padding: 8px 0; overflow-y: auto; box-shadow: 0 6px 18px rgba(0,0,0,.16); }
+    .logical-bu-multi-filter .filter-search { padding: 0 10px 8px; }
+    .logical-bu-multi-filter .filter-option label { display: flex; align-items: center; gap: 8px; margin: 0; padding: 7px 12px; font-weight: normal; cursor: pointer; }
+    .logical-bu-multi-filter .filter-option label:hover { background: #f3f7fb; }
+    .logical-bu-multi-filter .filter-option input { margin: 0; }
+    .logical-bu-multi-filter .filter-clear { padding: 0 8px; text-align: right; }
+    .logical-bu-failure-reasons { margin-top: 12px; padding: 10px 14px; background: #fff5f5; border: 1px solid #f2c7c7; border-radius: 4px; }
+    .logical-bu-failure-reasons ul { margin: 6px 0 0; padding-left: 20px; }
+    .logical-bu-failure-reasons { overflow-wrap: break-word; word-wrap: break-word; }
+    .logical-bu-failure-reasons li { word-break: break-all; }
+    .logical-bu-failure-table { width: 100%; table-layout: fixed; margin: 8px 0 0; }
+    .logical-bu-failure-table th, .logical-bu-failure-table td { white-space: normal; word-break: break-all; overflow-wrap: anywhere; }
+    .kc-counts { font-weight: 600; white-space: nowrap; }
+    .kc-healthy-text { color: #5cb85c; }
+    .kc-down-text { color: #d9534f; }
+    .kc-pending-text { color: #f0ad4e; }
+    .kc-unknown-text { color: #9e9e9e; }
+    .kc-unknown-list { margin-top: 3px; }
+    .kc-unknown-text { text-decoration: none; }
+    .kc-clickable { cursor: pointer; text-decoration: underline dotted; }
+    .kc-unknown-item { margin: 2px 0; padding: 2px 6px; color: #616161; background: #f5f5f5; border-left: 3px solid #9e9e9e; font-size: 12px; white-space: normal; }
+    .kc-unknown-addr { font-weight: 600; margin-right: 6px; }
+    .kc-unknown-reason { color: #888; word-break: break-all; }
+</style><script type="text/ng-template" id="ng-table/filters/logical-bu-dropdown-multiple.html">
+    <div class="dropdown logical-bu-multi-filter">
+        <button type="button" class="input-filter form-control dropdown-toggle"
+                data-toggle="dropdown">
+            <span class="filter-label">{{tableMultiFilterLabel(params, name)}}</span>
+        </button>
+        <ul class="dropdown-menu" ng-click="$event.stopPropagation()">
+            <li class="filter-search">
+                <input type="text" class="form-control input-sm" ng-model="multiFilterSearch[name]"
+                       ng-click="$event.stopPropagation()" placeholder="搜索选项">
+            </li>
+            <li class="filter-option" ng-repeat="data in $column.data | filter:multiFilterSearch[name]">
+                <label>
+                    <input type="checkbox" ng-checked="isTableMultiFilterSelected(params, name, data.id)"
+                           ng-click="toggleTableMultiFilter(params, name, data.id, $event)">
+                    <span>{{data.title}}</span>
+                </label>
+            </li>
+            <li class="divider"></li>
+            <li class="filter-clear">
+                <button type="button" class="btn btn-link btn-xs"
+                        ng-click="clearTableMultiFilter(params, name, $event)">清空本列</button>
+            </li>
+        </ul>
+    </div>
+</script>
 <div class="col-md-12">
     <div class="panel panel-primary">
         <header class="panel-heading">
@@ -5,20 +66,59 @@
                 <div class="col-md-6">
                     <span>逻辑 BU</span>
                 </div>
-                <div class="col-md-6 text-right">
+                <div class="col-md-6 text-right logical-bu-header-actions">
+                    <button type="button" class="btn btn-warning btn-xs" ng-click="preSwitchBm()"
+                            ng-disabled="selectedLogicalBuCount() === 0">强切 BM</button>
+                    <button type="button" class="btn btn-primary btn-xs" ng-click="preSwitchTfs()"
+                            ng-disabled="selectedLogicalBuCount() === 0">强切恢复</button>
+                    <button type="button" class="btn btn-success btn-xs" ng-click="preRecoverTfs()"
+                            ng-disabled="selectedLogicalBuCount() === 0">重置健康状态</button>
+                    <button type="button" class="btn btn-default btn-xs" ng-click="refreshKeeperState()"
+                            ng-disabled="refreshingKeeperState">{{refreshingKeeperState ? '刷新中...' : '刷新容器状态'}}</button>
                     <button type="button" class="btn btn-info btn-xs" ng-click="preCreate()">新增逻辑 BU</button>
                 </div>
             </div>
         </header>
 
+        <div class="well well-sm" style="margin: 12px 12px 0;">
+            <label style="margin-bottom: 0;">
+                <input type="checkbox" ng-model="allLogicalBusSelected" ng-change="toggleAllLogicalBus()">
+                跨页全选
+            </label>
+            <button type="button" class="btn btn-link btn-xs" ng-click="clearLogicalBuFilters()">清空筛选</button>
+        </div>
+
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
             <tr ng-repeat="bu in $data">
+                <td data-title="'选择'"><input type="checkbox" ng-model="bu.selected" ng-change="allLogicalBusSelected = false" aria-label="选择逻辑 BU"></td>
                 <td data-title="'ID'" filter="{ id: 'text'}">{{bu.id}}</td>
-                <td data-title="'名称'" filter="{ name: 'text'}">{{bu.name}}</td>
+                <td data-title="'名称'" filter="{ name: 'logical-bu-dropdown-multiple'}" filter-data="logicalBuNameFilterData">{{bu.name}}</td>
                 <td data-title="'active'" filter="{ active: 'text'}">{{bu.active}}</td>
                 <td data-title="'tfs_fs_id'" filter="{ tfsFsId: 'text'}">{{bu.tfsFsId}}</td>
+                <td data-title="'IDC'" filter="{ idcName: 'logical-bu-dropdown-multiple'}" filter-data="idcFilterData">{{bu.idcName || '-'}}</td>
+                <td data-title="'Priority'" filter="{ priorityText: 'text'}">{{bu.priorityText}}</td>
                 <td data-title="'关联 org'">{{formatOrgIds(bu.cmsOrgIds)}}</td>
-                <td data-title="'容器数'" sortable="'keeperContainerCount'">{{bu.keeperContainerCount}}</td>
+                <td data-title="'容器数'" sortable="'idcKeeperContainerCount'">{{bu.idcKeeperContainerCount}}</td>
+                <td ng-if="showKeeperCount" data-title="'容器状态'">
+                    <span ng-if="bu.keeperStateError" class="text-danger">{{bu.keeperStateError}}</span>
+                    <span ng-if="!bu.keeperStateError" class="kc-counts">
+                        <span class="kc-healthy-text" title="健康：Keeper 均为 HEALTHY 或 SICK">{{bu.keeperState.healthy}}</span>
+                        /
+                        <span class="kc-down-text" title="DOWN：至少一个 Keeper DOWN">{{bu.keeperState.down}}</span>
+                        /
+                        <span class="kc-pending-text" title="Pending：至少一个 Keeper RECOVERED_PENDING">{{bu.keeperState.pending}}</span>
+                        /
+                        <a href="" class="kc-unknown-text" ng-class="{'kc-clickable': bu.unknownContainers.length}"
+                           title="Unknown：KeeperContainer 无法访问，点击查看，Esc 收起"
+                           ng-click="bu.unknownContainers.length && (bu.showUnknown = !bu.showUnknown)">{{bu.keeperState.unknown}}</a>
+                    </span>
+                    <div ng-if="bu.showUnknown && bu.unknownContainers.length" class="kc-unknown-list">
+                        <div ng-repeat="kc in bu.unknownContainers" class="kc-unknown-item">
+                            <span class="kc-unknown-addr">{{kc.address}}</span>
+                            <span class="kc-unknown-reason">{{kc.reason || '-'}}</span>
+                        </div>
+                    </div>
+                </td>
                 <td data-title="'描述'" filter="{ description: 'text'}">{{bu.description}}</td>
                 <td data-title="'操作'">
                     <button class="btn btn-warning btn-xs" type="button" ng-click="preEdit(bu)">编辑</button>&nbsp;
@@ -26,6 +126,183 @@
                 </td>
             </tr>
         </table>
+    </div>
+</div>
+
+<div class="modal fade" id="switchBmModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-warning">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+                <h4 class="modal-title">强切 BM 详情</h4>
+            </div>
+            <div class="modal-body">
+                <div class="logical-bu-operation-scope">
+                    <div class="scope-result">
+                        <strong>逻辑 BU：</strong>{{formatSelectedIdcs(switchBmResult.logicalBuNames)}}<br>
+                        <strong>IDC：</strong>{{formatSelectedIdcs(switchBmResult.idcs)}}
+                    </div>
+                </div>
+                <div class="alert alert-warning" ng-if="!switchBmResult.completed">
+                    强切 BM 会将所选逻辑 BU 全部 IDC 下 TFS Keeper 的 Priority 更新为 0，并通知各 IDC 的 MetaServer 立即刷新，MetaServer 按限速逐步重新选举。
+                </div>
+                <div class="row logical-bu-operation-summary" ng-if="switchBmResult.completed">
+                    <div class="col-sm-6">
+                        <div class="well"><span>成功数</span><span class="count text-success">{{switchBmResult.successCount}}</span></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="well"><span>失败数</span><span class="count text-danger">{{switchBmResult.failedCount}}</span></div>
+                    </div>
+                </div>
+                <div class="logical-bu-failure-reasons" ng-if="switchBmResult.completed && switchBmResult.failureReasons.length">
+                    <strong class="text-danger">失败原因</strong>
+                    <ul><li ng-repeat="item in switchBmResult.failureReasons">{{item.reason}}（{{item.count}}）</li></ul>
+                    <table class="table table-condensed table-bordered logical-bu-failure-table" ng-if="switchBmResult.failureDetails.length">
+                        <colgroup><col style="width:11%"><col style="width:9%"><col style="width:11%"><col style="width:14%"><col style="width:15%"><col style="width:12%"><col style="width:28%"></colgroup>
+                        <tr><th>逻辑 BU</th><th>层</th><th>步骤</th><th>原因</th><th>对端</th><th>范围</th><th>详情</th></tr>
+                        <tr ng-repeat="d in switchBmResult.failureDetails">
+                            <td>{{d.logicalBuName}}</td>
+                            <td>{{d.layer}}</td>
+                            <td>{{d.stage}}</td>
+                            <td>{{d.message}}</td>
+                            <td>{{d.target || '-'}}</td>
+                            <td>{{d.scope || '-'}}</td>
+                            <td>{{d.detail || '-'}}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-warning" ng-if="!switchBmResult.completed"
+                        ng-disabled="switchBmResult.running || !switchBmResult.logicalBuIds.length"
+                        ng-click="runSwitchBm()">{{switchBmResult.running ? '执行中...' : '确认强切 BM'}}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="recoverTfsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-success">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+                <h4 class="modal-title">重置健康状态详情</h4>
+            </div>
+            <div class="modal-body">
+                <div class="logical-bu-operation-scope">
+                    <div class="scope-result">
+                        <strong>逻辑 BU：</strong>{{formatSelectedIdcs(recoverTfsResult.logicalBuNames)}}<br>
+                        <strong>IDC：</strong>{{formatSelectedIdcs(recoverTfsResult.idcs)}}
+                    </div>
+                </div>
+                <div class="alert alert-success" ng-if="!recoverTfsResult.completed">
+                    重置健康状态会让所选逻辑 BU 的 TFS KeeperContainer 把 RECOVERED_PENDING 的 Keeper 恢复为 HEALTHY（已是 HEALTHY 的不变，DOWN / SICK 会被拒绝）。不修改 Priority：Priority 为 0 时恢复后 TFS 仍保持 backup。
+                </div>
+                <div class="row logical-bu-operation-summary" ng-if="recoverTfsResult.completed">
+                    <div class="col-sm-6">
+                        <div class="well"><span>成功逻辑 BU</span><span class="count text-success">{{recoverTfsResult.successCount}}</span></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="well"><span>失败逻辑 BU</span><span class="count text-danger">{{recoverTfsResult.failedCount}}</span></div>
+                    </div>
+                </div>
+                <div class="logical-bu-operation-summary" ng-if="recoverTfsResult.completed && recoverTfsResult.keeperRecoverByBu.length">
+                    <strong>Keeper 恢复</strong>
+                    <table class="table table-condensed table-bordered logical-bu-failure-table">
+                        <colgroup><col style="width:35%"><col style="width:30%"><col style="width:15%"><col style="width:20%"></colgroup>
+                        <tr><th>逻辑 BU</th><th>IDC</th><th>结果</th><th>Keeper 恢复</th></tr>
+                        <tr ng-repeat="b in recoverTfsResult.keeperRecoverByBu">
+                            <td>{{b.logicalBuName}}</td>
+                            <td>{{formatSelectedIdcs(b.idcs)}}</td>
+                            <td ng-class="{'text-success': b.state === 'SUCCESS', 'text-danger': b.state !== 'SUCCESS'}">{{b.state === 'SUCCESS' ? '成功' : (b.state === 'BLOCKED' ? '未执行' : '失败')}}</td>
+                            <td class="kc-counts">
+                                <span ng-class="{'kc-healthy-text': b.successContainerCount === b.containerCount, 'kc-down-text': b.successContainerCount !== b.containerCount}"
+                                      title="成功：Keeper 全部恢复的容器数">{{b.successContainerCount}}</span>
+                                /
+                                <span title="总数：TFS 容器数">{{b.containerCount}}</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="logical-bu-failure-reasons" ng-if="recoverTfsResult.completed && recoverTfsResult.failureReasons.length">
+                    <strong class="text-danger">失败原因</strong>
+                    <ul><li ng-repeat="item in recoverTfsResult.failureReasons">{{item.reason}}（{{item.count}}）</li></ul>
+                    <table class="table table-condensed table-bordered logical-bu-failure-table" ng-if="recoverTfsResult.failureDetails.length">
+                        <colgroup><col style="width:11%"><col style="width:9%"><col style="width:11%"><col style="width:14%"><col style="width:15%"><col style="width:12%"><col style="width:28%"></colgroup>
+                        <tr><th>逻辑 BU</th><th>层</th><th>步骤</th><th>原因</th><th>对端</th><th>范围</th><th>详情</th></tr>
+                        <tr ng-repeat="d in recoverTfsResult.failureDetails">
+                            <td>{{d.logicalBuName}}</td>
+                            <td>{{d.layer}}</td>
+                            <td>{{d.stage}}</td>
+                            <td>{{d.message}}</td>
+                            <td>{{d.target || '-'}}</td>
+                            <td>{{d.scope || '-'}}</td>
+                            <td>{{d.detail || '-'}}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-success" ng-if="!recoverTfsResult.completed"
+                        ng-disabled="recoverTfsResult.running || !recoverTfsResult.logicalBuIds.length"
+                        ng-click="runRecoverTfs()">{{recoverTfsResult.running ? '执行中...' : '确认重置健康状态'}}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="switchTfsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+                <h4 class="modal-title">强切恢复详情</h4>
+            </div>
+            <div class="modal-body">
+                <div class="logical-bu-operation-scope">
+                    <div class="scope-result">
+                        <strong>逻辑 BU：</strong>{{formatSelectedIdcs(switchTfsResult.logicalBuNames)}}<br>
+                        <strong>IDC：</strong>{{formatSelectedIdcs(switchTfsResult.idcs)}}
+                    </div>
+                </div>
+                <div class="alert alert-info" ng-if="!switchTfsResult.completed">
+                    强切恢复会清除所选逻辑 BU 的 Priority（恢复为跟随 Keeper 自身的 keeper_priority），并通知各 IDC 的 MetaServer 立即刷新，MetaServer 按限速逐步重新选举。TFS Keeper 不健康时不会被选为 active。
+                </div>
+                <div class="row logical-bu-operation-summary" ng-if="switchTfsResult.completed">
+                    <div class="col-sm-6">
+                        <div class="well"><span>成功数</span><span class="count text-success">{{switchTfsResult.successCount}}</span></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="well"><span>失败数</span><span class="count text-danger">{{switchTfsResult.failedCount}}</span></div>
+                    </div>
+                </div>
+                <div class="logical-bu-failure-reasons" ng-if="switchTfsResult.completed && switchTfsResult.failureReasons.length">
+                    <strong class="text-danger">失败原因</strong>
+                    <ul><li ng-repeat="item in switchTfsResult.failureReasons">{{item.reason}}（{{item.count}}）</li></ul>
+                    <table class="table table-condensed table-bordered logical-bu-failure-table" ng-if="switchTfsResult.failureDetails.length">
+                        <colgroup><col style="width:11%"><col style="width:9%"><col style="width:11%"><col style="width:14%"><col style="width:15%"><col style="width:12%"><col style="width:28%"></colgroup>
+                        <tr><th>逻辑 BU</th><th>层</th><th>步骤</th><th>原因</th><th>对端</th><th>范围</th><th>详情</th></tr>
+                        <tr ng-repeat="d in switchTfsResult.failureDetails">
+                            <td>{{d.logicalBuName}}</td>
+                            <td>{{d.layer}}</td>
+                            <td>{{d.stage}}</td>
+                            <td>{{d.message}}</td>
+                            <td>{{d.target || '-'}}</td>
+                            <td>{{d.scope || '-'}}</td>
+                            <td>{{d.detail || '-'}}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" ng-if="!switchTfsResult.completed"
+                        ng-disabled="switchTfsResult.running || !switchTfsResult.logicalBuIds.length"
+                        ng-click="runSwitchTfs()">{{switchTfsResult.running ? '执行中...' : '确认强切恢复'}}</button>
+            </div>
+        </div>
     </div>
 </div>
 

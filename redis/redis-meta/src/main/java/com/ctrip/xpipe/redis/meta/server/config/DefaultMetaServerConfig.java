@@ -66,6 +66,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	private static final String KEY_KEEPER_ELECT_TIMING_CYLCLE_MILLS = "keeper.elect.timing.cycle.mills";
 
 	public static final String KEY_KEEPER_ELECT_STRATEGY = "keeper.elect.strategy";
+	public static final String KEY_KEEPER_PRIORITY_REELECT_RATE = "keeper.priority.reelect.rate.per.second";
 
 	public static final String KEY_TFS_GATEWAY_HOST = "metaserver.tfs.gateway.host";
 
@@ -258,6 +259,12 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public KeeperElectStrategy getKeeperElectStrategy() {
 		return KeeperElectStrategy.from(getProperty(KEY_KEEPER_ELECT_STRATEGY, KeeperElectStrategy.AUTO.name()));
+	}
+
+	/** Read on every throttler tick, so a config change takes effect without restart. */
+	@Override
+	public int getKeeperPriorityReElectRatePerSecond() {
+		return getIntProperty(KEY_KEEPER_PRIORITY_REELECT_RATE, 20);
 	}
 
 	@Override

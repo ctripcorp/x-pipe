@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.LogicalBuModel;
 import com.ctrip.xpipe.redis.console.model.LogicalBuOrgTbl;
 import com.ctrip.xpipe.redis.console.model.LogicalBuOrgTblDao;
@@ -158,5 +159,23 @@ public class LogicalBuServiceImplResolveTest {
 
         verify(queryHandler).handleDelete(any(), eq(true));
         verify(orgDao, never()).insertBatch(any(LogicalBuOrgTbl[].class));
+    }
+
+    @Test
+    public void testKeeperContainerStatsPerIdcFromRealContainers() {
+        java.util.Map<Long, String> dcNames = new java.util.HashMap<>();
+        dcNames.put(1L, "jq");
+        dcNames.put(2L, "oy");
+        LogicalBuModel model = new LogicalBuModel();
+        ReflectionTestUtils.invokeMethod(logicalBuService, "fillKeeperContainerStats", model, Lists.newArrayList(
+                new KeepercontainerTbl().setKeepercontainerId(1L).setKeepercontainerDc(1L),
+                new KeepercontainerTbl().setKeepercontainerId(1L).setKeepercontainerDc(1L),
+                new KeepercontainerTbl().setKeepercontainerId(2L).setKeepercontainerDc(2L),
+                new KeepercontainerTbl().setKeepercontainerId(3L).setKeepercontainerDc(1L)), dcNames);
+
+        Assert.assertEquals(3, model.getKeeperContainerCount());
+        Assert.assertEquals(Lists.newArrayList("jq", "oy"), model.getIdcNames());
+        Assert.assertEquals(Integer.valueOf(2), model.getIdcKeeperContainerCounts().get("jq"));
+        Assert.assertEquals(Integer.valueOf(1), model.getIdcKeeperContainerCounts().get("oy"));
     }
 }

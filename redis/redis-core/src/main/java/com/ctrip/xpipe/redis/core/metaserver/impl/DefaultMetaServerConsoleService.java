@@ -5,16 +5,20 @@ import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.metaserver.DcMetaReloadResult;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.web.client.RestOperations;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -109,6 +113,35 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		return doRequest("getCurrentMaster", clusterId, () ->
 				restTemplate.getForObject(getCurrentMasterPath, RedisMeta.class, clusterId, shardId));
 
+	}
+
+	/**
+	 * Slower than other calls by design: the entry MetaServer pulls DcMeta from console (one retry) and hands it
+	 * to its peers before answering. Dedicated client: long read timeout, no retry.
+	 */
+	public static int RELOAD_DC_META_SO_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("metaserver.dcmeta.reload.timeout", "60000"));
+
+	private volatile RestOperations reloadRestTemplate;
+
+	@Override
+	public List<DcMetaReloadResult> reloadDcMeta() {
+		return doRequest("reloadDcMeta", null, () -> {
+			DcMetaReloadResult[] results = reloadRestTemplate()
+					.postForObject(metaServerAddress + DcMetaReloadResult.PATH_RELOAD, null, DcMetaReloadResult[].class);
+			return results == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(results));
+		});
+	}
+
+	private RestOperations reloadRestTemplate() {
+		if (reloadRestTemplate == null) {
+			synchronized (this) {
+				if (reloadRestTemplate == null) {
+					reloadRestTemplate = RestTemplateFactory.createCommonsHttpRestTemplateWithRetry(0, 10,
+							DEFAULT_CONNECT_TIMEOUT, RELOAD_DC_META_SO_TIMEOUT_MILLI);
+				}
+			}
+		}
+		return reloadRestTemplate;
 	}
 
 	@Override

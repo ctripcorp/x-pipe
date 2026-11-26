@@ -116,6 +116,25 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
     }
 
     @Override
+    public List<KeeperInstanceMeta> getAllKeepers(String dcName, String ip, String hostname, int port) {
+        HostPort address = resolveAddress(dcName, ip, hostname, port);
+        HttpEntity<Void> requestEntity = new HttpEntity<>(buildHeadersWithHostname(hostname));
+        return restTemplate.exchange(String.format("http://%s:%d/keepers", address.getHost(), address.getPort()),
+                HttpMethod.GET, requestEntity,
+                new ParameterizedTypeReference<List<KeeperInstanceMeta>>() {}).getBody();
+    }
+
+    @Override
+    public String recoverHealthState(String dcName, String ip, String hostname, int port, Long replId) {
+        HostPort address = resolveAddress(dcName, ip, hostname, port);
+        KeeperTransMeta keeperTransMeta = new KeeperTransMeta();
+        keeperTransMeta.setReplId(replId);
+        HttpEntity<KeeperTransMeta> requestEntity = new HttpEntity<>(keeperTransMeta, buildHeadersWithHostname(hostname));
+        return restTemplate.exchange(String.format("http://%s:%d/keepers/health/recover", address.getHost(), address.getPort()),
+                HttpMethod.POST, requestEntity, String.class).getBody();
+    }
+
+    @Override
     public void releaseRdb(String dcName, String ip, String hostname, int port, Long replId) {
         HostPort address = resolveAddress(dcName, ip, hostname, port);
         
