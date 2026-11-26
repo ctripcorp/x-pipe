@@ -9,7 +9,9 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
 import com.ctrip.xpipe.redis.console.exception.NotEnoughResultsException;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import org.junit.Assert;
 import org.junit.Test;
@@ -196,5 +198,46 @@ public class ConsoleServiceManagerTest extends AbstractConsoleTest{
         } catch (RuntimeException expected) {
             Assert.assertEquals("dc down", expected.getMessage());
         }
+    }
+
+    @Test
+    public void testSwitchBeaconMasterRoutesToConsoleOfIdc() throws Exception {
+        ConsoleService jq = mock(ConsoleService.class);
+        ConsoleService oy = mock(ConsoleService.class);
+        Map<String, String> shardMasters = Collections.singletonMap("shard-a", "10.0.0.2:6379");
+        RestResponse<Map<String, String>> response = RestResponse.success(Collections.singletonMap("shard-a", "SUCCESS"));
+        when(oy.postForSwitchBeaconMaster("oy", "cluster-a", shardMasters, "1.1.1.1")).thenReturn(response);
+
+        ConsoleServiceManager manager = new ConsoleServiceManager(consoleConfig, consoleLeaderElector);
+        Field servicesField = ConsoleServiceManager.class.getDeclaredField("services");
+        servicesField.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, ConsoleService> services = (Map<String, ConsoleService>) servicesField.get(manager);
+        services.put("JQ", jq);
+        services.put("OY", oy);
+
+        Assert.assertSame(response, manager.postForSwitchBeaconMaster("oy", "cluster-a", shardMasters, "1.1.1.1"));
+        verifyNoInteractions(jq);
+    }
+
+    @Test
+    public void testBeaconMasterSwitchForwardTimeoutDefaultWithoutConfig() {
+        ConsoleServiceManager manager = new ConsoleServiceManager(consoleConfig, consoleLeaderElector);
+        Assert.assertEquals(DefaultConsoleService.DEFAULT_BEACON_MASTER_SWITCH_READ_TIMEOUT_MILLI,
+                manager.getBeaconMasterSwitchForwardTimeoutMilli());
+    }
+
+    @Test
+    public void testBeaconMasterSwitchForwardTimeoutReadLatestConfig() throws Exception {
+        ConsoleServiceManager manager = new ConsoleServiceManager(consoleConfig, consoleLeaderElector);
+        ConsoleCommonConfig commonConfig = mock(ConsoleCommonConfig.class);
+        when(commonConfig.getBeaconFailoverMasterSwitchTimeoutMilli()).thenReturn(30000, 60000);
+        when(commonConfig.getBeaconFailoverMasterSwitchForwardExtraMilli()).thenReturn(5000, 9000);
+        Field commonConfigField = ConsoleServiceManager.class.getDeclaredField("consoleCommonConfig");
+        commonConfigField.setAccessible(true);
+        commonConfigField.set(manager, commonConfig);
+
+        Assert.assertEquals(35000, manager.getBeaconMasterSwitchForwardTimeoutMilli());
+        Assert.assertEquals(69000, manager.getBeaconMasterSwitchForwardTimeoutMilli());
     }
 }

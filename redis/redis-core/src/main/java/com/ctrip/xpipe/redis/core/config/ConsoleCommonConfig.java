@@ -11,6 +11,8 @@ public interface ConsoleCommonConfig {
     // Beacon
     Set<String> getBeaconSupportZones();
     int monitorUnregisterProtectCount();
+    int getBeaconFailoverMasterSwitchTimeoutMilli();
+    int getBeaconFailoverMasterSwitchForwardExtraMilli();
 
     boolean isKeeperMsgCollectOn();
 

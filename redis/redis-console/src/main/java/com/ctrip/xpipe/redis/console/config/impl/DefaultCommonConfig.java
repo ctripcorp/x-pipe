@@ -19,6 +19,9 @@ public class DefaultCommonConfig extends AbstractConfigBean implements ConsoleCo
     // beacon
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
     private static final String KEY_MONITOR_UNREGISTER_PROTECT_COUNT = "monitor.unregister.protect.count";
+    private static final String KEY_BEACON_FAILOVER_MASTER_SWITCH_TIMEOUT_MILLI = "beacon.failover.master.switch.timeout.milli";
+    private static final String KEY_BEACON_FAILOVER_MASTER_SWITCH_FORWARD_EXTRA_MILLI =
+            "beacon.failover.master.switch.forward.extra.milli";
     private static final String KEY_KEEPER_MSG_COLLECT = "keeper.msg.collect";
     private static final String KEY_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI =
             "console.abnormal.cluster.status.monitor.interval.milli";
@@ -36,6 +39,16 @@ public class DefaultCommonConfig extends AbstractConfigBean implements ConsoleCo
     @Override
     public int monitorUnregisterProtectCount() {
         return getIntProperty(KEY_MONITOR_UNREGISTER_PROTECT_COUNT, 10);
+    }
+
+    @Override
+    public int getBeaconFailoverMasterSwitchTimeoutMilli() {
+        return getIntProperty(KEY_BEACON_FAILOVER_MASTER_SWITCH_TIMEOUT_MILLI, 30000);
+    }
+
+    @Override
+    public int getBeaconFailoverMasterSwitchForwardExtraMilli() {
+        return getIntProperty(KEY_BEACON_FAILOVER_MASTER_SWITCH_FORWARD_EXTRA_MILLI, 5000);
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.migration.command.ReactorMigrationCommandBuilderImplAddSentinelTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
+import com.ctrip.xpipe.redis.console.console.impl.DefaultConsoleServiceBeaconMasterSwitchTest;
 import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.checker.ConsoleCheckerControllerDcAllMetaTest;
@@ -232,6 +233,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DcMetaSynchronizerTest.class,
         RedisMetaSynchronizerTest.class,
         ConsoleServiceManagerTest.class,
+        DefaultConsoleServiceBeaconMasterSwitchTest.class,
         RemoteDcKeeperContainerAddressCacheTest.class,
         ChangeConfigTest.class,
         NettyKeyedPoolClientFactoryTest.class,

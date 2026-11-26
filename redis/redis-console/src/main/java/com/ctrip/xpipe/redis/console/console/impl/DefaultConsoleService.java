@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatu
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.SentinelBeaconPostMigrateRequest;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
@@ -17,10 +18,12 @@ import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestOperations;
 
@@ -46,6 +49,12 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     private static final String SENTINEL_BEACON_POST_MIGRATE_PATH = "/api/beacon/migration/sentinel/post/{clusterName}";
     private static final String BEACON_USAGE_PATH = "/api/beacon/sentinel/usage/local?system={system}&includeClusters={includeClusters}";
     private static final String BEACON_CLUSTER_PATH = "/api/beacon/sentinel/cluster/{clusterName}/local";
+    private static final String BEACON_MASTER_SWITCH_PATH =
+            "/api/beacon/failover/master/switch/local?cluster={cluster}&idc={idc}";
+    private static final int BEACON_MASTER_SWITCH_CONNECT_TIMEOUT_MILLI = 3000;
+    private static final int BEACON_MASTER_SWITCH_MAX_CONN = 10;
+    private static final int BEACON_MASTER_SWITCH_RETRY_TIMES = 0;
+    public static final int DEFAULT_BEACON_MASTER_SWITCH_READ_TIMEOUT_MILLI = 35000;
 
     private String address;
 
@@ -101,7 +110,14 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String beaconClusterUrl;
 
+    private final String beaconMasterSwitchUrl;
+
+    private final RestOperations beaconMasterSwitchRestTemplate;
+
     private final String keeperContainerAddressSnapshotUrl;
+
+    private static final ParameterizedTypeReference<RestResponse<Map<String, String>>> beaconMasterSwitchRespTypeDef =
+            new ParameterizedTypeReference<RestResponse<Map<String, String>>>(){};
 
     private static final ParameterizedTypeReference<List<SentinelBeaconUsageItem>> beaconUsageTypeDef =
             new ParameterizedTypeReference<List<SentinelBeaconUsageItem>>(){};
@@ -116,6 +132,10 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
             new ParameterizedTypeReference<Map<String, Pair<HostPort, Long>>>(){};
 
     public DefaultConsoleService(String address) {
+        this(address, DEFAULT_BEACON_MASTER_SWITCH_READ_TIMEOUT_MILLI);
+    }
+
+    public DefaultConsoleService(String address, int beaconMasterSwitchReadTimeoutMilli) {
         this.address = address;
         if(!this.address.startsWith("http://")) {
             this.address = "http://" + this.address;
@@ -145,6 +165,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         sentinelBeaconPostMigrateUrl = String.format("%s%s", this.address, SENTINEL_BEACON_POST_MIGRATE_PATH);
         beaconUsageUrl = String.format("%s%s", this.address, BEACON_USAGE_PATH);
         beaconClusterUrl = String.format("%s%s", this.address, BEACON_CLUSTER_PATH);
+        beaconMasterSwitchUrl = String.format("%s%s", this.address, BEACON_MASTER_SWITCH_PATH);
         keeperContainerAddressSnapshotUrl = String.format("%s/api/keepercontainer/address/snapshot", this.address);
         sentinelMigrationRestTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(
                 SENTINEL_BEACON_MIGRATE_MAX_CONN,
@@ -152,6 +173,13 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
                 SENTINEL_BEACON_MIGRATE_CONNECT_TIMEOUT_MILLI,
                 SENTINEL_BEACON_MIGRATE_READ_TIMEOUT_MILLI,
                 SENTINEL_BEACON_MIGRATE_RETRY_TIMES
+        );
+        beaconMasterSwitchRestTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(
+                BEACON_MASTER_SWITCH_MAX_CONN,
+                BEACON_MASTER_SWITCH_MAX_CONN * 10,
+                BEACON_MASTER_SWITCH_CONNECT_TIMEOUT_MILLI,
+                beaconMasterSwitchReadTimeoutMilli,
+                BEACON_MASTER_SWITCH_RETRY_TIMES
         );
     }
 
@@ -303,6 +331,20 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     public List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRoute(String clusterName) {
         ResponseEntity<List<SentinelClusterBeaconRouteItem>> response = restTemplate.exchange(
                 beaconClusterUrl, HttpMethod.GET, null, clusterBeaconRouteTypeDef, clusterName);
+        return response.getBody();
+    }
+
+    @Override
+    public RestResponse<Map<String, String>> postForSwitchBeaconMaster(String idc, String clusterName,
+                                                                       Map<String, String> shardMasters, String sourceIp) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (!StringUtil.isEmpty(sourceIp)) {
+            headers.set("X-FORWARDED-FOR", sourceIp);
+        }
+        ResponseEntity<RestResponse<Map<String, String>>> response = beaconMasterSwitchRestTemplate
+                .exchange(beaconMasterSwitchUrl, HttpMethod.POST, new HttpEntity<>(shardMasters, headers),
+                        beaconMasterSwitchRespTypeDef, clusterName, idc);
         return response.getBody();
     }
 

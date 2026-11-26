@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHeal
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.tuple.Pair;
@@ -72,6 +73,9 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
 
     @Autowired(required = false)
     private MonitorManager monitorManager;
+
+    @Autowired(required = false)
+    private ConsoleCommonConfig consoleCommonConfig;
 
     @Autowired
     public ConsoleServiceManager(ConsoleConfig consoleConfig, @Nullable ConsoleLeaderElector leaderElector) {
@@ -218,7 +222,8 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
                         throw new XpipeRuntimeException("unknown dc id " + dcId);
                     }
 
-                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()));
+                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()),
+                            getBeaconMasterSwitchForwardTimeoutMilli());
                     services.put(upperCaseDcId, service);
                 }
             }
@@ -271,6 +276,19 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
 
     public RetMessage postMigrateSentinelBeacon(String dcId, String clusterName, Map<String, HostPort> shardMasters) {
         return getServiceByDc(dcId).postMigrateSentinelBeacon(clusterName, shardMasters);
+    }
+
+    public RestResponse<Map<String, String>> postForSwitchBeaconMaster(String idc, String clusterName,
+                                                                       Map<String, String> shardMasters, String sourceIp) {
+        return getServiceByDc(idc).postForSwitchBeaconMaster(idc, clusterName, shardMasters, sourceIp);
+    }
+
+    public int getBeaconMasterSwitchForwardTimeoutMilli() {
+        if (consoleCommonConfig == null) {
+            return DefaultConsoleService.DEFAULT_BEACON_MASTER_SWITCH_READ_TIMEOUT_MILLI;
+        }
+        return consoleCommonConfig.getBeaconFailoverMasterSwitchTimeoutMilli()
+                + consoleCommonConfig.getBeaconFailoverMasterSwitchForwardExtraMilli();
     }
 
     private <T> Map<String, BroadcastResult<T>> broadcast(Set<String> dcIds, Function<String, T> perDcTask) {
@@ -435,7 +453,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         for(String url : getConsoleUrls()){
             ConsoleService service = services.get(url);
             if (service == null) {
-                service = new DefaultConsoleService(url);
+                service = new DefaultConsoleService(url, getBeaconMasterSwitchForwardTimeoutMilli());
                 services.put(url, service);
             }
             result.put(url, service);

@@ -22,6 +22,16 @@ public class TestCommonConfig implements ConsoleCommonConfig {
     }
 
     @Override
+    public int getBeaconFailoverMasterSwitchTimeoutMilli() {
+        return 30000;
+    }
+
+    @Override
+    public int getBeaconFailoverMasterSwitchForwardExtraMilli() {
+        return 5000;
+    }
+
+    @Override
     public boolean isKeeperMsgCollectOn() {
         return true;
     }

@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.service.beacon;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.api.migration.auto.data.BeaconResp;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
-import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.service.beacon.exception.BeaconServiceException;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -16,6 +17,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.client.RestOperations;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Map;
@@ -37,6 +40,14 @@ public class BeaconService implements MonitorService {
     protected static final String PATH_CLUSTER_EXTRA = "/api/v1/monitor/{system}/cluster/{cluster}/extra";
     protected static final String PATH_HASH_CLUSTER = "/api/v1/check/{system}/cluster/{cluster}/hash";
     protected static final String PATH_CHECK_ALL_CLUSTER = "/api/v1/check/{systemName}/clusters";
+    protected static final String PATH_FORCE_FAILOVER = "/api/v1/failover/{system}/cluster/{cluster}";
+
+    public static final int FORCE_FAILOVER_CONNECT_TIMEOUT_MILLI = 3000;
+    private static final String FORCED_SHARD_MASTERS = "forcedShardMasters";
+
+    private RestOperations forceFailoverRestTemplate;
+    private int forceFailoverRestTemplateTimeoutMilli;
+    private String forceFailoverPath;
 
     private String getAllClustersPath;
     private String clusterPath;
@@ -87,6 +98,7 @@ public class BeaconService implements MonitorService {
         clusterExtraPath = host + PATH_CLUSTER_EXTRA;
         hashPath = host + PATH_HASH_CLUSTER;
         allClustersPath = host + PATH_CHECK_ALL_CLUSTER;
+        forceFailoverPath = host + PATH_FORCE_FAILOVER;
     }
 
     @Override
@@ -265,6 +277,49 @@ public class BeaconService implements MonitorService {
         } finally {
             tryMetric("getAllClusterWithDc", HttpMethod.GET, system, NO_CLUSTER, success, startTime);
         }
+    }
+
+    private static final ParameterizedTypeReference<BeaconResp<Map<String, String>>> forceFailoverRespTypeDef =
+            new ParameterizedTypeReference<BeaconResp<Map<String, String>>>() {};
+
+    @Override
+    public BeaconResp<Map<String, String>> forceFailoverShardMasters(String system, String clusterName,
+                                                                     Map<String, HostPort> shardMasters, int timeoutMilli) {
+        logger.info("[forceFailoverShardMasters][{}][{}] targets {}", system, clusterName, shardMasters);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        Map<String, String> forcedShardMasters = new HashMap<>();
+        shardMasters.forEach((shard, target) -> forcedShardMasters.put(shard, target.toString()));
+        HttpEntity<Object> entity = new HttpEntity<>(Collections.singletonMap(FORCED_SHARD_MASTERS, forcedShardMasters),
+                headers);
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        try {
+            ResponseEntity<BeaconResp<Map<String, String>>> responseEntity = getForceFailoverRestTemplate(timeoutMilli)
+                    .exchange(forceFailoverPath, HttpMethod.POST, entity, forceFailoverRespTypeDef, system, clusterName);
+            BeaconResp<Map<String, String>> beaconResp = responseEntity.getBody();
+            if (null == beaconResp) {
+                throw new BeaconServiceException(forceFailoverPath, 0, "no body");
+            }
+            if (!beaconResp.isSuccess()) {
+                logger.info("[forceFailoverShardMasters] fail, {} {}", beaconResp.getCode(), beaconResp.getMsg());
+            }
+            success = beaconResp.isSuccess();
+            return beaconResp;
+        } finally {
+            tryMetric("forceFailover", HttpMethod.POST, system, clusterName, success, startTime);
+        }
+    }
+
+    @VisibleForTesting
+    synchronized RestOperations getForceFailoverRestTemplate(int timeoutMilli) {
+        if (forceFailoverRestTemplate == null || forceFailoverRestTemplateTimeoutMilli != timeoutMilli) {
+            // POST failover is not idempotent: never retry
+            forceFailoverRestTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(10, 100,
+                    FORCE_FAILOVER_CONNECT_TIMEOUT_MILLI, timeoutMilli, 0);
+            forceFailoverRestTemplateTimeoutMilli = timeoutMilli;
+        }
+        return forceFailoverRestTemplate;
     }
 
     @VisibleForTesting

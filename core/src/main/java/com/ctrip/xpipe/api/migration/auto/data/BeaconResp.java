@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.service.beacon.data;
+package com.ctrip.xpipe.api.migration.auto.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

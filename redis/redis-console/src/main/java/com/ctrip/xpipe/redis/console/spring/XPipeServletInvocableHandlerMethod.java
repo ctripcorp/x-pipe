@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.controller.Health;
+import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteController;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi4Beacon;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationInfoApi;
@@ -43,7 +44,8 @@ public class XPipeServletInvocableHandlerMethod extends ServletInvocableHandlerM
                     || getBean() instanceof MigrationApi4Beacon
                     || getBean() instanceof Health
                     || getBean() instanceof MigrationInfoApi
-                    || getBean() instanceof MigrationController) {
+                    || getBean() instanceof MigrationController
+                    || getBean() instanceof BeaconRouteController) {
 
                 EventMonitor.DEFAULT.logEvent(EVENT_TYPE_SERVLET_HANDLER, "Sync");
                 return getBridgedMethod().invoke(getBean(), args);
