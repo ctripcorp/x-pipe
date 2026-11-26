@@ -1,0 +1,36 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheMemoryStats.java
+  s_97469a66694c0a::t_d221698c5f0b1a 1-2,4-40
+  s_97469a66694c0a::t_ab8b229684d031 3
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemMemoryStatsTest.java
+  s_97469a66694c0a::t_89cdd211ffdf7b 127
+  s_97469a66694c0a::t_cdc7f7d0609919 1-35,37-126,128-186
+  s_97469a66694c0a::t_ab8b229684d031 36
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/StorageUtil.java
+  s_97469a66694c0a::t_a2431dc651ea3c 272-275,277,281-295
+  s_97469a66694c0a::t_fcfe2ac3e25e0c 14
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileMemoryStats.java
+  s_97469a66694c0a::t_679adefab1460a 1-2,4-7,9-46
+  s_97469a66694c0a::t_ab8b229684d031 3,8
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_97469a66694c0a::t_ab8b229684d031 255,262,269
+  s_97469a66694c0a::t_cb17221519c8c7 256-261,263-268,270-318
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/FileCacheEntry.java
+  s_97469a66694c0a::t_7a9d5a3590f7b9 343,345-347
+  s_97469a66694c0a::t_ab8b229684d031 344
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "4b685e25c2b7b278f34cf2197235c55e4b0392c0",
+  "prompts": {},
+  "sessions": {
+    "s_97469a66694c0a": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_2a7ac043-18d2-431d-b3dc-fd95dab29cc0",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
