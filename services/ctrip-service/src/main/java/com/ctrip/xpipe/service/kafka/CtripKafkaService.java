@@ -56,6 +56,7 @@ public class CtripKafkaService implements KafkaService {
 
     private AtomicBoolean started = new AtomicBoolean(false);
     private AtomicBoolean initSuccess = new AtomicBoolean(false);
+    private AtomicBoolean timestampInitSuccess = new AtomicBoolean(false);
 
     public CtripKafkaService(){
         startProducer();
@@ -98,12 +99,15 @@ public class CtripKafkaService implements KafkaService {
             return;
         }
         if (producer == null) {
+            // LOCAL env: createKafkaProducer returns null by design, treat as initialized
+            timestampInitSuccess.set(true);
             return;
         }
         synchronized (this) {
             // 初始化期间可能已被 forceStopProducer 停止，或已重新启动生成了新的 pool
             if (started.get() && producerPool == pool) {
                 timestampProducer = producer;
+                timestampInitSuccess.set(true);
                 return;
             }
         }
@@ -124,6 +128,7 @@ public class CtripKafkaService implements KafkaService {
             synchronized (this) {
                 currentTimestampProducer = timestampProducer;
                 timestampProducer = null;
+                timestampInitSuccess.set(false);
                 producerPool = null;
             }
             if (currentTimestampProducer != null) {
@@ -135,6 +140,11 @@ public class CtripKafkaService implements KafkaService {
     @Override
     public boolean initSuccess() {
         return initSuccess.get();
+    }
+
+    @Override
+    public boolean timestampInitSuccess() {
+        return timestampInitSuccess.get();
     }
 
     private Producer<String,Object> createKafkaProducer(long bufferMemory, String topic, String clientId) {
@@ -199,33 +209,37 @@ public class CtripKafkaService implements KafkaService {
     }
 
     @Override
-    public void sendKafka(GtidKeyItem gtidKeyItem){
+    public boolean sendKafka(GtidKeyItem gtidKeyItem){
         long threadId =  Thread.currentThread().threadId();
         int index = Long.hashCode(threadId) & PRODUCER_POOL_MASK;
         Producer<String,Object> producer = producerPool[index];
         try{
             if(producer == null){
                 EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,"KafkaProducer-NotReady");
-                return;
+                return false;
             }
             producer.send(new ProducerRecord<>(KEY_TOPIC,gtidKeyItem));
+            return true;
         }catch (Exception e){
             EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,e.getClass().getName(),convertProducerMetrics(producer.metrics(),e));
+            return false;
         }
     }
 
     @Override
-    public void sendTimestampKafka(GtidTimestampItem gtidTimestampItem) {
+    public boolean sendTimestampKafka(GtidTimestampItem gtidTimestampItem) {
         Producer<String, Object> producer = timestampProducer;
         if (producer == null) {
             EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA, "TimestampProducer-NotReady");
-            return;
+            return false;
         }
         try {
             producer.send(new ProducerRecord<>(TIMESTAMP_TOPIC, gtidTimestampItem));
+            return true;
         } catch (Exception e) {
             EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA, "Timestamp-" + e.getClass().getName(),
                     convertProducerMetrics(producer.metrics(), e));
+            return false;
         }
     }
 

@@ -12,13 +12,13 @@ import com.ctrip.xpipe.api.kafka.KafkaService;
 public class DefaultKafkaService implements KafkaService {
 
     @Override
-    public void sendKafka(GtidKeyItem gtidKeyItem) {
-
+    public boolean sendKafka(GtidKeyItem gtidKeyItem) {
+        return true;
     }
 
     @Override
-    public void sendTimestampKafka(GtidTimestampItem gtidTimestampItem) {
-
+    public boolean sendTimestampKafka(GtidTimestampItem gtidTimestampItem) {
+        return true;
     }
 
     @Override
@@ -33,6 +33,11 @@ public class DefaultKafkaService implements KafkaService {
 
     @Override
     public boolean initSuccess() {
+        return true;
+    }
+
+    @Override
+    public boolean timestampInitSuccess() {
         return true;
     }
 

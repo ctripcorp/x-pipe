@@ -55,7 +55,7 @@ public class CKStoreTransactionBatchTest {
         Mockito.doAnswer(invocation -> {
             keyItems.add(invocation.getArgument(0));
             latch.countDown();
-            return null;
+            return true;
         }).when(kafkaService).sendKafka(Mockito.any());
 
         List<RedisOpItem> items = new ArrayList<>();

@@ -1,15 +1,17 @@
 package com.ctrip.xpipe.redis.keeper.store.ck;
 
 import com.ctrip.xpipe.api.kafka.GtidTimestampItem;
-import com.ctrip.xpipe.gtid.GtidSet;
 
 import java.util.*;
 
 /**
  * Aggregates cumulative GTID watermarks into minute buckets.
  *
- * update, seed and drain are synchronized because updates run on the CK consumer
- * while drains run on the scheduled reporter thread.
+ * Watermarks start from the first seq observed after start-up. Backlog replay after a
+ * restart may therefore produce a lower end_seq than earlier records; Console tolerates
+ * this by locating the window lower bound with a running maximum.
+ *
+ * update and drain are synchronized so they stay safe if ever called from different threads.
  */
 class GtidTimestampAggregator {
 
@@ -23,19 +25,6 @@ class GtidTimestampAggregator {
 
     GtidTimestampAggregator(long shardId) {
         this.shardId = shardId;
-    }
-
-    synchronized void seed(GtidSet executedGtidSet) {
-        if (executedGtidSet == null) {
-            return;
-        }
-
-        for (GtidSet.UUIDSet uuidSet : executedGtidSet.getUUIDSets()) {
-            if (uuidSet == null || uuidSet.isEmpty()) {
-                continue;
-            }
-            watermarks.merge(uuidSet.getUUID(), uuidSet.getLastGno(), Math::max);
-        }
     }
 
     synchronized void update(String uuid, long seq, long timestamp) {
@@ -77,10 +66,6 @@ class GtidTimestampAggregator {
 
     synchronized int bucketCount() {
         return minuteBuckets.size();
-    }
-
-    synchronized Long watermark(String uuid) {
-        return watermarks.get(uuid);
     }
 
     private void appendItems(List<GtidTimestampItem> target, long minute, Map<String, Long> uuidWatermarks) {

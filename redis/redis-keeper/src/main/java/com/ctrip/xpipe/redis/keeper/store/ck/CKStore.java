@@ -3,9 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store.ck;
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
 import com.ctrip.xpipe.api.kafka.GtidTimestampItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
-import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.config.ConfigKeyListener;
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
@@ -49,8 +47,6 @@ public class CKStore implements Keeperable {
 
     private final GtidTimestampAggregator timestampAggregator;
 
-    private IOSupplier<GtidSet> executedGtidSetSupplier;
-
     private volatile LongSupplier secondsClock = () -> System.currentTimeMillis() / 1000;
 
     // 只在消费线程读写
@@ -58,6 +54,10 @@ public class CKStore implements Keeperable {
 
     private static final String CK_BLOCK = "ck.block";
     private static final String CK_INIT = "ck.init";
+    // 同一指标名，用 table tag 区分 key 表与时间表
+    private static final String TAG_TABLE = "table";
+    private static final String TABLE_KEY = "key";
+    private static final String TABLE_TIMESTAMP = "timestamp";
 
     private KafkaService kafkaService;
     private MetricProxy metricProxy;
@@ -66,7 +66,10 @@ public class CKStore implements Keeperable {
     private RedisOpParser redisOpParser;
     private String address;
 
+    // key 表：入队失败或 Kafka 提交失败
     private volatile boolean isSendCkFail;
+    // 时间表：Kafka 提交失败
+    private volatile boolean isSendTimestampFail;
 
     private volatile int offerCount = 0;
 
@@ -99,8 +102,6 @@ public class CKStore implements Keeperable {
             metricProxy = MetricProxy.DEFAULT;
             kafkaService = KafkaService.DEFAULT;
 
-            // 播种必须在队列为空、尚未接收事件时进行，否则会把积压事件所在旧分钟的 end_seq 写大
-            seedTimestampWatermarks();
             startConsumerThread();
 
             isReady = true;
@@ -113,8 +114,6 @@ public class CKStore implements Keeperable {
                         stopConsumerThread();
                         kafkaService.forceStopProducer();
                     } else {
-                        // 新队列为空，可以安全播种
-                        seedTimestampWatermarks();
                         startConsumerThread();
                         kafkaService.startProducer();
                         isReady = true;
@@ -125,9 +124,12 @@ public class CKStore implements Keeperable {
 
             hickwallFuture = hickwallReporterService.scheduleWithFixedDelay(
                     () -> {
-                        reportHickwall(CK_BLOCK, isSendCkFail);
-                        reportHickwall(CK_INIT, !kafkaService.initSuccess());
+                        reportHickwall(CK_BLOCK, TABLE_KEY, isSendCkFail);
+                        reportHickwall(CK_INIT, TABLE_KEY, !kafkaService.initSuccess());
                         isSendCkFail = false;
+                        reportHickwall(CK_BLOCK, TABLE_TIMESTAMP, isSendTimestampFail);
+                        reportHickwall(CK_INIT, TABLE_TIMESTAMP, !kafkaService.timestampInitSuccess());
+                        isSendTimestampFail = false;
                     }, 1, 1, TimeUnit.MINUTES
             );
 
@@ -353,18 +355,18 @@ public class CKStore implements Keeperable {
         }
 
         if (redisKey != null && redisKeyList == null) {
-            kafkaService.sendKafka(GtidKeyItem.buildGtidKeyItem(
+            sendKeyItem(GtidKeyItem.buildGtidKeyItem(
                     redisOp.getRedisOpType().name(), uuid, seq,
                     redisKey.get(), null, dbId, replId, address, timestamp));
         } else if (redisKey != null) {
             for (RedisKey subKey : redisKeyList) {
-                kafkaService.sendKafka(GtidKeyItem.buildGtidKeyItem(
+                sendKeyItem(GtidKeyItem.buildGtidKeyItem(
                         redisOp.getRedisOpType().name(), uuid, seq,
                         redisKey.get(), subKey.get(), dbId, replId, address, timestamp));
             }
         } else {
             for (RedisKey item : redisKeyList) {
-                kafkaService.sendKafka(GtidKeyItem.buildGtidKeyItem(
+                sendKeyItem(GtidKeyItem.buildGtidKeyItem(
                         redisOp.getRedisOpType().name(), uuid, seq,
                         item.get(), null, dbId, replId, address, timestamp));
             }
@@ -374,16 +376,6 @@ public class CKStore implements Keeperable {
     public void writeCKItem(String gtid, String dbId, List<RedisOpItem> redisOpList, long timestamp) {
         for (RedisOpItem redisOp : redisOpList) {
             writeCKItem(gtid, dbId, redisOp, timestamp);
-        }
-    }
-
-    private void seedTimestampWatermarks() {
-        if (executedGtidSetSupplier == null) return;
-
-        try {
-            timestampAggregator.seed(executedGtidSetSupplier.get());
-        } catch (Throwable th) {
-            logger.warn("[CKStore] seed timestamp watermarks fail", th);
         }
     }
 
@@ -424,20 +416,30 @@ public class CKStore implements Keeperable {
     private void sendTimestampItems(List<GtidTimestampItem> timestampItems) {
         for (GtidTimestampItem timestampItem : timestampItems) {
             try {
-                kafkaService.sendTimestampKafka(timestampItem);
+                if (!kafkaService.sendTimestampKafka(timestampItem)) {
+                    isSendTimestampFail = true;
+                }
             } catch (Throwable th) {
+                isSendTimestampFail = true;
                 logger.warn("[CKStore] send timestamp item fail, uuid={}, endSeq={}",
                         timestampItem.getUuid(), timestampItem.getEndSeq(), th);
             }
         }
     }
 
-    private void reportHickwall(String type, boolean block) {
+    private void sendKeyItem(GtidKeyItem keyItem) {
+        if (!kafkaService.sendKafka(keyItem)) {
+            isSendCkFail = true;
+        }
+    }
+
+    private void reportHickwall(String type, String table, boolean block) {
         if(block){
-            CatEventMonitor.DEFAULT.logAlertEvent(type);
+            CatEventMonitor.DEFAULT.logAlertEvent(type + "." + table);
         }
 
         MetricData data = new MetricData(type);
+        data.addTag(TAG_TABLE, table);
         data.setValue(block ? 1 : 0);
         try {
             data.setTimestampMilli(System.currentTimeMillis());
@@ -471,11 +473,6 @@ public class CKStore implements Keeperable {
     public void setKeeper() { this.isKeeper = true; }
 
     public void setMaster() { this.isKeeper = false; }
-
-    /** 必须在 start() 之前设置，用于启动时播种累计水位 */
-    public void setExecutedGtidSetSupplier(IOSupplier<GtidSet> executedGtidSetSupplier) {
-        this.executedGtidSetSupplier = executedGtidSetSupplier;
-    }
 
     @VisibleForTesting
     void setSecondsClock(LongSupplier secondsClock) {

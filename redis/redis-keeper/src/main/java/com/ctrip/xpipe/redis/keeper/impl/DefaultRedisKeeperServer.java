@@ -253,11 +253,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		replicationStoreManager.initialize();
-		// 只读取已存在的 store，不在初始化阶段新建；没有 store 时跳过播种
-		ckStore.setExecutedGtidSetSupplier(() -> {
-			ReplicationStore store = replicationStoreManager.getCurrent();
-			return store == null ? null : store.getGtidSet().getKey();
-		});
 
 
 		try {

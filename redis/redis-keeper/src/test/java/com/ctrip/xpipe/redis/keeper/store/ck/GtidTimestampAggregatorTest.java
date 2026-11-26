@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.ck;
 
 import com.ctrip.xpipe.api.kafka.GtidTimestampItem;
-import com.ctrip.xpipe.gtid.GtidSet;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumReader;
@@ -33,19 +32,6 @@ public class GtidTimestampAggregatorTest {
         assertItem(items, UUID_A, 60L, 12L, 7);
         assertItem(items, UUID_B, 60L, 5L, 7);
         Assert.assertEquals(0, aggregator.bucketCount());
-    }
-
-    @Test
-    public void shouldSeedCumulativeWatermarkBeforeBacklogReplay() {
-        GtidTimestampAggregator aggregator = new GtidTimestampAggregator(1L);
-        aggregator.seed(new GtidSet(UUID_A + ":1-10000"));
-
-        aggregator.update(UUID_A, 9600L, 300L);
-
-        List<GtidTimestampItem> items = aggregator.drainExpired(360L);
-        Assert.assertEquals(1, items.size());
-        assertItem(items, UUID_A, 300L, 10000L, 1);
-        Assert.assertEquals(Long.valueOf(10000L), aggregator.watermark(UUID_A));
     }
 
     @Test

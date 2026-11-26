@@ -12,13 +12,19 @@ import com.ctrip.xpipe.utils.ServicesUtil;
 public interface KafkaService extends Ordered {
     KafkaService DEFAULT = ServicesUtil.getKafkaService();
 
-    void sendKafka(GtidKeyItem gtidKeyItem);
+    /** @return false if the item could not be handed to the producer (not ready or send threw) */
+    boolean sendKafka(GtidKeyItem gtidKeyItem);
 
-    void sendTimestampKafka(GtidTimestampItem gtidTimestampItem);
+    /** @return false if the item could not be handed to the producer (not ready or send threw) */
+    boolean sendTimestampKafka(GtidTimestampItem gtidTimestampItem);
 
     void startProducer();
 
     void forceStopProducer();
 
+    /** key topic producer pool initialized */
     boolean initSuccess();
+
+    /** timestamp topic producer initialized */
+    boolean timestampInitSuccess();
 }

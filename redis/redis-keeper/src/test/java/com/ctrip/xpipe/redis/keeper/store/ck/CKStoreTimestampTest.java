@@ -3,7 +3,8 @@ package com.ctrip.xpipe.redis.keeper.store.ck;
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
 import com.ctrip.xpipe.api.kafka.GtidTimestampItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
-import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
@@ -23,10 +24,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class CKStoreTimestampTest {
 
@@ -36,7 +39,6 @@ public class CKStoreTimestampTest {
     private CKStore ckStore;
     private KafkaService kafkaService;
     private final AtomicLong clock = new AtomicLong(119L);
-    private final AtomicReference<GtidSet> executed = new AtomicReference<>();
 
     @Before
     public void setUp() {
@@ -45,7 +47,6 @@ public class CKStoreTimestampTest {
         parser = new GeneralRedisOpParser(manager);
         ckStore = new CKStore(ReplId.from(1L), parser, "", new DefaultKeeperConfig());
         ckStore.setSecondsClock(clock::get);
-        ckStore.setExecutedGtidSetSupplier(executed::get);
         kafkaService = Mockito.mock(KafkaService.class);
     }
 
@@ -55,8 +56,7 @@ public class CKStoreTimestampTest {
     }
 
     @Test
-    public void shouldSeedWatermarkOnStart() throws Exception {
-        executed.set(new GtidSet(UUID + ":1-100"));
+    public void shouldAggregateKeyEventAndFlushOnDispose() throws Exception {
         start();
 
         ckStore.sendPayloads(Collections.singletonList(set(50)));
@@ -65,23 +65,56 @@ public class CKStoreTimestampTest {
 
         GtidTimestampItem item = singleTimestampItem();
         Assert.assertEquals(60L, item.getTimestamp());
-        Assert.assertEquals(100L, item.getEndSeq());
+        Assert.assertEquals(50L, item.getEndSeq());
     }
 
     @Test
-    public void shouldNotSeedOnSetMaster() throws Exception {
-        executed.set(new GtidSet(UUID + ":1-10"));
+    public void shouldReportBlockMetricPerTableWhenSendFails() throws Exception {
         start();
+        MetricProxy metricProxy = Mockito.mock(MetricProxy.class);
+        setField("metricProxy", metricProxy);
+        Mockito.when(kafkaService.initSuccess()).thenReturn(true);
+        Mockito.when(kafkaService.timestampInitSuccess()).thenReturn(true);
 
-        // setMaster 时队列可能有积压，播种会把旧分钟的 end_seq 写大，因此不能播种
-        executed.set(new GtidSet(UUID + ":1-1000"));
-        ckStore.setMaster();
+        // key 发送成功，时间表发送失败
+        Mockito.when(kafkaService.sendKafka(Mockito.any())).thenReturn(true);
+        Mockito.when(kafkaService.sendTimestampKafka(Mockito.any())).thenReturn(false);
 
-        ckStore.sendPayloads(Collections.singletonList(set(20)));
+        ckStore.sendPayloads(Collections.singletonList(set(1)));
         Mockito.verify(kafkaService, Mockito.timeout(15000)).sendKafka(Mockito.any(GtidKeyItem.class));
         ckStore.dispose();
+        Mockito.verify(kafkaService, Mockito.atLeastOnce()).sendTimestampKafka(Mockito.any());
 
-        Assert.assertEquals(20L, singleTimestampItem().getEndSeq());
+        reportHickwallNow();
+
+        Map<String, Integer> values = reportedValues(metricProxy);
+        Assert.assertEquals(Integer.valueOf(0), values.get("ck.block|key"));
+        Assert.assertEquals(Integer.valueOf(1), values.get("ck.block|timestamp"));
+        Assert.assertEquals(Integer.valueOf(0), values.get("ck.init|key"));
+        Assert.assertEquals(Integer.valueOf(0), values.get("ck.init|timestamp"));
+
+        // 上报后标志复位，再次上报应为 0
+        Mockito.reset(metricProxy);
+        reportHickwallNow();
+        Assert.assertEquals(Integer.valueOf(0), reportedValues(metricProxy).get("ck.block|timestamp"));
+    }
+
+    @Test
+    public void shouldReportKeyBlockWhenKeySendFails() throws Exception {
+        start();
+        MetricProxy metricProxy = Mockito.mock(MetricProxy.class);
+        setField("metricProxy", metricProxy);
+        Mockito.when(kafkaService.sendKafka(Mockito.any())).thenReturn(false);
+        Mockito.when(kafkaService.sendTimestampKafka(Mockito.any())).thenReturn(true);
+
+        ckStore.sendPayloads(Collections.singletonList(set(1)));
+        Mockito.verify(kafkaService, Mockito.timeout(15000)).sendKafka(Mockito.any(GtidKeyItem.class));
+
+        reportHickwallNow();
+
+        Map<String, Integer> values = reportedValues(metricProxy);
+        Assert.assertEquals(Integer.valueOf(1), values.get("ck.block|key"));
+        Assert.assertEquals(Integer.valueOf(0), values.get("ck.block|timestamp"));
     }
 
     @Test
@@ -128,9 +161,41 @@ public class CKStoreTimestampTest {
 
     private void start() throws Exception {
         ckStore.start();
-        Field field = CKStore.class.getDeclaredField("kafkaService");
+        setField("kafkaService", kafkaService);
+    }
+
+    private void setField(String name, Object value) throws Exception {
+        Field field = CKStore.class.getDeclaredField(name);
         field.setAccessible(true);
-        field.set(ckStore, kafkaService);
+        field.set(ckStore, value);
+    }
+
+    /** 直接执行与定时任务相同的上报逻辑，避免等待 1 分钟调度 */
+    private void reportHickwallNow() throws Exception {
+        Method method = CKStore.class.getDeclaredMethod("reportHickwall", String.class, String.class, boolean.class);
+        method.setAccessible(true);
+        Field keyFail = CKStore.class.getDeclaredField("isSendCkFail");
+        Field tsFail = CKStore.class.getDeclaredField("isSendTimestampFail");
+        keyFail.setAccessible(true);
+        tsFail.setAccessible(true);
+
+        method.invoke(ckStore, "ck.block", "key", keyFail.getBoolean(ckStore));
+        method.invoke(ckStore, "ck.init", "key", !kafkaService.initSuccess());
+        keyFail.setBoolean(ckStore, false);
+        method.invoke(ckStore, "ck.block", "timestamp", tsFail.getBoolean(ckStore));
+        method.invoke(ckStore, "ck.init", "timestamp", !kafkaService.timestampInitSuccess());
+        tsFail.setBoolean(ckStore, false);
+    }
+
+    /** 收集 metricName|tableTag -> value */
+    private Map<String, Integer> reportedValues(MetricProxy metricProxy) throws Exception {
+        ArgumentCaptor<MetricData> captor = ArgumentCaptor.forClass(MetricData.class);
+        Mockito.verify(metricProxy, Mockito.atLeastOnce()).writeBinMultiDataPoint(captor.capture());
+        Map<String, Integer> values = new HashMap<>();
+        for (MetricData data : captor.getAllValues()) {
+            values.put(data.getMetricType() + "|" + data.getTags().get("table"), (int) data.getValue());
+        }
+        return values;
     }
 
     private GtidTimestampItem singleTimestampItem() {
