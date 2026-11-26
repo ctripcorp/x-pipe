@@ -2,12 +2,11 @@ package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
-import com.ctrip.xpipe.api.migration.auto.data.MonitorForceFailoverResult;
+import com.ctrip.xpipe.api.migration.auto.data.BeaconResp;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.console.impl.DefaultConsoleService;
-import com.ctrip.xpipe.redis.console.controller.api.vo.BeaconFailoverMasterSwitchRequest;
-import com.ctrip.xpipe.redis.console.controller.api.vo.BeaconFailoverResponse;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
@@ -37,12 +36,12 @@ import org.springframework.web.context.request.async.DeferredResult;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -50,6 +49,7 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
 
     private static final String CLUSTER = "cluster-a";
     private static final String SHARD = "shard-a";
+    private static final String SHARD_B = "shard-b";
     private static final String REMOTE_IDC = "remote-idc-for-test";
     private static final String SOURCE_IP = "1.1.1.1";
     private static final long ORG_ID = 3L;
@@ -58,6 +58,8 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
     private static final int FORWARD_EXTRA_MILLI = 4000;
     private static final HostPort MASTER = new HostPort("10.0.0.1", 6379);
     private static final HostPort SLAVE = new HostPort("10.0.0.2", 6379);
+    private static final HostPort MASTER_B = new HostPort("10.0.1.1", 6379);
+    private static final HostPort SLAVE_B = new HostPort("10.0.1.2", 6379);
 
     @InjectMocks
     private BeaconRouteController controller;
@@ -130,21 +132,59 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
     public void switchMasterInCurrentIdcShouldForceFailoverByMonitorService() {
         mockLocalSwitchContext();
         mockShardRedises();
+        mockShardBRedises();
         mockBeaconRoute();
-        Object beaconData = "FIXED_OR_WAIT";
-        Mockito.when(monitorService.forceFailoverShardMaster(BEACON_SYSTEM, CLUSTER, SHARD, SLAVE, TIMEOUT_MILLI))
-                .thenReturn(new MonitorForceFailoverResult(MonitorForceFailoverResult.CODE_SUCCESS, "success", beaconData));
+        Map<String, HostPort> forced = new LinkedHashMap<>();
+        forced.put(SHARD, SLAVE);
+        forced.put(SHARD_B, SLAVE_B);
+        Map<String, String> beaconStates = new LinkedHashMap<>();
+        beaconStates.put(SHARD, "SUCCESS");
+        beaconStates.put(SHARD_B, "SUCCESS");
+        Mockito.when(monitorService.forceFailoverShardMasters(BEACON_SYSTEM, CLUSTER, forced, TIMEOUT_MILLI))
+                .thenReturn(new BeaconResp<>(beaconStates));
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put(SHARD, SLAVE.toString());
+        body.put(SHARD_B, SLAVE_B.toString());
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                currentIdc, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), SLAVE.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                currentIdc, body);
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertTrue(response.isSuccess());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_SUCCESS, response.getCode());
         Assert.assertEquals("success", response.getMsg());
-        Assert.assertSame(beaconData, response.getData());
-        Assert.assertEquals((long) TIMEOUT_MILLI + 5000, ReflectionTestUtils.getField(result, "timeoutValue"));
-        Mockito.verify(monitorService).forceFailoverShardMaster(BEACON_SYSTEM, CLUSTER, SHARD, SLAVE, TIMEOUT_MILLI);
+        Assert.assertEquals(beaconStates, response.getData());
+        Assert.assertEquals((long) TIMEOUT_MILLI + FORWARD_EXTRA_MILLI, ReflectionTestUtils.getField(result, "timeoutValue"));
+        Mockito.verify(monitorService).forceFailoverShardMasters(BEACON_SYSTEM, CLUSTER, forced, TIMEOUT_MILLI);
         Mockito.verifyNoInteractions(consoleServiceManager);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void switchMasterShouldSendAllShardsToBeaconWhenSomeTargetIsNotMaster() {
+        mockLocalSwitchContext();
+        mockShardRedises();
+        mockShardBRedises();
+        mockBeaconRoute();
+        // shard-a target is already the master, shard-b needs to switch
+        Map<String, HostPort> forced = new LinkedHashMap<>();
+        forced.put(SHARD, MASTER);
+        forced.put(SHARD_B, SLAVE_B);
+        Map<String, String> beaconStates = new LinkedHashMap<>();
+        beaconStates.put(SHARD, "SUCCESS");
+        beaconStates.put(SHARD_B, "SUCCESS");
+        Mockito.when(monitorService.forceFailoverShardMasters(BEACON_SYSTEM, CLUSTER, forced, TIMEOUT_MILLI))
+                .thenReturn(new BeaconResp<>(beaconStates));
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put(SHARD, MASTER.toString());
+        body.put(SHARD_B, SLAVE_B.toString());
+
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                currentIdc, body);
+
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_SUCCESS, response.getCode());
+        Assert.assertEquals(beaconStates, response.getData());
+        Mockito.verify(monitorService).forceFailoverShardMasters(BEACON_SYSTEM, CLUSTER, forced, TIMEOUT_MILLI);
     }
 
     @Test
@@ -153,11 +193,11 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
         mockLocalSwitchContext();
         mockShardRedises();
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                currentIdc.toUpperCase(), new BeaconFailoverMasterSwitchRequest(MASTER.getHost(), MASTER.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                currentIdc.toUpperCase(), shardMasters(SHARD, MASTER));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertTrue(response.isSuccess());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_SUCCESS, response.getCode());
         Mockito.verifyNoInteractions(consoleServiceManager);
     }
 
@@ -167,11 +207,11 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
         mockLocalSwitchContext();
         mockShardRedises();
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                currentIdc, new BeaconFailoverMasterSwitchRequest(MASTER.getHost(), MASTER.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                currentIdc, shardMasters(SHARD, MASTER));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertTrue(response.isSuccess());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_SUCCESS, response.getCode());
         Assert.assertTrue(response.getMsg().contains("already"));
         Mockito.verifyNoInteractions(monitorService, monitorManager);
     }
@@ -182,46 +222,61 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
         mockLocalSwitchContext();
         mockShardRedises();
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                currentIdc, new BeaconFailoverMasterSwitchRequest("10.0.0.3", 6379));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                currentIdc, shardMasters(SHARD, new HostPort("10.0.0.3", 6379)));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
         Assert.assertTrue(response.getMsg().contains("is not in shard"));
         Mockito.verifyNoInteractions(monitorService);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void switchMasterShouldRejectMissingIpOrPort() {
+    public void switchMasterShouldRejectEmptyShardMasters() {
         mockLocalSwitchContext();
 
-        for (BeaconFailoverMasterSwitchRequest switchRequest : Arrays.asList(null,
-                new BeaconFailoverMasterSwitchRequest(null, 6379),
-                new BeaconFailoverMasterSwitchRequest("", 6379),
-                new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), null))) {
-            DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                    currentIdc, switchRequest);
+        for (Map<String, String> body : Arrays.asList(null, Collections.<String, String>emptyMap())) {
+            DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                    currentIdc, body);
 
-            BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-            Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
-            Assert.assertTrue(response.getMsg().contains("ip and port must not be empty"));
+            RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+            Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
+            Assert.assertTrue(response.getMsg().contains("shard masters must not be empty"));
         }
         Mockito.verifyNoInteractions(clusterService, monitorService);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void switchMasterShouldRejectInvalidPort() {
+    public void switchMasterShouldRejectEmptyShardOrTarget() {
         mockLocalSwitchContext();
 
-        for (int port : new int[]{0, -1, 65536}) {
-            DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                    currentIdc, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), port));
+        for (Map<String, String> body : Arrays.asList(Collections.singletonMap("", SLAVE.toString()),
+                Collections.singletonMap(SHARD, ""), Collections.<String, String>singletonMap(SHARD, null))) {
+            DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                    currentIdc, body);
 
-            BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-            Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
-            Assert.assertTrue(response.getMsg().contains("invalid port"));
+            RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+            Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
+            Assert.assertTrue(response.getMsg().contains("shard and target must not be empty"));
+        }
+        Mockito.verifyNoInteractions(clusterService, monitorService);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void switchMasterShouldRejectInvalidTarget() {
+        mockLocalSwitchContext();
+
+        for (String target : new String[]{"10.0.0.2", "10.0.0.2:abc", ":6379", "10.0.0.2:0", "10.0.0.2:-1",
+                "10.0.0.2:65536"}) {
+            DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                    currentIdc, Collections.singletonMap(SHARD, target));
+
+            RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+            Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
+            Assert.assertTrue(response.getMsg().contains("invalid target of shard " + SHARD));
         }
         Mockito.verifyNoInteractions(clusterService, monitorService);
     }
@@ -232,17 +287,18 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
         mockLocalSwitchContext();
         mockShardRedises();
         mockBeaconRoute();
-        Object taskData = Collections.singletonMap("taskId", "t-1");
-        Mockito.when(monitorService.forceFailoverShardMaster(BEACON_SYSTEM, CLUSTER, SHARD, SLAVE, TIMEOUT_MILLI))
-                .thenReturn(new MonitorForceFailoverResult(5002, "force failover is still running", taskData));
+        Map<String, String> states = Collections.singletonMap(SHARD, "MIGRATING");
+        Mockito.when(monitorService.forceFailoverShardMasters(BEACON_SYSTEM, CLUSTER,
+                        Collections.singletonMap(SHARD, SLAVE), TIMEOUT_MILLI))
+                .thenReturn(new BeaconResp<>(5002, "force failover still running after 20000 ms, fail reasons: {}", states));
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                currentIdc, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), SLAVE.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                currentIdc, shardMasters(SHARD, SLAVE));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
         Assert.assertEquals(5002, response.getCode());
-        Assert.assertEquals("force failover is still running", response.getMsg());
-        Assert.assertSame(taskData, response.getData());
+        Assert.assertEquals("force failover still running after 20000 ms, fail reasons: {}", response.getMsg());
+        Assert.assertSame(states, response.getData());
     }
 
     @Test
@@ -251,14 +307,15 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
         mockLocalSwitchContext();
         mockShardRedises();
         mockBeaconRoute();
-        Mockito.when(monitorService.forceFailoverShardMaster(BEACON_SYSTEM, CLUSTER, SHARD, SLAVE, TIMEOUT_MILLI))
+        Mockito.when(monitorService.forceFailoverShardMasters(BEACON_SYSTEM, CLUSTER,
+                        Collections.singletonMap(SHARD, SLAVE), TIMEOUT_MILLI))
                 .thenThrow(new ResourceAccessException("Read timed out"));
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                currentIdc, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), SLAVE.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                currentIdc, shardMasters(SHARD, SLAVE));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
         Assert.assertEquals("Read timed out", response.getMsg());
     }
 
@@ -272,11 +329,11 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
         unmanaged.setBeaconHost("http://beacon-a");
         Mockito.when(monitorManager.getSentinelClusterRoutes(CLUSTER)).thenReturn(Collections.singletonList(unmanaged));
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                currentIdc, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), SLAVE.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                currentIdc, shardMasters(SHARD, SLAVE));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
         Assert.assertTrue(response.getMsg().contains("sentinel beacon route not found"));
         Mockito.verifyNoInteractions(monitorService);
     }
@@ -289,29 +346,29 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
         mockBeaconRouteItem();
         Mockito.when(monitorManager.get(ORG_ID, CLUSTER, null, BeaconRouteType.SENTINEL)).thenReturn(null);
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                currentIdc, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), SLAVE.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                currentIdc, shardMasters(SHARD, SLAVE));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
         Assert.assertTrue(response.getMsg().contains("sentinel beacon service not found"));
     }
 
     @Test
     public void switchMasterInRemoteIdcShouldForwardToConsoleOfThatIdc() {
         mockForwardContext();
-        BeaconFailoverResponse<Object> remoteResponse = new BeaconFailoverResponse<>("FIXED_OR_WAIT");
-        Mockito.when(consoleServiceManager.postForSwitchBeaconMaster(REMOTE_IDC, CLUSTER, SHARD, SLAVE.getHost(),
-                SLAVE.getPort(), SOURCE_IP)).thenReturn(remoteResponse);
+        Map<String, String> body = shardMasters(SHARD, SLAVE);
+        RestResponse<Map<String, String>> remoteResponse = RestResponse.success(Collections.singletonMap(SHARD, "SUCCESS"));
+        Mockito.when(consoleServiceManager.postForSwitchBeaconMaster(REMOTE_IDC, CLUSTER, body, SOURCE_IP))
+                .thenReturn(remoteResponse);
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                REMOTE_IDC, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), SLAVE.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                REMOTE_IDC, body);
 
         Assert.assertSame(remoteResponse, result.getResult());
-        Assert.assertEquals((long) TIMEOUT_MILLI + FORWARD_EXTRA_MILLI + 5000,
+        Assert.assertEquals((long) TIMEOUT_MILLI + FORWARD_EXTRA_MILLI + FORWARD_EXTRA_MILLI,
                 ReflectionTestUtils.getField(result, "timeoutValue"));
-        Mockito.verifyNoInteractions(clusterService, shardService, metaCache, monitorManager, monitorService,
-                consoleCommonConfig);
+        Mockito.verifyNoInteractions(clusterService, shardService, metaCache, monitorManager, monitorService);
     }
 
     @Test
@@ -319,27 +376,27 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
     public void switchMasterInRemoteIdcShouldValidateBeforeForward() {
         mockForwardContext();
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                REMOTE_IDC, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), null));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                REMOTE_IDC, Collections.singletonMap(SHARD, SLAVE.getHost()));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
-        Mockito.verify(consoleServiceManager, Mockito.never())
-                .postForSwitchBeaconMaster(any(), any(), any(), any(), anyInt(), any());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
+        Mockito.verify(consoleServiceManager, Mockito.never()).postForSwitchBeaconMaster(any(), any(), any(), any());
     }
 
     @Test
     @SuppressWarnings("unchecked")
     public void switchMasterInRemoteIdcShouldFailWithoutConsoleServiceManager() {
         ReflectionTestUtils.setField(controller, "consoleServiceManager", null);
+        Mockito.when(consoleCommonConfig.getBeaconFailoverMasterSwitchForwardExtraMilli()).thenReturn(FORWARD_EXTRA_MILLI);
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                REMOTE_IDC, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), SLAVE.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                REMOTE_IDC, shardMasters(SHARD, SLAVE));
 
-        Assert.assertEquals((long) DefaultConsoleService.DEFAULT_BEACON_MASTER_SWITCH_READ_TIMEOUT_MILLI + 5000,
+        Assert.assertEquals((long) DefaultConsoleService.DEFAULT_BEACON_MASTER_SWITCH_READ_TIMEOUT_MILLI + FORWARD_EXTRA_MILLI,
                 ReflectionTestUtils.getField(result, "timeoutValue"));
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
         Assert.assertTrue(response.getMsg().contains("console service manager unavailable"));
     }
 
@@ -347,25 +404,25 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
     @SuppressWarnings("unchecked")
     public void switchMasterInRemoteIdcShouldReturnErrorWhenForwardFail() {
         mockForwardContext();
-        Mockito.when(consoleServiceManager.postForSwitchBeaconMaster(any(), any(), any(), any(), anyInt(), any()))
+        Mockito.when(consoleServiceManager.postForSwitchBeaconMaster(any(), any(), any(), any()))
                 .thenThrow(new ResourceAccessException("connect refused"));
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMaster(request, CLUSTER, SHARD,
-                REMOTE_IDC, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), SLAVE.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMaster(request, CLUSTER,
+                REMOTE_IDC, shardMasters(SHARD, SLAVE));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
         Assert.assertEquals("connect refused", response.getMsg());
     }
 
     @Test
     @SuppressWarnings("unchecked")
     public void localEndpointShouldRejectNonCurrentIdc() {
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMasterLocal(request, CLUSTER, SHARD,
-                REMOTE_IDC, new BeaconFailoverMasterSwitchRequest(SLAVE.getHost(), SLAVE.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMasterLocal(request, CLUSTER,
+                REMOTE_IDC, shardMasters(SHARD, SLAVE));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertEquals(BeaconFailoverResponse.CODE_ERROR, response.getCode());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_FAIL, response.getCode());
         Assert.assertTrue(response.getMsg().contains("is not current idc"));
         Mockito.verifyNoInteractions(consoleServiceManager, clusterService, monitorService);
     }
@@ -376,21 +433,27 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
         mockLocalSwitchContext();
         mockShardRedises();
 
-        DeferredResult<BeaconFailoverResponse<Object>> result = controller.switchBeaconMasterLocal(request, CLUSTER, SHARD,
-                currentIdc, new BeaconFailoverMasterSwitchRequest(MASTER.getHost(), MASTER.getPort()));
+        DeferredResult<RestResponse<Map<String, String>>> result = controller.switchBeaconMasterLocal(request, CLUSTER,
+                currentIdc, shardMasters(SHARD, MASTER));
 
-        BeaconFailoverResponse<Object> response = (BeaconFailoverResponse<Object>) result.getResult();
-        Assert.assertTrue(response.isSuccess());
+        RestResponse<Map<String, String>> response = (RestResponse<Map<String, String>>) result.getResult();
+        Assert.assertEquals(RestResponse.CODE_SUCCESS, response.getCode());
         Mockito.verifyNoInteractions(consoleServiceManager);
+    }
+
+    private static Map<String, String> shardMasters(String shard, HostPort target) {
+        return Collections.singletonMap(shard, target.toString());
     }
 
     private void mockForwardContext() {
         Mockito.when(consoleServiceManager.getBeaconMasterSwitchForwardTimeoutMilli())
                 .thenReturn(TIMEOUT_MILLI + FORWARD_EXTRA_MILLI);
+        Mockito.when(consoleCommonConfig.getBeaconFailoverMasterSwitchForwardExtraMilli()).thenReturn(FORWARD_EXTRA_MILLI);
     }
 
     private void mockLocalSwitchContext() {
         Mockito.when(consoleCommonConfig.getBeaconFailoverMasterSwitchTimeoutMilli()).thenReturn(TIMEOUT_MILLI);
+        Mockito.when(consoleCommonConfig.getBeaconFailoverMasterSwitchForwardExtraMilli()).thenReturn(FORWARD_EXTRA_MILLI);
     }
 
     private void mockShardRedises() {
@@ -399,6 +462,13 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
         Mockito.when(metaCache.getRedisOfDcClusterShard(currentIdc, CLUSTER, SHARD)).thenReturn(Arrays.asList(
                 new RedisMeta().setIp(MASTER.getHost()).setPort(MASTER.getPort()),
                 new RedisMeta().setIp(SLAVE.getHost()).setPort(SLAVE.getPort()).setMaster(MASTER.toString())));
+    }
+
+    private void mockShardBRedises() {
+        Mockito.when(shardService.find(CLUSTER, SHARD_B)).thenReturn(new ShardTbl().setShardName(SHARD_B));
+        Mockito.when(metaCache.getRedisOfDcClusterShard(currentIdc, CLUSTER, SHARD_B)).thenReturn(Arrays.asList(
+                new RedisMeta().setIp(MASTER_B.getHost()).setPort(MASTER_B.getPort()),
+                new RedisMeta().setIp(SLAVE_B.getHost()).setPort(SLAVE_B.getPort()).setMaster(MASTER_B.toString())));
     }
 
     private void mockBeaconRoute() {

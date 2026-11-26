@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
-import com.ctrip.xpipe.api.migration.auto.data.MonitorForceFailoverResult;
+import com.ctrip.xpipe.api.migration.auto.data.BeaconResp;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -64,102 +64,106 @@ public class BeaconRouteController extends AbstractConsoleController {
 
     @Autowired
     private ConsoleCommonConfig consoleCommonConfig;
-
-    // must exceed the http connect timeout so that the http client always times out first
-    private static final int FAILOVER_DEFERRED_RESULT_EXTRA_MILLI = 5000;
-
     @Autowired(required = false)
     private SentinelBeaconClusterMonitorNotifier sentinelBeaconClusterMonitorNotifier;
 
     @PostMapping("/failover/master/switch")
-    public DeferredResult<BeaconFailoverResponse<Object>> switchBeaconMaster(HttpServletRequest request,
-                                                                               @RequestParam("cluster") String cluster,
-                                                                               @RequestParam("shard") String shard,
-                                                                               @RequestParam("idc") String idc,
-                                                                               @RequestBody BeaconFailoverMasterSwitchRequest switchRequest) {
+    public DeferredResult<RestResponse<Map<String, String>>> switchBeaconMaster(HttpServletRequest request,
+                                                                              @RequestParam("cluster") String cluster,
+                                                                              @RequestParam("idc") String idc,
+                                                                              @RequestBody Map<String, String> shardMasters) {
         String forwardedFor = request.getHeader("X-FORWARDED-FOR");
         String sourceIp = StringUtil.isEmpty(forwardedFor) ? request.getRemoteAddr() : forwardedFor;
         if (!StringUtil.isEmpty(idc) && idc.equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
-            return submitLocalMasterSwitch(sourceIp, cluster, shard, idc, switchRequest);
+            return submitLocalMasterSwitch(sourceIp, cluster, idc, shardMasters);
         }
         int forwardTimeoutMilli = consoleServiceManager == null
                 ? DefaultConsoleService.DEFAULT_BEACON_MASTER_SWITCH_READ_TIMEOUT_MILLI
                 : consoleServiceManager.getBeaconMasterSwitchForwardTimeoutMilli();
         return submitMasterSwitch(forwardTimeoutMilli,
-                () -> forwardMasterSwitch(idc, cluster, shard, switchRequest, sourceIp));
+                () -> forwardMasterSwitch(idc, cluster, shardMasters, sourceIp));
     }
 
     @PostMapping("/failover/master/switch/local")
-    public DeferredResult<BeaconFailoverResponse<Object>> switchBeaconMasterLocal(HttpServletRequest request,
-                                                                                    @RequestParam("cluster") String cluster,
-                                                                                    @RequestParam("shard") String shard,
-                                                                                    @RequestParam("idc") String idc,
-                                                                                    @RequestBody BeaconFailoverMasterSwitchRequest switchRequest) {
+    public DeferredResult<RestResponse<Map<String, String>>> switchBeaconMasterLocal(HttpServletRequest request,
+                                                                                   @RequestParam("cluster") String cluster,
+                                                                                   @RequestParam("idc") String idc,
+                                                                                   @RequestBody Map<String, String> shardMasters) {
         String currentIdc = FoundationService.DEFAULT.getDataCenter();
         if (StringUtil.isEmpty(idc) || !idc.equalsIgnoreCase(currentIdc)) {
-            DeferredResult<BeaconFailoverResponse<Object>> deferredResult = new DeferredResult<>();
-            deferredResult.setResult(new BeaconFailoverResponse<>(BeaconFailoverResponse.CODE_ERROR,
-                    String.format("idc %s is not current idc %s", idc, currentIdc)));
+            DeferredResult<RestResponse<Map<String, String>>> deferredResult = new DeferredResult<>();
+            deferredResult.setResult(RestResponse.fail(String.format("idc %s is not current idc %s", idc, currentIdc)));
             return deferredResult;
         }
         String forwardedFor = request.getHeader("X-FORWARDED-FOR");
         String sourceIp = StringUtil.isEmpty(forwardedFor) ? request.getRemoteAddr() : forwardedFor;
-        return submitLocalMasterSwitch(sourceIp, cluster, shard, idc, switchRequest);
+        return submitLocalMasterSwitch(sourceIp, cluster, idc, shardMasters);
     }
 
-    private DeferredResult<BeaconFailoverResponse<Object>> submitLocalMasterSwitch(String sourceIp,
-                                                                                   String cluster, String shard, String idc,
-                                                                                   BeaconFailoverMasterSwitchRequest switchRequest) {
+    private DeferredResult<RestResponse<Map<String, String>>> submitLocalMasterSwitch(String sourceIp, String cluster,
+                                                                                      String idc,
+                                                                                      Map<String, String> shardMasters) {
         int timeoutMilli = consoleCommonConfig.getBeaconFailoverMasterSwitchTimeoutMilli();
         return submitMasterSwitch(timeoutMilli,
-                () -> executeMasterSwitch(timeoutMilli, cluster, shard, idc, switchRequest, sourceIp));
+                () -> executeMasterSwitch(timeoutMilli, cluster, idc, shardMasters, sourceIp));
     }
 
-    private DeferredResult<BeaconFailoverResponse<Object>> submitMasterSwitch(int httpTimeoutMilli,
-                                                                              Supplier<BeaconFailoverResponse<Object>> task) {
-        DeferredResult<BeaconFailoverResponse<Object>> deferredResult =
-                new DeferredResult<>((long) httpTimeoutMilli + FAILOVER_DEFERRED_RESULT_EXTRA_MILLI);
-        deferredResult.onTimeout(() -> deferredResult.setResult(new BeaconFailoverResponse<>(
-                BeaconFailoverResponse.CODE_ERROR, "beacon master switch timeout, result unknown")));
+    private DeferredResult<RestResponse<Map<String, String>>> submitMasterSwitch(int httpTimeoutMilli,
+                                                                                 Supplier<RestResponse<Map<String, String>>> task) {
+        DeferredResult<RestResponse<Map<String, String>>> deferredResult =
+                new DeferredResult<>((long) httpTimeoutMilli
+                        + consoleCommonConfig.getBeaconFailoverMasterSwitchForwardExtraMilli());
+        deferredResult.onTimeout(() -> deferredResult.setResult(
+                RestResponse.fail("beacon master switch timeout, result unknown")));
         executor.execute(() -> deferredResult.setResult(task.get()));
         return deferredResult;
     }
 
-    private HostPort parseTarget(String cluster, String shard, String idc, BeaconFailoverMasterSwitchRequest switchRequest) {
-        if (StringUtil.isEmpty(cluster) || StringUtil.isEmpty(shard) || StringUtil.isEmpty(idc)) {
-            throw new IllegalArgumentException("cluster, shard and idc must not be empty");
+    private Map<String, HostPort> parseShardMasters(String cluster, String idc, Map<String, String> shardMasters) {
+        if (StringUtil.isEmpty(cluster) || StringUtil.isEmpty(idc)) {
+            throw new IllegalArgumentException("cluster and idc must not be empty");
         }
-        if (switchRequest == null || StringUtil.isEmpty(switchRequest.getIp()) || switchRequest.getPort() == null) {
-            throw new IllegalArgumentException("ip and port must not be empty");
+        if (shardMasters == null || shardMasters.isEmpty()) {
+            throw new IllegalArgumentException("shard masters must not be empty");
         }
-        int port = switchRequest.getPort();
-        if (port <= 0 || port > 65535) {
-            throw new IllegalArgumentException("invalid port: " + port);
-        }
-        return new HostPort(switchRequest.getIp().trim(), port);
+        Map<String, HostPort> targets = new LinkedHashMap<>();
+        shardMasters.forEach((shard, target) -> targets.put(shard, parseTarget(shard, target)));
+        return targets;
     }
 
-    private BeaconFailoverResponse<Object> forwardMasterSwitch(String idc, String cluster, String shard,
-                                                               BeaconFailoverMasterSwitchRequest switchRequest,
-                                                               String sourceIp) {
+    private HostPort parseTarget(String shard, String target) {
+        if (StringUtil.isEmpty(shard) || StringUtil.isEmpty(target)) {
+            throw new IllegalArgumentException("shard and target must not be empty");
+        }
+        try {
+            HostPort hostPort = HostPort.fromString(target.trim());
+            if (!StringUtil.isEmpty(hostPort.getHost()) && hostPort.getPort() > 0 && hostPort.getPort() <= 65535) {
+                return hostPort;
+            }
+        } catch (RuntimeException ignore) {
+            // not ip:port, reported below
+        }
+        throw new IllegalArgumentException("invalid target of shard " + shard + ": " + target);
+    }
+
+    private RestResponse<Map<String, String>> forwardMasterSwitch(String idc, String cluster,
+                                                                  Map<String, String> shardMasters, String sourceIp) {
         Transaction transaction = Cat.newTransaction("Beacon.Force.Failover", "MasterSwitchForward");
         transaction.addData("sourceIp", sourceIp);
         transaction.addData("idc", idc);
         transaction.addData("cluster", cluster);
-        transaction.addData("shard", shard);
         try {
-            HostPort target = parseTarget(cluster, shard, idc, switchRequest);
-            transaction.addData("target", target);
+            transaction.addData("shardMasters", parseShardMasters(cluster, idc, shardMasters));
             if (consoleServiceManager == null) {
                 throw new IllegalStateException("console service manager unavailable, can not forward to idc " + idc);
             }
-            BeaconFailoverResponse<Object> response = consoleServiceManager.postForSwitchBeaconMaster(idc, cluster, shard,
-                    target.getHost(), target.getPort(), sourceIp);
+            RestResponse<Map<String, String>> response = consoleServiceManager.postForSwitchBeaconMaster(idc, cluster,
+                    shardMasters, sourceIp);
             if (response == null) {
                 throw new IllegalStateException("console of idc " + idc + " returned no response body");
             }
             transaction.addData("code", response.getCode());
-            if (response.isSuccess()) {
+            if (RestResponse.CODE_SUCCESS == response.getCode()) {
                 transaction.setStatus(Transaction.SUCCESS);
             } else {
                 transaction.setStatus(new IllegalStateException(response.getMsg()));
@@ -167,54 +171,62 @@ public class BeaconRouteController extends AbstractConsoleController {
             return response;
         } catch (Throwable th) {
             transaction.setStatus(th);
-            return new BeaconFailoverResponse<>(BeaconFailoverResponse.CODE_ERROR, th.getMessage());
+            return RestResponse.fail(th.getMessage());
         } finally {
             transaction.complete();
         }
     }
 
-    private BeaconFailoverResponse<Object> executeMasterSwitch(int timeoutMilli, String cluster, String shard,
-                                                               String idc, BeaconFailoverMasterSwitchRequest switchRequest,
-                                                               String sourceIp) {
+    private RestResponse<Map<String, String>> executeMasterSwitch(int timeoutMilli, String cluster, String idc,
+                                                                  Map<String, String> shardMasters, String sourceIp) {
         Transaction transaction = Cat.newTransaction("Beacon.Force.Failover", "MasterSwitch");
         transaction.addData("sourceIp", sourceIp);
         transaction.addData("idc", idc);
         transaction.addData("cluster", cluster);
-        transaction.addData("shard", shard);
         try {
-            HostPort target = parseTarget(cluster, shard, idc, switchRequest);
-            transaction.addData("target", target);
+            Map<String, HostPort> targets = parseShardMasters(cluster, idc, shardMasters);
+            transaction.addData("shardMasters", targets);
             ClusterTbl clusterTbl = clusterService.find(cluster);
             if (clusterTbl == null) {
                 throw new IllegalArgumentException("cluster not found: " + cluster);
             }
-            ShardTbl shardTbl = shardService.find(clusterTbl.getClusterName(), shard);
-            if (shardTbl == null) {
-                throw new IllegalArgumentException("shard not found: " + shard);
-            }
+            String clusterName = clusterTbl.getClusterName();
 
-            List<RedisMeta> redises = metaCache.getRedisOfDcClusterShard(
-                    FoundationService.DEFAULT.getDataCenter(), clusterTbl.getClusterName(), shardTbl.getShardName());
-            RedisMeta currentMaster = redises.stream().filter(RedisMeta::isMaster).findFirst()
-                    .orElseThrow(() -> new IllegalStateException("current master not found"));
-            HostPort currentMasterHostPort = new HostPort(currentMaster.getIp(), currentMaster.getPort());
-            if (target.equals(currentMasterHostPort)) {
-                transaction.addData("currentMaster", currentMasterHostPort);
+            Map<String, HostPort> forcedShardMasters = new LinkedHashMap<>();
+            boolean allTargetsAreMaster = true;
+            for (Map.Entry<String, HostPort> entry : targets.entrySet()) {
+                ShardTbl shardTbl = shardService.find(clusterName, entry.getKey());
+                if (shardTbl == null) {
+                    throw new IllegalArgumentException("shard not found: " + entry.getKey());
+                }
+                String shardName = shardTbl.getShardName();
+                HostPort target = entry.getValue();
+                List<RedisMeta> redises = metaCache.getRedisOfDcClusterShard(
+                        FoundationService.DEFAULT.getDataCenter(), clusterName, shardName);
+                RedisMeta currentMaster = redises.stream().filter(RedisMeta::isMaster).findFirst()
+                        .orElseThrow(() -> new IllegalStateException("current master not found in shard " + shardName));
+                if (redises.stream().noneMatch(redis -> target.equals(new HostPort(redis.getIp(), redis.getPort())))) {
+                    throw new IllegalArgumentException("target " + target + " is not in shard " + shardName + " of idc " + idc);
+                }
+                if (null != forcedShardMasters.put(shardName, target)) {
+                    throw new IllegalArgumentException("duplicate shard: " + shardName);
+                }
+                allTargetsAreMaster &= target.equals(new HostPort(currentMaster.getIp(), currentMaster.getPort()));
+            }
+            // every target is already the master in xpipe meta, no need to call beacon
+            if (allTargetsAreMaster) {
                 transaction.setStatus(Transaction.SUCCESS);
-                return new BeaconFailoverResponse<>(BeaconFailoverResponse.CODE_SUCCESS,
-                        "current master is already " + target);
-            }
-            if (redises.stream().noneMatch(redis -> target.equals(new HostPort(redis.getIp(), redis.getPort())))) {
-                throw new IllegalArgumentException("target " + target + " is not in shard " + shardTbl.getShardName() + " of idc " + idc);
+                return new RestResponse<>(RestResponse.CODE_SUCCESS,
+                        "current master is already the target: " + forcedShardMasters, null);
             }
 
-            SentinelClusterBeaconRouteItem route = monitorManager.getSentinelClusterRoutes(clusterTbl.getClusterName())
+            SentinelClusterBeaconRouteItem route = monitorManager.getSentinelClusterRoutes(clusterName)
                     .stream()
                     .filter(SentinelClusterBeaconRouteItem::isManagedByBeacon)
                     .filter(item -> !StringUtil.isEmpty(item.getBeaconHost()))
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("sentinel beacon route not found"));
-            MonitorService monitorService = monitorManager.get(route.getOrgId(), clusterTbl.getClusterName(),
+            MonitorService monitorService = monitorManager.get(route.getOrgId(), clusterName,
                     null, BeaconRouteType.SENTINEL);
             if (monitorService == null) {
                 throw new IllegalStateException("sentinel beacon service not found");
@@ -223,8 +235,9 @@ public class BeaconRouteController extends AbstractConsoleController {
             transaction.addData("beaconHost", monitorService.getHost());
             transaction.addData("beaconSystem", route.getSystem());
 
-            MonitorForceFailoverResult result = monitorService.forceFailoverShardMaster(route.getSystem(),
-                    clusterTbl.getClusterName(), shardTbl.getShardName(), target, timeoutMilli);
+            // shards whose target is already master are sent too, beacon marks them SUCCESS in its first round
+            BeaconResp<Map<String, String>> result = monitorService.forceFailoverShardMasters(route.getSystem(),
+                    clusterName, forcedShardMasters, timeoutMilli);
             if (result == null) {
                 throw new IllegalStateException("beacon returned no result");
             }
@@ -235,10 +248,10 @@ public class BeaconRouteController extends AbstractConsoleController {
             } else {
                 transaction.setStatus(new IllegalStateException(result.getMsg()));
             }
-            return new BeaconFailoverResponse<>(result.getCode(), result.getMsg(), result.getData());
+            return new RestResponse<>(result.getCode(), result.getMsg(), result.getData());
         } catch (Throwable th) {
             transaction.setStatus(th);
-            return new BeaconFailoverResponse<>(BeaconFailoverResponse.CODE_ERROR, th.getMessage());
+            return RestResponse.fail(th.getMessage());
         } finally {
             transaction.complete();
         }

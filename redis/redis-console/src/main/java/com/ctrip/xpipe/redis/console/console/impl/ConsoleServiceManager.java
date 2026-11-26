@@ -16,7 +16,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatu
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.controller.api.vo.BeaconFailoverResponse;
 import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
@@ -77,8 +76,6 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
 
     @Autowired(required = false)
     private ConsoleCommonConfig consoleCommonConfig;
-
-    private volatile int beaconMasterSwitchForwardTimeoutMilli;
 
     @Autowired
     public ConsoleServiceManager(ConsoleConfig consoleConfig, @Nullable ConsoleLeaderElector leaderElector) {
@@ -281,25 +278,17 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return getServiceByDc(dcId).postMigrateSentinelBeacon(clusterName, shardMasters);
     }
 
-    public BeaconFailoverResponse<Object> postForSwitchBeaconMaster(String idc, String clusterName, String shardName,
-                                                                    String ip, int port, String sourceIp) {
-        return getServiceByDc(idc).postForSwitchBeaconMaster(clusterName, shardName, idc, ip, port, sourceIp);
+    public RestResponse<Map<String, String>> postForSwitchBeaconMaster(String idc, String clusterName,
+                                                                       Map<String, String> shardMasters, String sourceIp) {
+        return getServiceByDc(idc).postForSwitchBeaconMaster(idc, clusterName, shardMasters, sourceIp);
     }
 
     public int getBeaconMasterSwitchForwardTimeoutMilli() {
-        int timeoutMilli = beaconMasterSwitchForwardTimeoutMilli;
-        if (timeoutMilli > 0) {
-            return timeoutMilli;
+        if (consoleCommonConfig == null) {
+            return DefaultConsoleService.DEFAULT_BEACON_MASTER_SWITCH_READ_TIMEOUT_MILLI;
         }
-        synchronized (this) {
-            if (beaconMasterSwitchForwardTimeoutMilli <= 0) {
-                beaconMasterSwitchForwardTimeoutMilli = consoleCommonConfig == null
-                        ? DefaultConsoleService.DEFAULT_BEACON_MASTER_SWITCH_READ_TIMEOUT_MILLI
-                        : consoleCommonConfig.getBeaconFailoverMasterSwitchTimeoutMilli()
-                        + consoleCommonConfig.getBeaconFailoverMasterSwitchForwardExtraMilli();
-            }
-            return beaconMasterSwitchForwardTimeoutMilli;
-        }
+        return consoleCommonConfig.getBeaconFailoverMasterSwitchTimeoutMilli()
+                + consoleCommonConfig.getBeaconFailoverMasterSwitchForwardExtraMilli();
     }
 
     private <T> Map<String, BroadcastResult<T>> broadcast(Set<String> dcIds, Function<String, T> perDcTask) {

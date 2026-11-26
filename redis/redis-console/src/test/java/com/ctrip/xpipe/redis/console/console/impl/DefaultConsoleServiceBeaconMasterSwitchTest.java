@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.controller.api.vo.BeaconFailoverMasterSwitchRequest;
-import com.ctrip.xpipe.redis.console.controller.api.vo.BeaconFailoverResponse;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,6 +18,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestOperations;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
@@ -26,7 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 public class DefaultConsoleServiceBeaconMasterSwitchTest extends AbstractConsoleTest {
 
     private static final String URL = "http://console-remote:8080/api/beacon/failover/master/switch/local"
-            + "?cluster={cluster}&shard={shard}&idc={idc}";
+            + "?cluster={cluster}&idc={idc}";
 
     @Mock
     private RestOperations restOperations;
@@ -41,21 +44,24 @@ public class DefaultConsoleServiceBeaconMasterSwitchTest extends AbstractConsole
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public void shouldPostIpAndPortToLocalEndpointOfRemoteConsole() {
-        BeaconFailoverResponse<Object> remoteResponse = new BeaconFailoverResponse<>("FIXED_OR_WAIT");
+    public void shouldPostShardMastersToLocalEndpointOfRemoteConsole() {
+        Map<String, String> shardMasters = new LinkedHashMap<>();
+        shardMasters.put("shard-a", "10.0.0.2:6379");
+        shardMasters.put("shard-b", "10.0.0.3:6379");
+        RestResponse<Map<String, String>> remoteResponse =
+                RestResponse.success(Collections.singletonMap("shard-a", "SUCCESS"));
         Mockito.doReturn(ResponseEntity.ok(remoteResponse)).when(restOperations).exchange(eq(URL), eq(HttpMethod.POST),
-                any(HttpEntity.class), any(ParameterizedTypeReference.class), eq("cluster-a"), eq("shard-a"), eq("REMOTE"));
+                any(HttpEntity.class), any(ParameterizedTypeReference.class), eq("cluster-a"), eq("REMOTE"));
 
-        BeaconFailoverResponse<Object> response = consoleService.postForSwitchBeaconMaster("cluster-a", "shard-a", "REMOTE",
-                "10.0.0.2", 6379, "1.1.1.1");
+        RestResponse<Map<String, String>> response = consoleService.postForSwitchBeaconMaster("REMOTE", "cluster-a",
+                shardMasters, "1.1.1.1");
 
         Assert.assertSame(remoteResponse, response);
         ArgumentCaptor<HttpEntity> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
         Mockito.verify(restOperations).exchange(eq(URL), eq(HttpMethod.POST), entityCaptor.capture(),
-                any(ParameterizedTypeReference.class), eq("cluster-a"), eq("shard-a"), eq("REMOTE"));
-        HttpEntity<BeaconFailoverMasterSwitchRequest> entity = entityCaptor.getValue();
-        Assert.assertEquals("10.0.0.2", entity.getBody().getIp());
-        Assert.assertEquals(Integer.valueOf(6379), entity.getBody().getPort());
+                any(ParameterizedTypeReference.class), eq("cluster-a"), eq("REMOTE"));
+        HttpEntity<Map<String, String>> entity = entityCaptor.getValue();
+        Assert.assertEquals(shardMasters, entity.getBody());
         Assert.assertEquals("1.1.1.1", entity.getHeaders().getFirst("X-FORWARDED-FOR"));
         Assert.assertEquals(MediaType.APPLICATION_JSON, entity.getHeaders().getContentType());
     }
@@ -63,15 +69,16 @@ public class DefaultConsoleServiceBeaconMasterSwitchTest extends AbstractConsole
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void shouldNotSetForwardedHeaderWhenSourceIpEmpty() {
-        Mockito.doReturn(ResponseEntity.ok(new BeaconFailoverResponse<>())).when(restOperations).exchange(eq(URL),
+        Mockito.doReturn(ResponseEntity.ok(new RestResponse<>())).when(restOperations).exchange(eq(URL),
                 eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class),
-                eq("cluster-a"), eq("shard-a"), eq("REMOTE"));
+                eq("cluster-a"), eq("REMOTE"));
 
-        consoleService.postForSwitchBeaconMaster("cluster-a", "shard-a", "REMOTE", "10.0.0.2", 6379, null);
+        consoleService.postForSwitchBeaconMaster("REMOTE", "cluster-a",
+                Collections.singletonMap("shard-a", "10.0.0.2:6379"), null);
 
         ArgumentCaptor<HttpEntity> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
         Mockito.verify(restOperations).exchange(eq(URL), eq(HttpMethod.POST), entityCaptor.capture(),
-                any(ParameterizedTypeReference.class), eq("cluster-a"), eq("shard-a"), eq("REMOTE"));
+                any(ParameterizedTypeReference.class), eq("cluster-a"), eq("REMOTE"));
         Assert.assertNull(entityCaptor.getValue().getHeaders().getFirst("X-FORWARDED-FOR"));
     }
 

@@ -4,7 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.console.controller.api.vo.BeaconFailoverResponse;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
@@ -65,8 +65,9 @@ public interface ConsoleService extends CheckerService {
 
     List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRoute(String clusterName);
 
-    BeaconFailoverResponse<Object> postForSwitchBeaconMaster(String clusterName, String shardName, String idc,
-                                                      String ip, int port, String sourceIp);
+    // shardMasters: shard -> "ip:port"
+    RestResponse<Map<String, String>> postForSwitchBeaconMaster(String idc, String clusterName,
+                                                                Map<String, String> shardMasters, String sourceIp);
 
     /**
      * 拉取目标 console 所在机房的 keepercontainer 地址快照。失败直接抛出，不吞成空快照。

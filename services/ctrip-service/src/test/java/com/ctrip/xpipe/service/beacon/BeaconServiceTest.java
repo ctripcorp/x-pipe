@@ -1,15 +1,14 @@
 package com.ctrip.xpipe.service.beacon;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.migration.auto.data.BeaconResp;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
-import com.ctrip.xpipe.api.migration.auto.data.MonitorForceFailoverResult;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MockMetricProxy;
 import com.ctrip.xpipe.service.AbstractServiceTest;
-import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.service.beacon.exception.BeaconServiceException;
 import com.google.common.collect.Sets;
 import okhttp3.mockwebserver.MockResponse;
@@ -29,6 +28,7 @@ import org.springframework.web.client.RestOperations;
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -263,40 +263,50 @@ public class BeaconServiceTest extends AbstractServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testForceFailoverShardMaster() throws Exception {
-        webServer.enqueue(new MockResponse().setBody("{\"code\":0,\"msg\":\"success\",\"data\":\"FIXED\"}")
+    public void testForceFailoverShardMasters() throws Exception {
+        webServer.enqueue(new MockResponse()
+                .setBody("{\"code\":0,\"msg\":\"success\",\"data\":{\"shard1\":\"SUCCESS\",\"shard2\":\"SUCCESS\"}}")
                 .setHeader("Content-Type", "application/json"));
+        Map<String, HostPort> shardMasters = new LinkedHashMap<>();
+        shardMasters.put("shard1", new HostPort("10.0.0.2", 6379));
+        shardMasters.put("shard2", new HostPort("10.0.0.3", 6379));
 
-        MonitorForceFailoverResult result = beaconService.forceFailoverShardMaster(system, cluster, "shard1",
-                new HostPort("10.0.0.2", 6379), 3000);
+        BeaconResp<Map<String, String>> result = beaconService.forceFailoverShardMasters(system, cluster,
+                shardMasters, 3000);
 
         Assert.assertTrue(result.isSuccess());
-        Assert.assertEquals("FIXED", result.getData());
+        Map<String, String> expectedStates = new LinkedHashMap<>();
+        expectedStates.put("shard1", "SUCCESS");
+        expectedStates.put("shard2", "SUCCESS");
+        Assert.assertEquals(expectedStates, result.getData());
         RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals("/api/v1/failover/xpipe/cluster/cluster1", request.getPath());
         Assert.assertEquals("POST", request.getMethod());
         Map<String, Object> body = Codec.DEFAULT.decode(request.getBody().readByteArray(), Map.class);
-        Assert.assertEquals(Collections.singletonMap("shard1", "10.0.0.2:6379"), body.get("forcedShardMasters"));
+        Map<String, String> expectedForced = new LinkedHashMap<>();
+        expectedForced.put("shard1", "10.0.0.2:6379");
+        expectedForced.put("shard2", "10.0.0.3:6379");
+        Assert.assertEquals(expectedForced, body.get("forcedShardMasters"));
         assertBeaconMetric("forceFailover", "POST", true, system, cluster);
     }
 
     @Test
-    public void testForceFailoverShardMasterShouldReturnBeaconFailureCode() {
+    public void testForceFailoverShardMastersShouldReturnBeaconFailureCode() {
         webServer.enqueue(new MockResponse()
-                .setBody("{\"code\":5002,\"msg\":\"force failover is still running\",\"data\":{\"taskId\":\"t-1\"}}")
+                .setBody("{\"code\":5002,\"msg\":\"force failover is still running\",\"data\":{\"shard1\":\"MIGRATING\"}}")
                 .setHeader("Content-Type", "application/json"));
 
-        MonitorForceFailoverResult result = beaconService.forceFailoverShardMaster(system, cluster, "shard1",
-                new HostPort("10.0.0.2", 6379), 3000);
+        BeaconResp<Map<String, String>> result = beaconService.forceFailoverShardMasters(system, cluster,
+                Collections.singletonMap("shard1", new HostPort("10.0.0.2", 6379)), 3000);
 
         Assert.assertEquals(5002, result.getCode());
         Assert.assertEquals("force failover is still running", result.getMsg());
-        Assert.assertEquals(Collections.singletonMap("taskId", "t-1"), result.getData());
+        Assert.assertEquals(Collections.singletonMap("shard1", "MIGRATING"), result.getData());
         assertBeaconMetric("forceFailover", "POST", false, system, cluster);
     }
 
     @Test
-    public void testForceFailoverShardMasterShouldNotRetryOnReadTimeout() {
+    public void testForceFailoverShardMastersShouldNotRetryOnReadTimeout() {
         webServer.enqueue(new MockResponse().setBody("{\"code\":0,\"msg\":\"success\"}")
                 .setHeader("Content-Type", "application/json")
                 .setBodyDelay(2, TimeUnit.SECONDS));
@@ -304,7 +314,8 @@ public class BeaconServiceTest extends AbstractServiceTest {
                 .setHeader("Content-Type", "application/json"));
 
         try {
-            beaconService.forceFailoverShardMaster(system, cluster, "shard1", new HostPort("10.0.0.2", 6379), 300);
+            beaconService.forceFailoverShardMasters(system, cluster,
+                    Collections.singletonMap("shard1", new HostPort("10.0.0.2", 6379)), 300);
             Assert.fail("expected ResourceAccessException");
         } catch (ResourceAccessException ignored) {
         }

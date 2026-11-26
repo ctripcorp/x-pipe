@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
-import com.ctrip.xpipe.api.migration.auto.data.MonitorForceFailoverResult;
+import com.ctrip.xpipe.api.migration.auto.data.BeaconResp;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.endpoint.HostPort;
 
@@ -86,8 +86,8 @@ public class DefaultMonitorService implements MonitorService {
     }
 
     @Override
-    public MonitorForceFailoverResult forceFailoverShardMaster(String system, String clusterName, String shardName,
-                                                               HostPort target, int timeoutMilli) {
+    public BeaconResp<Map<String, String>> forceFailoverShardMasters(String system, String clusterName,
+                                                                     Map<String, HostPort> shardMasters, int timeoutMilli) {
         // do nothing
         return null;
     }

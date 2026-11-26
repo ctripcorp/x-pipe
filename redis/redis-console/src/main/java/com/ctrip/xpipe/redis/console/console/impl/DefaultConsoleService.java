@@ -8,8 +8,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatu
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.SentinelBeaconPostMigrateRequest;
-import com.ctrip.xpipe.redis.console.controller.api.vo.BeaconFailoverMasterSwitchRequest;
-import com.ctrip.xpipe.redis.console.controller.api.vo.BeaconFailoverResponse;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
@@ -51,7 +50,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     private static final String BEACON_USAGE_PATH = "/api/beacon/sentinel/usage/local?system={system}&includeClusters={includeClusters}";
     private static final String BEACON_CLUSTER_PATH = "/api/beacon/sentinel/cluster/{clusterName}/local";
     private static final String BEACON_MASTER_SWITCH_PATH =
-            "/api/beacon/failover/master/switch/local?cluster={cluster}&shard={shard}&idc={idc}";
+            "/api/beacon/failover/master/switch/local?cluster={cluster}&idc={idc}";
     private static final int BEACON_MASTER_SWITCH_CONNECT_TIMEOUT_MILLI = 3000;
     private static final int BEACON_MASTER_SWITCH_MAX_CONN = 10;
     private static final int BEACON_MASTER_SWITCH_RETRY_TIMES = 0;
@@ -117,8 +116,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String keeperContainerAddressSnapshotUrl;
 
-    private static final ParameterizedTypeReference<BeaconFailoverResponse<Object>> beaconFailoverResponseTypeDef =
-            new ParameterizedTypeReference<BeaconFailoverResponse<Object>>(){};
+    private static final ParameterizedTypeReference<RestResponse<Map<String, String>>> beaconMasterSwitchRespTypeDef =
+            new ParameterizedTypeReference<RestResponse<Map<String, String>>>(){};
 
     private static final ParameterizedTypeReference<List<SentinelBeaconUsageItem>> beaconUsageTypeDef =
             new ParameterizedTypeReference<List<SentinelBeaconUsageItem>>(){};
@@ -336,17 +335,16 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     }
 
     @Override
-    public BeaconFailoverResponse<Object> postForSwitchBeaconMaster(String clusterName, String shardName, String idc,
-                                                                    String ip, int port, String sourceIp) {
+    public RestResponse<Map<String, String>> postForSwitchBeaconMaster(String idc, String clusterName,
+                                                                       Map<String, String> shardMasters, String sourceIp) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         if (!StringUtil.isEmpty(sourceIp)) {
             headers.set("X-FORWARDED-FOR", sourceIp);
         }
-        ResponseEntity<BeaconFailoverResponse<Object>> response = beaconMasterSwitchRestTemplate
-                .exchange(beaconMasterSwitchUrl, HttpMethod.POST,
-                        new HttpEntity<>(new BeaconFailoverMasterSwitchRequest(ip, port), headers),
-                        beaconFailoverResponseTypeDef, clusterName, shardName, idc);
+        ResponseEntity<RestResponse<Map<String, String>>> response = beaconMasterSwitchRestTemplate
+                .exchange(beaconMasterSwitchUrl, HttpMethod.POST, new HttpEntity<>(shardMasters, headers),
+                        beaconMasterSwitchRespTypeDef, clusterName, idc);
         return response.getBody();
     }
 
