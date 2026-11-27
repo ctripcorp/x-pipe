@@ -237,6 +237,7 @@ public class CtripKafkaService implements KafkaService {
             producer.send(new ProducerRecord<>(TIMESTAMP_TOPIC, gtidTimestampItem));
             return true;
         } catch (Exception e) {
+            logger.error("[sendTimestampKafka]sendTimestampKafka failed",e);
             EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA, "Timestamp-" + e.getClass().getName(),
                     convertProducerMetrics(producer.metrics(), e));
             return false;
