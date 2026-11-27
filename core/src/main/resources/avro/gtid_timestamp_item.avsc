@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "GtidTimestampItem",
+  "namespace": "com.ctrip.xpipe.api.kafka",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "long"
+    },
+    {
+      "name": "shardid",
+      "type": "int"
+    },
+    {
+      "name": "uuid",
+      "type": "string"
+    },
+    {
+      "name": "end_seq",
+      "type": "long"
+    }
+  ]
+}

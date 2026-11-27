@@ -4,6 +4,7 @@ import com.ctrip.framework.ckafka.client.client.CKafkaClientBuilder;
 import com.ctrip.framework.foundation.Env;
 import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
+import com.ctrip.xpipe.api.kafka.GtidTimestampItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
@@ -19,22 +20,39 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CtripKafkaService implements KafkaService {
 
     private static final Logger logger = LoggerFactory.getLogger(CtripKafkaService.class);
 
-    private static final String TOPIC = "bbz.fx.xpipe.ck.gtid";
+    private static final String KEY_TOPIC = "bbz.fx.xpipe.ck.gtid";
 
+    private static final String TIMESTAMP_TOPIC = "bbz.fx.xpipe.ck.gtid.timestamp";
+
+    // key 表 topic 的 ACL user
     private static final String ACL_USER = "kMTApwMDMzNzAws";
 
     private static final String ACL_PRO_USER = "kMTApwMDA0Mzc2s";
 
+    // 时间表 topic 的 ACL user，测试环境与生产环境相同
+    private static final String TIMESTAMP_ACL_USER = "kMTApwMDA0Mzc2s";
+
+    private static final String TIMESTAMP_ACL_PRO_USER = "kMTApwMDA0Mzc2s";
+
     private static final String CUSTOM_CLIENT_ID = "bbzfxxpipeckgtid";
 
+    private static final String TIMESTAMP_CLIENT_ID = "bbzfxxpipeckgtidtimestamp";
+
     private Producer<String,Object>[] producerPool;
+
+    private volatile Producer<String,Object> timestampProducer;
+
+    // 时间表每个 keeper 每分钟只有少量消息，缓冲不需要与 key producer 一样大
+    private static final long TIMESTAMP_BUFFER_MEMORY = 4L * 1024 * 1024;
 
     private final int PRODUCER_POOL_SIZE = 16;
 
@@ -44,6 +62,7 @@ public class CtripKafkaService implements KafkaService {
 
     private AtomicBoolean started = new AtomicBoolean(false);
     private AtomicBoolean initSuccess = new AtomicBoolean(false);
+    private AtomicBoolean timestampInitSuccess = new AtomicBoolean(false);
 
     public CtripKafkaService(){
         startProducer();
@@ -52,13 +71,16 @@ public class CtripKafkaService implements KafkaService {
     @Override
     public void startProducer(){
         if(started.compareAndSet(false,true)){
-            producerPool = new Producer[PRODUCER_POOL_SIZE];
+            Producer<String,Object>[] pool = new Producer[PRODUCER_POOL_SIZE];
+            synchronized (this) {
+                producerPool = pool;
+            }
             long bufferMemory = Runtime.getRuntime().maxMemory() / 16 / PRODUCER_POOL_SIZE;
             new Thread(()->{
                 String result = TransactionMonitor.DEFAULT.logTransactionSwallowException("KafkaProducer","initialize",()->{
                     long start = System.currentTimeMillis();
                     for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
-                        producerPool[i] = createKafkaProducer(bufferMemory);
+                        pool[i] = createKafkaProducer(bufferMemory, KEY_TOPIC, CUSTOM_CLIENT_ID, ACL_USER, ACL_PRO_USER);
                     }
                     logger.info("[startProducer] elapse {}",System.currentTimeMillis()-start);
                     return "OK";
@@ -66,9 +88,37 @@ public class CtripKafkaService implements KafkaService {
                 if(result != null){
                     initSuccess.set(true);
                 }
+                // 时间表 producer 独立初始化：失败不影响 key 发送，也不影响 CK_INIT 指标
+                initTimestampProducer(pool, Math.min(bufferMemory, TIMESTAMP_BUFFER_MEMORY));
             },"kafka-producer-init").start();
 
         }
+    }
+
+    private void initTimestampProducer(Producer<String,Object>[] pool, long bufferMemory) {
+        Producer<String, Object> producer;
+        try {
+            producer = createKafkaProducer(bufferMemory, TIMESTAMP_TOPIC, TIMESTAMP_CLIENT_ID,
+                    TIMESTAMP_ACL_USER, TIMESTAMP_ACL_PRO_USER);
+        } catch (Throwable th) {
+            logger.warn("[initTimestampProducer] fail", th);
+            EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA, "TimestampProducer-InitFail");
+            return;
+        }
+        if (producer == null) {
+            // LOCAL env: createKafkaProducer returns null by design, treat as initialized
+            timestampInitSuccess.set(true);
+            return;
+        }
+        synchronized (this) {
+            // 初始化期间可能已被 forceStopProducer 停止，或已重新启动生成了新的 pool
+            if (started.get() && producerPool == pool) {
+                timestampProducer = producer;
+                timestampInitSuccess.set(true);
+                return;
+            }
+        }
+        producer.close(Duration.ZERO);
     }
 
     @Override
@@ -81,7 +131,16 @@ public class CtripKafkaService implements KafkaService {
                     producer.close(Duration.ZERO);
                 }
             }
-            producerPool = null;
+            Producer<String, Object> currentTimestampProducer;
+            synchronized (this) {
+                currentTimestampProducer = timestampProducer;
+                timestampProducer = null;
+                timestampInitSuccess.set(false);
+                producerPool = null;
+            }
+            if (currentTimestampProducer != null) {
+                currentTimestampProducer.close(Duration.ZERO);
+            }
         }
     }
 
@@ -90,7 +149,13 @@ public class CtripKafkaService implements KafkaService {
         return initSuccess.get();
     }
 
-    private Producer<String,Object> createKafkaProducer(long bufferMemory) {
+    @Override
+    public boolean timestampInitSuccess() {
+        return timestampInitSuccess.get();
+    }
+
+    private Producer<String,Object> createKafkaProducer(long bufferMemory, String topic, String clientId,
+                                                        String aclUser, String proAclUser) {
         Producer<String, Object> producer = null;
         // 自定义配置，按需配置
         Properties properties = new Properties();
@@ -103,7 +168,7 @@ public class CtripKafkaService implements KafkaService {
         properties.put(ProducerConfig.RETRIES_CONFIG, "2");
         properties.put(ProducerConfig.PARTITIONER_AVAILABILITY_TIMEOUT_MS_CONFIG, "100");
         properties.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, "50");
-        properties.put(ProducerConfig.CLIENT_ID_CONFIG, ACL_USER + "-" + CUSTOM_CLIENT_ID);
+        properties.put(ProducerConfig.CLIENT_ID_CONFIG, aclUser + "-" + clientId);
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, CustomHermesSerializer.class.getCanonicalName());
 
@@ -116,32 +181,34 @@ public class CtripKafkaService implements KafkaService {
                             .newProducerBuilder()
 //                            .hermesAvroSerializer()
                             .customProperties(properties) // 从此传入自定义配置，无则不需要关心
-                            .topic(TOPIC) // 要发送的topic
-                            .aclUser(ACL_PRO_USER) // acl token如有则替换填入此处，无则忽略
+                            .topic(topic) // 要发送的topic
+                            .aclUser(proAclUser) // acl token如有则替换填入此处，无则忽略
                             .build();
                 } else {
                     producer = CKafkaClientBuilder // producer单例需要用户自己维护
                             .newProducerBuilder()
 //                            .hermesAvroSerializer()
                             .customProperties(properties) // 从此传入自定义配置，无则不需要关心
-                            .topic(TOPIC) // 要发送的topic
-                            .aclUser(ACL_USER) // acl token如有则替换填入此处，无则忽略
+                            .topic(topic) // 要发送的topic
+                            .aclUser(aclUser) // acl token如有则替换填入此处，无则忽略
                             .build();
                 }
 
                 try {
                     long start = System.currentTimeMillis();
-                    producer.partitionsFor(TOPIC);
+                    producer.partitionsFor(topic);
                     logger.info("[partitionFor] elapse {}",System.currentTimeMillis()-start);
                 } catch (Throwable t) {
                     logger.warn("init partition wait meta ready", t);
                 }
 
-                //preheat
-                long start = System.currentTimeMillis();
-                producer.send(new ProducerRecord<>(TOPIC, GtidKeyItem.buildGtidKeyItem("test","uuid","0",
-                                "testk".getBytes(),"testv".getBytes(),"0",0,"localhost")));
-                logger.info("[sendKafka] elapse {}",System.currentTimeMillis()-start);
+                if (KEY_TOPIC.equals(topic)) {
+                    // preheat the existing key topic without writing a different schema to the timestamp topic
+                    long start = System.currentTimeMillis();
+                    producer.send(new ProducerRecord<>(topic, GtidKeyItem.buildGtidKeyItem("test","uuid","0",
+                                    "testk".getBytes(),"testv".getBytes(),"0",0,"localhost")));
+                    logger.info("[sendKafka] elapse {}",System.currentTimeMillis()-start);
+                }
             }
             return producer;
         } catch (IOException e) {
@@ -150,18 +217,38 @@ public class CtripKafkaService implements KafkaService {
     }
 
     @Override
-    public void sendKafka(GtidKeyItem gtidKeyItem){
+    public boolean sendKafka(GtidKeyItem gtidKeyItem){
         long threadId =  Thread.currentThread().threadId();
         int index = Long.hashCode(threadId) & PRODUCER_POOL_MASK;
         Producer<String,Object> producer = producerPool[index];
         try{
             if(producer == null){
                 EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,"KafkaProducer-NotReady");
-                return;
+                return false;
             }
-            producer.send(new ProducerRecord<>(TOPIC,gtidKeyItem));
+            producer.send(new ProducerRecord<>(KEY_TOPIC,gtidKeyItem));
+            return true;
         }catch (Exception e){
             EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,e.getClass().getName(),convertProducerMetrics(producer.metrics(),e));
+            return false;
+        }
+    }
+
+    @Override
+    public boolean sendTimestampKafka(GtidTimestampItem gtidTimestampItem) {
+        Producer<String, Object> producer = timestampProducer;
+        if (producer == null) {
+            EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA, "TimestampProducer-NotReady");
+            return false;
+        }
+        try {
+            producer.send(new ProducerRecord<>(TIMESTAMP_TOPIC, gtidTimestampItem));
+            return true;
+        } catch (Exception e) {
+            logger.error("[sendTimestampKafka]sendTimestampKafka failed",e);
+            EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA, "Timestamp-" + e.getClass().getName(),
+                    convertProducerMetrics(producer.metrics(), e));
+            return false;
         }
     }
 
