@@ -510,7 +510,26 @@ public class AbstractTest {
     }
 
     protected void waitForAnyKey() throws IOException {
-        System.in.read();
+        // Under maven surefire stdin belongs to the fork channel, so read() returns immediately. With
+        // -Dxpipe.test.stopFile=<path> or env XPIPE_TEST_STOP_FILE (env also reaches surefire's forked JVM)
+        // the launcher ignores stdin and keeps running until that file appears.
+        String stopFile = System.getProperty("xpipe.test.stopFile", System.getenv("XPIPE_TEST_STOP_FILE"));
+        if (stopFile == null || stopFile.trim().isEmpty()) {
+            System.in.read();
+            return;
+        }
+        File file = new File(stopFile.trim());
+        file.delete();
+        System.out.println("waiting for stop file " + file.getAbsolutePath() + " ..................");
+        while (!file.exists()) {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+        file.delete();
     }
 
     protected ZkTestServer startRandomZk() {

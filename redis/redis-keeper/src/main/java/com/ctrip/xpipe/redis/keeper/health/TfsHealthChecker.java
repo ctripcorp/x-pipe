@@ -52,7 +52,7 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
     MetricProxy metricProxy = MetricProxy.DEFAULT;
 
     private final Map<String, HealthState> states = new ConcurrentHashMap<>();
-    /** Last state we know reached zk (confirmed by a successful resetElection). Drives retry. */
+    /** Last state we know reached zk (confirmed by a successful election-data publication). Drives retry. */
     private final Map<String, HealthState> publishedStates = new ConcurrentHashMap<>();
 
     IoRuleEvaluator evaluator = IoRuleEvaluator.defaults();
@@ -104,6 +104,35 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
         return states.getOrDefault(tenant, HealthState.HEALTHY);
     }
 
+    /**
+     * Operator recovery gate: only RECOVERED_PENDING may re-enter HEALTHY; HEALTHY is idempotent.
+     * The caller publishes the mutated KeeperMeta and acknowledges it through {@link #onElectionReset(String)}.
+     */
+    public synchronized boolean recoverToHealthy(RedisKeeperServer keeper) {
+        String tenant = tenantOf(keeper);
+        if (tenant == null) {
+            return false;
+        }
+
+        HealthState current = states.computeIfAbsent(tenant, ignored -> seedState(keeper));
+        if (current != HealthState.RECOVERED_PENDING && current != HealthState.HEALTHY) {
+            logger.warn("[recoverToHealthy][{}] reject state {}", tenant, current);
+            return false;
+        }
+
+        if (current == HealthState.RECOVERED_PENDING) {
+            // Preserve what zk is expected to hold so a failed direct publication is retried next tick.
+            publishedStates.putIfAbsent(tenant, current);
+        }
+        states.put(tenant, HealthState.HEALTHY);
+        KeeperMeta meta = keeper.getCurrentKeeperMeta();
+        if (meta != null) {
+            meta.setHealthState(HealthState.HEALTHY.name());
+        }
+        logger.info("[recoverToHealthy][{}]{} -> HEALTHY", tenant, current);
+        return true;
+    }
+
     public void check() {
         try {
             check(nanoClock.getAsLong());
@@ -112,7 +141,7 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
         }
     }
 
-    void check(long nowNanos) {
+    synchronized void check(long nowNanos) {
         // apply first: on a non-TFS container this switches recording off in the telemetry
         IoHealthSettings settings = IoHealthSettings.from(config);
         telemetry.applySettings(settings);
@@ -144,7 +173,7 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
                 logger.info("[check][{}]{} -> {}", tenant, current, next);
             }
             // publish whenever zk lags the decided state, so a throttled/failed reset self-heals here
-            if (shouldPublish(next, current, publishedStates.get(tenant))) {
+            if (shouldPublish(next, publishedStates.get(tenant))) {
                 onChange(keeper, tenant, next);
             }
         }
@@ -152,19 +181,18 @@ public class TfsHealthChecker extends AbstractLifecycleObservable implements Top
         publishedStates.keySet().retainAll(seen);
     }
 
-    private static boolean shouldPublish(HealthState next, HealthState current,
-            HealthState published) {
+    private static boolean shouldPublish(HealthState next, HealthState published) {
         if (next != published && (next == HealthState.DOWN
                 || next == HealthState.RECOVERED_PENDING)) {
             return true;
         }
-        // Auto recovery must be retried until the healthy state reaches zk.
+        // Automatic or operator recovery must be retried until HEALTHY reaches zk.
         return next == HealthState.HEALTHY
-                && (current == HealthState.RECOVERED_PENDING
-                || published == HealthState.RECOVERED_PENDING);
+                && published != null
+                && published != HealthState.HEALTHY;
     }
 
-    /** Called by KeeperContainerService once a resetElection succeeded, so we stop retrying this state. */
+    /** Called by KeeperContainerService once election data reached zk, so we stop retrying this state. */
     public void onElectionReset(String tenant) {
         HealthState decided = states.get(tenant);
         if (decided != null) {

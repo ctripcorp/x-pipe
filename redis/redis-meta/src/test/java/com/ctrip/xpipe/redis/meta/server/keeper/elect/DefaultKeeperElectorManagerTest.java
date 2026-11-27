@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
+import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.meta.HealthState;
+import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -21,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -151,6 +155,71 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 			verify(currentMetaManager).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
 			verify(currentMetaManager).addResource(anyLong(), anyLong(), any(Releasable.class));
 		}));
+	}
+
+	@Test
+	public void testKeeperDataChangeTriggersReElectionWithoutRecreatingNode() throws Exception {
+		Long clusterDbId = clusterMeta.getDbId();
+		Long shardDbId = shardMeta.getDbId();
+		KeeperMeta first = new KeeperMeta().setId("keeper-1").setIp("127.0.0.1").setPort(4101);
+		KeeperMeta second = new KeeperMeta().setId("keeper-2").setIp("127.0.0.1").setPort(4102);
+		AtomicReference<KeeperMeta> selected = new AtomicReference<>();
+		AtomicReference<List<KeeperMeta>> survivors = new AtomicReference<>();
+
+		when(keeperActiveElectAlgorithm.select(eq(clusterDbId), eq(shardDbId), anyList()))
+				.thenAnswer(invocation -> {
+					List<KeeperMeta> candidates = invocation.getArgument(2);
+					for (KeeperMeta candidate : candidates) {
+						if (!HealthState.DOWN.name().equals(candidate.getHealthState())) {
+							return candidate;
+						}
+					}
+					return candidates.isEmpty() ? null : candidates.get(0);
+				});
+		doAnswer(invocation -> {
+			survivors.set(invocation.getArgument(2));
+			selected.set(invocation.getArgument(3));
+			return true;
+		}).when(currentMetaManager).setSurviveKeepers(eq(clusterDbId), eq(shardDbId), anyList(), any());
+		when(currentMetaManager.watchKeeperIfNotWatched(clusterDbId, shardDbId)).thenReturn(true);
+
+		keeperElectorManager.observerShardLeader(clusterDbId, shardDbId);
+		LeaderElector firstElector = addKeeperZkNode(clusterDbId, shardDbId, getZkClient(), first);
+		LeaderElector secondElector = addKeeperZkNode(clusterDbId, shardDbId, getZkClient(), second);
+		try {
+			waitConditionUntilTimeOut(() -> selected.get() != null
+					&& "keeper-1".equals(selected.get().getId())
+					&& survivors.get() != null && survivors.get().size() == 2);
+
+			String parentPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterDbId, shardDbId);
+			List<String> childrenBefore = getZkClient().get().getChildren().forPath(parentPath);
+			String firstPath = null;
+			for (String child : childrenBefore) {
+				String childPath = parentPath + "/" + child;
+				KeeperMeta data = JsonCodec.INSTANCE.decode(
+						new String(getZkClient().get().getData().forPath(childPath), StandardCharsets.UTF_8),
+						KeeperMeta.class);
+				if ("keeper-1".equals(data.getId())) {
+					firstPath = childPath;
+					break;
+				}
+			}
+			org.junit.Assert.assertNotNull(firstPath);
+
+			first.setHealthState(HealthState.DOWN.name());
+			getZkClient().get().setData().forPath(firstPath, JsonCodec.INSTANCE.encodeAsBytes(first));
+
+			waitConditionUntilTimeOut(() -> selected.get() != null
+					&& "keeper-2".equals(selected.get().getId()));
+			org.junit.Assert.assertEquals(childrenBefore,
+					getZkClient().get().getChildren().forPath(parentPath));
+			org.junit.Assert.assertTrue(survivors.get().stream().anyMatch(keeper ->
+					"keeper-1".equals(keeper.getId())
+							&& HealthState.DOWN.name().equals(keeper.getHealthState())));
+		} finally {
+			firstElector.stop();
+			secondElector.stop();
+		}
 	}
 
 	@SuppressWarnings("unchecked")

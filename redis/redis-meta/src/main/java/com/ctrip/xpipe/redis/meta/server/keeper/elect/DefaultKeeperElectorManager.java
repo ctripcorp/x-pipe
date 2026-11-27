@@ -58,6 +58,9 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	private KeeperElectReElectService keeperElectReElectService;
 
 	@Autowired
+	private KeeperPriorityReElectThrottler keeperPriorityReElectThrottler;
+
+	@Autowired
 	private DcMetaCache dcMetaCache;
 
 	private void observeLeader(final ClusterMeta cluster) {
@@ -229,12 +232,8 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 			}
 			ShardMetaComparator shardMetaComparator = (ShardMetaComparator) shardComparator;
 			if (keeperElectReElectService.keeperPriorityChanged(shardMetaComparator)) {
-				try {
-					keeperElectReElectService.reElect(clusterDbId, shardMetaComparator.getCurrent().getDbId());
-				} catch (Exception e) {
-					logger.error("[handleClusterModified][reElect]cluster_{},shard_{}",
-							clusterDbId, shardMetaComparator.getCurrent().getDbId(), e);
-				}
+				// priority-only change (e.g. logical BU TFS <-> BM): rate limited, see KeeperPriorityReElectThrottler
+				keeperPriorityReElectThrottler.submit(clusterDbId, shardMetaComparator.getCurrent().getDbId());
 			}
 		}
 	}

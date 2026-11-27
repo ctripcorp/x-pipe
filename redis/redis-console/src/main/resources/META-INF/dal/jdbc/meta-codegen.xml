@@ -1118,6 +1118,7 @@
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="name" field="name" value-type="String" length="128" nullable="false" />
     <member name="tfs-fs-id" field="tfs_fs_id" value-type="String" length="128" nullable="false" />
+    <member name="priority" field="priority" value-type="int" length="10" />
     <member name="active" field="active" value-type="boolean" nullable="false" />
     <member name="description" field="description" value-type="String" length="1024" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />

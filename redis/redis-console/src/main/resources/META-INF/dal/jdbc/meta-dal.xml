@@ -3603,6 +3603,10 @@
 	<entity name="logical-bu-tbl" table="LOGICAL_BU_TBL" alias="lbt">
 		<var name="key-id" value-type="long" key-member="id" />
 		<var name="target-cms-org-id" value-type="long"/>
+		<var name="expected-priority" value-type="Integer"/>
+
+		<!-- NULL means "use per-keeper REDIS_TBL.keeper_priority"; non-null overrides TFS keepers of this BU -->
+		<member name="priority" field="priority" value-type="Integer" />
 
 		<relation name="org-mapping" entity-name="logical-bu-org-tbl" entity-alias="lbot" multiple="true"/>
 		<relation name="keepercontainer-info" entity-name="keepercontainer-tbl" entity-alias="kt" multiple="true"/>
@@ -3612,9 +3616,46 @@
 				<member name="id"/>
 				<member name="name"/>
 			</readset>
+			<readset name="PRIORITY">
+				<member name="id"/>
+				<member name="priority"/>
+			</readset>
 		</readsets>
 
+		<updatesets>
+			<!-- Portal edit must never write priority; priority only changes via the keeper-ops CAS queries -->
+			<updateset name="BASIC">
+				<member name="name"/>
+				<member name="tfs-fs-id"/>
+				<member name="active"/>
+				<member name="description"/>
+			</updateset>
+		</updatesets>
+
 		<query-defs>
+			<!-- Optimistic lock on priority. Split by NULL / non-NULL expected value so it works on both MySQL and H2. -->
+			<query name="update-priority-if-null" type="UPDATE">
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='priority'/> = ${priority}
+					WHERE <FIELD name='id'/> = ${key-id}
+					AND <FIELD name='priority'/> IS NULL
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="update-priority-if-equals" type="UPDATE">
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='priority'/> = ${priority}
+					WHERE <FIELD name='id'/> = ${key-id}
+					AND <FIELD name='priority'/> = ${expected-priority}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-all" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[

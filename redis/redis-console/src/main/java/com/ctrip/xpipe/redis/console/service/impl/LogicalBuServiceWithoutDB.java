@@ -19,7 +19,9 @@ import org.springframework.web.client.RestClientException;
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Conditional(ConsoleDisableDbCondition.class)
@@ -91,6 +93,22 @@ public class LogicalBuServiceWithoutDB implements LogicalBuService {
 
     @Override
     public void delete(long id) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<Long, Integer> findAllPriorities() {
+        Map<Long, Integer> result = new HashMap<>();
+        for (LogicalBuModel model : allLogicalBus.getData()) {
+            if (model.getPriority() != null) {
+                result.put(model.getId(), model.getPriority());
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean casPriority(long id, Integer expected, Integer target) {
         throw new UnsupportedOperationException();
     }
 

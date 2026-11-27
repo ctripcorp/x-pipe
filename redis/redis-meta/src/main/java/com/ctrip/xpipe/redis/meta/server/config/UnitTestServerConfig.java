@@ -37,6 +37,9 @@ public class UnitTestServerConfig implements MetaServerConfig{
 
 	private KeeperElectStrategy keeperElectStrategy = KeeperElectStrategy.AUTO;
 
+	/** 0 = re-elect immediately, keeps existing tests deterministic; throttling tests set it explicitly. */
+	private int keeperPriorityReElectRatePerSecond = 0;
+
 	private String tfsGatewayHost = DefaultMetaServerConfig.DEFAULT_TFS_GATEWAY_HOST;
 
 	private long tfsGatewayAppId = DefaultMetaServerConfig.DEFAULT_TFS_GATEWAY_APP_ID;
@@ -229,6 +232,16 @@ public class UnitTestServerConfig implements MetaServerConfig{
 
 	public UnitTestServerConfig setTfsDirPathTemplate(String tfsDirPathTemplate) {
 		this.tfsDirPathTemplate = tfsDirPathTemplate;
+		return this;
+	}
+
+	@Override
+	public int getKeeperPriorityReElectRatePerSecond() {
+		return keeperPriorityReElectRatePerSecond;
+	}
+
+	public UnitTestServerConfig setKeeperPriorityReElectRatePerSecond(int keeperPriorityReElectRatePerSecond) {
+		this.keeperPriorityReElectRatePerSecond = keeperPriorityReElectRatePerSecond;
 		return this;
 	}
 

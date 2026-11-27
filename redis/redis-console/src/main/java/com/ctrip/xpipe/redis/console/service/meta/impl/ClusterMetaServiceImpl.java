@@ -63,6 +63,8 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
     private ApplierService applierService;
     @Autowired
     private AzGroupClusterRepository azGroupClusterRepository;
+    @Autowired
+    private LogicalBuKeeperPriorityOverrider logicalBuKeeperPriorityOverrider;
 
     private static final String DC_NAME_DELIMITER = ",";
 
@@ -145,7 +147,8 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
             clusterMeta.setType(azGroupType.toString());
             clusterMeta.setAzGroupType(null);
         }
-        return clusterMeta;
+        // Must run last: covers both normal and source (asymmetric) shards.
+        return logicalBuKeeperPriorityOverrider.override(clusterMeta);
     }
 
     private Map<Long, DcClusterTbl> generateDcClusterMap(long clusterDbId) {

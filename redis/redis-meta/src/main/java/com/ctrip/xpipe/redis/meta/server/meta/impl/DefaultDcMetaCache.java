@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperPriorityUtils;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaReloader;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.*;
 import com.google.common.collect.Maps;
@@ -39,7 +40,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *         Jul 7, 2016
  */
 @Component
-public class DefaultDcMetaCache extends AbstractLifecycleObservable implements DcMetaCache, Runnable, TopElement {
+public class DefaultDcMetaCache extends AbstractLifecycleObservable implements DcMetaCache, DcMetaReloader, Runnable, TopElement {
 
 	public static final String META_MODIFY_JUST_NOW_TEMPLATE = "current dc meta modifyTime {}, loadTime {}";
 
@@ -134,35 +135,63 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		super.doStop();
 	}
 
+	/** Serializes the periodic refresh and {@link #apply} so two DcMetas are never compared/applied concurrently. */
+	private final Object refreshLock = new Object();
+
+	/** loadTime of the newest DcMeta applied (or found identical); older DcMetas handed by peers are ignored. */
+	private volatile long lastAppliedLoadTime = 0;
+
 	@Override
 	public void run() {
 
 		try {
 			if (consoleService != null) {
-				long metaLoadTime = System.currentTimeMillis();
-				DcMeta future = loadMetaFromConsole();
-				lastSuccessfulLoadMilli.set(System.currentTimeMillis());
-				DcMeta current = dcMetaManager.get().getDcMeta();
-
-				changeDcMeta(current, future, metaLoadTime);
-				checkRouteChange(current, future);
+				Pulled pulled = pull();
+				apply(pulled.getDcMeta(), pulled.getLoadTime());
 			}
 		} catch (Throwable th) {
 			logger.error("[run]" + th.getMessage());
 		}
 	}
 
+	@Override
+	public Pulled pull() {
+		if (consoleService == null) {
+			throw new IllegalStateException("no console service, meta is loaded from file");
+		}
+		long metaLoadTime = System.currentTimeMillis();
+		DcMeta future = loadMetaFromConsole();
+		lastSuccessfulLoadMilli.set(System.currentTimeMillis());
+		return new Pulled(future, metaLoadTime);
+	}
+
+	@Override
+	public ReloadStatus apply(DcMeta future, long metaLoadTime) {
+		synchronized (refreshLock) {
+			if (metaLoadTime < lastAppliedLoadTime) {
+				logger.info("[apply][ignore older meta]loadTime={}, lastApplied={}", metaLoadTime, lastAppliedLoadTime);
+				return ReloadStatus.NO_CHANGE;
+			}
+			DcMeta current = dcMetaManager.get().getDcMeta();
+			ReloadStatus status = changeDcMeta(current, future, metaLoadTime);
+			checkRouteChange(current, future);
+			if (status == ReloadStatus.APPLIED || status == ReloadStatus.NO_CHANGE) {
+				lastAppliedLoadTime = metaLoadTime;
+			}
+			return status;
+		}
+	}
 	private DcMeta loadMetaFromConsole() {
 		Set<String> types = metaServerConfig.getOwnClusterType();
 		return consoleService.getDcMeta(currentDc, types);
 	}
 
 	@VisibleForTesting
-	protected void changeDcMeta(DcMeta current, DcMeta future, final long metaLoadTime) {
+	protected ReloadStatus changeDcMeta(DcMeta current, DcMeta future, final long metaLoadTime) {
 
 		if (!mayMetaUpdateFromConsole(metaLoadTime)) {
 			logger.info("[run][skip change dc meta]" + META_MODIFY_JUST_NOW_TEMPLATE, metaModifyTime.get(), metaLoadTime);
-			return;
+			return ReloadStatus.SKIPPED_RECENT_MODIFY;
 		}
 
 		KeeperPriorityUtils.normalizeDcMeta(future);
@@ -175,7 +204,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 			logger.error("[run][modify count size too big]{}, {}, {}", META_MODIFY_PROTECT_COUNT,
 					dcMetaComparator.totalChangedCount(), dcMetaComparator);
 			EventMonitor.DEFAULT.logAlertEvent("remove too many:" + dcMetaComparator.totalChangedCount());
-			return;
+			return ReloadStatus.REJECTED_TOO_MANY;
 		}
 
 		DcMetaManager newDcMetaManager = DefaultDcMetaManager.buildFromDcMeta(future);
@@ -189,7 +218,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 		if (!dcMetaUpdated) {
 			logger.info("[run][skip change dc meta]" + META_MODIFY_JUST_NOW_TEMPLATE, metaModifyTime, metaLoadTime);
-			return;
+			return ReloadStatus.SKIPPED_RECENT_MODIFY;
 		}
 
 		logger.info("[run][change dc meta]");
@@ -201,7 +230,9 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 					StringUtil.join(",", (comparator) -> comparator.idDesc(), dcMetaComparator.getMofified()))
 			);
 			notifyObservers(dcMetaComparator);
+			return ReloadStatus.APPLIED;
 		}
+		return ReloadStatus.NO_CHANGE;
 	}
 
 	private int drClusterNums(DcMetaComparator comparator) {

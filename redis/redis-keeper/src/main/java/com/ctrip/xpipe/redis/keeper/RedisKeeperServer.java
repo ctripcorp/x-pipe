@@ -212,6 +212,11 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 
 	PsyncObserver createPsyncObserverForRdbOnlyRepl();
 
+	/** Publish the current KeeperMeta into the existing latch node without changing its sequence. */
+	default boolean publishElectionData() {
+		return false;
+	}
+
 	/** @return true when the latch was re-created (and the current KeeperMeta re-published). */
 	boolean resetElection();
 

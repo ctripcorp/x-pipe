@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaReloader;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -70,17 +71,40 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
         DcMeta future = MetaCloneFacade.INSTANCE.clone(dcMeta);
         future.getClusters().put("mockTestClusterForChangeSuccess", new ClusterMeta());
-        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis());
+        Assert.assertEquals(DcMetaReloader.ReloadStatus.APPLIED, dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() + 1));
         Assert.assertEquals(dcMetaCache.getClusters().size(), future.getClusters().size());
+
+        // same meta again: nothing to apply
+        Assert.assertEquals(DcMetaReloader.ReloadStatus.NO_CHANGE,
+                dcMetaCache.changeDcMeta(future, MetaCloneFacade.INSTANCE.clone(future), System.currentTimeMillis() + 1));
 
         // check change skip
         dcMeta = future;
         future = MetaCloneFacade.INSTANCE.clone(future);
         future.getClusters().put("mockTestClusterForChangeSkip", new ClusterMeta());
-        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() - 10000);
+        Assert.assertEquals(DcMetaReloader.ReloadStatus.SKIPPED_RECENT_MODIFY,
+                dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() - 10000));
         Assert.assertNotEquals(dcMetaCache.getClusters().size(), future.getClusters().size());
     }
 
+    @Test
+    public void testApplyIgnoresOlderMetaThanLastApplied() {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        dcMetaCache.setMetaServerConfig(new UnitTestServerConfig());
+        DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
+        long now = System.currentTimeMillis() + 10;
+        // initialize the cache the same way the other tests do
+        dcMetaCache.changeDcMeta(dcMeta, MetaCloneFacade.INSTANCE.clone(dcMeta), now);
+
+        DcMeta newer = MetaCloneFacade.INSTANCE.clone(dcMeta);
+        newer.getClusters().put("newerCluster", new ClusterMeta().setId("newerCluster"));
+        Assert.assertEquals(DcMetaReloader.ReloadStatus.APPLIED, dcMetaCache.apply(newer, now + 20));
+
+        // a peer hands over a DcMeta pulled before the one already applied: it must not roll back
+        DcMeta older = MetaCloneFacade.INSTANCE.clone(dcMeta);
+        Assert.assertEquals(DcMetaReloader.ReloadStatus.NO_CHANGE, dcMetaCache.apply(older, now + 15));
+        Assert.assertTrue(dcMetaCache.getClusters().stream().anyMatch(c -> "newerCluster".equals(c.getId())));
+    }
     @Test
     public void testClusterModify() throws Exception {
         XpipeMeta xpipeMeta = getXpipeMeta();

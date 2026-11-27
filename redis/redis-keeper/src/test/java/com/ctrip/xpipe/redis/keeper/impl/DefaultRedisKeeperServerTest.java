@@ -119,6 +119,35 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	}
 
 	@Test
+	public void testPublishElectionDataDoesNotRestartElector() throws Exception {
+		LeaderElector elector = mock(LeaderElector.class);
+		LifecycleState electorState = mock(LifecycleState.class);
+		when(elector.getLifecycleState()).thenReturn(electorState);
+		when(electorState.canStop()).thenReturn(true);
+		when(electorState.canDispose()).thenReturn(true);
+		when(elector.publishElectionData()).thenReturn(true);
+
+		LeaderElectorManager electorManager = mock(LeaderElectorManager.class);
+		when(electorManager.createLeaderElector(any())).thenReturn(elector);
+		KeeperMeta keeperMeta = createKeeperMeta();
+		DefaultRedisKeeperServer server = (DefaultRedisKeeperServer) createRedisKeeperServer(
+				getReplId().id(), keeperMeta, getKeeperConfig(), getReplicationStoreManagerBaseDir(keeperMeta),
+				electorManager);
+		server.initialize();
+		server.start();
+
+		try {
+			Assert.assertTrue(server.publishElectionData());
+			Assert.assertTrue(server.getLastElectionResetTime() > 0);
+			verify(elector).publishElectionData();
+			verify(elector, never()).stop();
+		} finally {
+			server.stop();
+			server.dispose();
+		}
+	}
+
+	@Test
 	public void testResetDuringStopDoesNotRestartElection() throws Exception {
 		LeaderElector elector = mock(LeaderElector.class);
 		LifecycleState electorState = mock(LifecycleState.class);

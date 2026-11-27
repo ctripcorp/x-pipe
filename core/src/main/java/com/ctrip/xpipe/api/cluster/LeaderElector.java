@@ -13,4 +13,13 @@ public interface LeaderElector extends Lifecycle {
 
 	boolean hasLeaderShip();
 
+	/**
+	 * Publish the latest election context into this elector's existing ephemeral node.
+	 * The node path and sequence stay unchanged. Returns false when the node is not
+	 * ready or ZooKeeper rejects the update.
+	 */
+	default boolean publishElectionData() {
+		return false;
+	}
+
 }

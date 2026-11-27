@@ -35,6 +35,8 @@ import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainer
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperPriorityReElectThrottlerTest;
+import com.ctrip.xpipe.redis.meta.server.rest.impl.DcMetaReloadControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssignerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperElectReElectServiceTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.MultiPathKeeperElectorManagerTest;
@@ -94,6 +96,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	KeeperRoleAssignerTest.class,
 	KeeperElectReElectServiceTest.class,
 	DefaultKeeperElectorManagerTest.class,
+	KeeperPriorityReElectThrottlerTest.class,
+	DcMetaReloadControllerTest.class,
 	DefaultApplierElectorManagerTest.class,
 	MultiPathKeeperElectorManagerTest.class,
 	//AddKeeperCommandTest.class,

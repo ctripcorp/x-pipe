@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi4Beacon;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationInfoApi;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.MigrationController;
+import com.ctrip.xpipe.redis.console.controller.consoleportal.LogicalBuController;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.method.HandlerMethod;
@@ -43,7 +44,9 @@ public class XPipeServletInvocableHandlerMethod extends ServletInvocableHandlerM
                     || getBean() instanceof MigrationApi4Beacon
                     || getBean() instanceof Health
                     || getBean() instanceof MigrationInfoApi
-                    || getBean() instanceof MigrationController) {
+                    || getBean() instanceof MigrationController
+                    // keeper-ops execute is synchronous and may take ~100s, beyond servlet.method.timeout.milli
+                    || getBean() instanceof LogicalBuController) {
 
                 EventMonitor.DEFAULT.logEvent(EVENT_TYPE_SERVLET_HANDLER, "Sync");
                 return getBridgedMethod().invoke(getBean(), args);

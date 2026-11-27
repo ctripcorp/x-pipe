@@ -49,9 +49,19 @@ public class TestWithoutZkProfile extends AbstractProfile{
 		return new TestKeeperCommonConfig();
 	}
 
+	/** Optional per-process overrides for local multi-container runs (see AppTest); unset keeps the defaults. */
+	public static final String KEY_CONTAINER_STORE_DIR = "keeper.container.store.dir";
+	public static final String KEY_CONTAINER_MODE = "keeper.container.mode";
+
 	@Bean
 	public KeeperContainerConfig getKeeperContainerConfig(){
-		return new TestKeeperContainerConfig(AbstractTest.getUserHome() + "/rsd");
+		TestKeeperContainerConfig config = new TestKeeperContainerConfig(
+				System.getProperty(KEY_CONTAINER_STORE_DIR, AbstractTest.getUserHome() + "/rsd"));
+		String mode = System.getProperty(KEY_CONTAINER_MODE);
+		if (mode != null && !mode.trim().isEmpty()) {
+			config.setMode(mode.trim());
+		}
+		return config;
 	}
 	
 	@Bean

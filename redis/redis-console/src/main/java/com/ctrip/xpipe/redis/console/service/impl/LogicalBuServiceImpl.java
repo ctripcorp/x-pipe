@@ -8,9 +8,11 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.LogicalBuService;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +24,13 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +41,9 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
     private LogicalBuOrgTblDao logicalBuOrgTblDao;
 
     private KeepercontainerTblDao keepercontainerTblDao;
+
+    @Autowired
+    private DcService dcService;
 
     @PostConstruct
     private void initAdditionalDaos() {
@@ -55,7 +66,9 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
         if (all == null) {
             return Collections.emptyList();
         }
-        return all.stream().map(this::toModel).collect(Collectors.toList());
+        // one DC_TBL read per request, shared by every BU row
+        Map<Long, String> dcNames = loadDcNames();
+        return all.stream().map(tbl -> toModel(tbl, dcNames)).collect(Collectors.toList());
     }
 
     @Override
@@ -69,7 +82,7 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
         if (logicalBuTbl == null) {
             throw new BadRequestException("Logical BU not found: " + id);
         }
-        LogicalBuModel model = toModel(logicalBuTbl);
+        LogicalBuModel model = toModel(logicalBuTbl, loadDcNames());
         model.setKeeperContainers(loadKeeperContainers(id));
         return model;
     }
@@ -120,11 +133,49 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
         queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
-                return dao.updateById(existing, LogicalBuTblEntity.UPDATESET_FULL);
+                // BASIC excludes priority: portal edits must not overwrite a concurrent keeper-ops switch
+                return dao.updateById(existing, LogicalBuTblEntity.UPDATESET_BASIC);
             }
         });
         replaceOrgMappings(id, model.getCmsOrgIds());
         return findById(id);
+    }
+
+    @Override
+    public Map<Long, Integer> findAllPriorities() {
+        List<LogicalBuTbl> all = queryHandler.handleQuery(new DalQuery<List<LogicalBuTbl>>() {
+            @Override
+            public List<LogicalBuTbl> doQuery() throws DalException {
+                return dao.findAll(LogicalBuTblEntity.READSET_PRIORITY);
+            }
+        });
+        if (all == null || all.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Integer> result = new HashMap<>();
+        for (LogicalBuTbl tbl : all) {
+            if (tbl.getPriority() != null) {
+                result.put(tbl.getId(), tbl.getPriority());
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean casPriority(long id, Integer expected, Integer target) {
+        LogicalBuTbl proto = dao.createLocal();
+        proto.setKeyId(id);
+        proto.setPriority(target);
+        proto.setExpectedPriority(expected);
+        // Must not go through queryHandler.handleUpdate: it treats "0 rows" as a failure and hides the CAS result.
+        try {
+            int updated = expected == null
+                    ? dao.updatePriorityIfNull(proto, LogicalBuTblEntity.UPDATESET_FULL)
+                    : dao.updatePriorityIfEquals(proto, LogicalBuTblEntity.UPDATESET_FULL);
+            return updated == 1;
+        } catch (DalException e) {
+            throw new ServerException("Update logical bu priority failed." + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -225,16 +276,44 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
         }, true);
     }
 
-    private LogicalBuModel toModel(LogicalBuTbl tbl) {
+    private LogicalBuModel toModel(LogicalBuTbl tbl, Map<Long, String> dcNames) {
         LogicalBuModel model = new LogicalBuModel();
         model.setId(tbl.getId());
         model.setName(tbl.getName());
         model.setTfsFsId(tbl.getTfsFsId());
+        model.setPriority(tbl.getPriority());
         model.setActive(tbl.isActive());
         model.setDescription(tbl.getDescription());
         model.setCmsOrgIds(loadCmsOrgIds(tbl.getId()));
-        model.setKeeperContainerCount(loadKeeperContainerCount(tbl.getId()));
+        fillKeeperContainerStats(model, loadKeeperContainerTbls(tbl.getId()), dcNames);
         return model;
+    }
+
+    private Map<Long, String> loadDcNames() {
+        Map<Long, String> dcNames = dcService.dcNameMap();
+        return dcNames == null ? Collections.emptyMap() : dcNames;
+    }
+
+    /** Total and per-idc counts of the BU's active keepercontainers; the BU's idcs are where those containers are. */
+    private void fillKeeperContainerStats(LogicalBuModel model, List<KeepercontainerTbl> containers,
+                                          Map<Long, String> dcNames) {
+        Set<Long> seen = new HashSet<>();
+        Map<String, Integer> perIdc = new TreeMap<>();
+        if (containers != null) {
+            for (KeepercontainerTbl container : containers) {
+                if (!seen.add(container.getKeepercontainerId())) {
+                    continue;
+                }
+                String idc = dcNames.get(container.getKeepercontainerDc());
+                if (idc == null) {
+                    idc = String.valueOf(container.getKeepercontainerDc());
+                }
+                perIdc.merge(idc, 1, Integer::sum);
+            }
+        }
+        model.setKeeperContainerCount(seen.size());
+        model.setIdcKeeperContainerCounts(new LinkedHashMap<>(perIdc));
+        model.setIdcNames(new ArrayList<>(perIdc.keySet()));
     }
 
     private List<Long> loadCmsOrgIds(long logicalBuId) {
@@ -250,11 +329,6 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
         return orgMappings.stream()
                 .map(LogicalBuOrgTbl::getCmsOrgId)
                 .collect(Collectors.toList());
-    }
-
-    private int loadKeeperContainerCount(long logicalBuId) {
-        List<KeepercontainerTbl> keeperContainers = loadKeeperContainerTbls(logicalBuId);
-        return keeperContainers == null ? 0 : keeperContainers.size();
     }
 
     private List<LogicalBuKeeperContainerModel> loadKeeperContainers(long logicalBuId) {

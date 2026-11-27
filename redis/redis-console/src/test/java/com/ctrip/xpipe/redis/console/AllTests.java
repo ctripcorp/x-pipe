@@ -87,6 +87,10 @@ import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultReactorMetaServerConsoleServiceEmptyBodyTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import com.ctrip.xpipe.redis.console.service.impl.LogicalBuPriorityIntegrationTest;
+import com.ctrip.xpipe.redis.console.service.logicalbu.LayeredCallerTest;
+import com.ctrip.xpipe.redis.console.service.logicalbu.LogicalBuKeeperOpsServiceTest;
+import com.ctrip.xpipe.redis.console.service.meta.impl.LogicalBuKeeperPriorityOverriderTest;
 import org.junit.runners.Suite.SuiteClasses;
 
 /**
@@ -111,6 +115,10 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperContainerServiceImplLogicalBuTest.class,
         LogicalBuServiceImplResolveTest.class,
         LogicalBuServiceWithoutDBTest.class,
+        LogicalBuPriorityIntegrationTest.class,
+        LogicalBuKeeperPriorityOverriderTest.class,
+        LayeredCallerTest.class,
+        LogicalBuKeeperOpsServiceTest.class,
         DefaultKeeperAdvancedServiceGetNewKeepersTest.class,
         DefaultKeeperAdvancedServiceFindBestKeepersTest.class,
         KeeperContainerCheckerServiceImplTest.class,

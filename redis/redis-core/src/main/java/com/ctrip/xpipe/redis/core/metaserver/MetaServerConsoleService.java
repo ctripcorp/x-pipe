@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.List;
+
 /**
  * used for console
  * @author wenchao.meng
@@ -21,6 +23,14 @@ public interface MetaServerConsoleService extends MetaServerService{
 	void clusterModified(String clusterId, ClusterMeta clusterMeta);
 
 	void clusterDeleted(String clusterId);
+
+	/**
+	 * Ask every MetaServer of this dc to pull DcMeta from console now (same path as the periodic refresh).
+	 * Returns one result per MetaServer instance; transport errors to the entry instance are thrown.
+	 */
+	default List<DcMetaReloadResult> reloadDcMeta() {
+		throw new UnsupportedOperationException("reloadDcMeta");
+	}
 	
 	/**
 	 * @param clusterId

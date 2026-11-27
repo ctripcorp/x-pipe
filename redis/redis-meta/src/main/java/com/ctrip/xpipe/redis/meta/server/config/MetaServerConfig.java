@@ -57,6 +57,15 @@ public interface MetaServerConfig extends CoreConfig {
 	KeeperElectStrategy getKeeperElectStrategy();
 
 	/**
+	 * Max shards per second (per MetaServer instance) re-elected because ONLY keeper priority changed,
+	 * e.g. a logical BU switched TFS ↔ BM. Spreads the switch instead of flipping thousands of shards at once.
+	 * {@code <= 0} disables throttling (re-elect immediately, the old behavior). Keeper failover is never throttled.
+	 */
+	default int getKeeperPriorityReElectRatePerSecond() {
+		return 20;
+	}
+
+	/**
 	 * TFS Gateway Host（含 scheme，无 path）。QConfig: {@code metaserver.tfs.gateway.host}。
 	 */
 	String getTfsGatewayHost();

@@ -331,6 +331,7 @@ CREATE TABLE `LOGICAL_BU_TBL` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `name` varchar(128) NOT NULL DEFAULT '' COMMENT 'logical bu display name',
   `tfs_fs_id` varchar(128) NOT NULL DEFAULT '' COMMENT 'tfs fs id for ForceCloseDir',
+  `priority` int(11) DEFAULT NULL COMMENT 'TFS keeper priority, NULL means use keeper_priority',
   `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'accept new cluster binding',
   `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description',
   `DataChange_LastTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',

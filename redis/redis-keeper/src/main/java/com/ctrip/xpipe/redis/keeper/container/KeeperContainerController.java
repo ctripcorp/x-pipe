@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.container.resp.RestResp;
 import com.ctrip.xpipe.redis.keeper.container.resp.UnclosedHandlesResp;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
@@ -117,6 +118,27 @@ public class KeeperContainerController extends AbstractController {
     public UnclosedHandlesResp unclosedHandles() {
         logger.info("[unclosedHandles]");
         return UnclosedHandlesResp.from(containerResourceManager.getDeferredHandleCloser(), System.currentTimeMillis());
+    }
+
+    @PostMapping("/health/recover")
+    public String recoverHealthState(@RequestBody KeeperTransMeta keeperTransMeta) {
+        if (keeperTransMeta == null || keeperTransMeta.getReplId() == null) {
+            return "replId is required";
+        }
+        logger.info("[recoverHealthState]{}", keeperTransMeta);
+        try {
+            keeperContainerService.recoverHealthState(ReplId.from(keeperTransMeta.getReplId()));
+            return "OK";
+        } catch (RedisKeeperRuntimeException e) {
+            String reason = e.getErrorMessage() == null
+                    ? e.getMessage() : e.getErrorMessage().getErrorMessage();
+            logger.warn("[recoverHealthState][fail]{}", keeperTransMeta, e);
+            return StringUtil.isEmpty(reason) ? e.getClass().getSimpleName() : reason;
+        } catch (Exception e) {
+            String reason = e.getMessage();
+            logger.warn("[recoverHealthState][fail]{}", keeperTransMeta, e);
+            return StringUtil.isEmpty(reason) ? e.getClass().getSimpleName() : reason;
+        }
     }
 
     @PostMapping("/election/reset" )

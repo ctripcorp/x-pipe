@@ -290,6 +290,36 @@ public class TfsHealthCheckerTest {
     }
 
     @Test
+    public void testApiRecoversPendingKeeperAndRetriesUntilPublished() {
+        KeeperMeta meta = new KeeperMeta().setHealthState(HealthState.RECOVERED_PENDING.name());
+        when(keeper1.getCurrentKeeperMeta()).thenReturn(meta);
+
+        Assert.assertTrue(checker.recoverToHealthy(keeper1));
+        Assert.assertEquals(HealthState.HEALTHY, checker.state("repl_1"));
+        Assert.assertEquals(HealthState.HEALTHY.name(), meta.getHealthState());
+        Assert.assertTrue(notified.isEmpty());
+
+        baseline(600);
+        checker.check(System.nanoTime());
+        Assert.assertEquals(1, notified.size());
+        Assert.assertEquals("repl_1", notified.get(0));
+
+        checker.onElectionReset("repl_1");
+        checker.check(System.nanoTime());
+        Assert.assertEquals(1, notified.size());
+    }
+
+    @Test
+    public void testApiRejectsRecoveryBeforeRecoveredPending() {
+        KeeperMeta meta = new KeeperMeta().setHealthState(HealthState.DOWN.name());
+        when(keeper1.getCurrentKeeperMeta()).thenReturn(meta);
+
+        Assert.assertFalse(checker.recoverToHealthy(keeper1));
+        Assert.assertEquals(HealthState.DOWN, checker.state("repl_1"));
+        Assert.assertEquals(HealthState.DOWN.name(), meta.getHealthState());
+    }
+
+    @Test
     public void testRecoveredPendingStaysUntilTheApiClearsIt() {
         Assert.assertEquals(HealthState.HEALTHY, TfsHealthChecker.next(HealthState.HEALTHY, false));
         Assert.assertEquals(HealthState.SICK, TfsHealthChecker.next(HealthState.HEALTHY, true));

@@ -29,4 +29,12 @@ public interface KeeperContainerCheckerService {
 
     void releaseRdb(String dcName, String ip, String hostname, int port, Long replId);
 
+    /** Keepers hosted by a keepercontainer, addressed like {@link #resetKeeper} (hostname resolved in dcName). */
+    List<KeeperInstanceMeta> getAllKeepers(String dcName, String ip, String hostname, int port);
+
+    /**
+     * POST /keepers/health/recover: RECOVERED_PENDING → HEALTHY, HEALTHY is a no-op, other states are rejected.
+     * @return "OK" on success, otherwise the reason given by the keepercontainer
+     */
+    String recoverHealthState(String dcName, String ip, String hostname, int port, Long replId);
 }
