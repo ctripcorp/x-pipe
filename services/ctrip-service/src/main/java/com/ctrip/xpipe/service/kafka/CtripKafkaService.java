@@ -33,9 +33,15 @@ public class CtripKafkaService implements KafkaService {
 
     private static final String TIMESTAMP_TOPIC = "bbz.fx.xpipe.ck.gtid.timestamp";
 
+    // key 表 topic 的 ACL user
     private static final String ACL_USER = "kMTApwMDMzNzAws";
 
     private static final String ACL_PRO_USER = "kMTApwMDA0Mzc2s";
+
+    // 时间表 topic 的 ACL user，测试环境与生产环境相同
+    private static final String TIMESTAMP_ACL_USER = "kMTApwMDA0Mzc2s";
+
+    private static final String TIMESTAMP_ACL_PRO_USER = "kMTApwMDA0Mzc2s";
 
     private static final String CUSTOM_CLIENT_ID = "bbzfxxpipeckgtid";
 
@@ -74,7 +80,7 @@ public class CtripKafkaService implements KafkaService {
                 String result = TransactionMonitor.DEFAULT.logTransactionSwallowException("KafkaProducer","initialize",()->{
                     long start = System.currentTimeMillis();
                     for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
-                        pool[i] = createKafkaProducer(bufferMemory, KEY_TOPIC, CUSTOM_CLIENT_ID);
+                        pool[i] = createKafkaProducer(bufferMemory, KEY_TOPIC, CUSTOM_CLIENT_ID, ACL_USER, ACL_PRO_USER);
                     }
                     logger.info("[startProducer] elapse {}",System.currentTimeMillis()-start);
                     return "OK";
@@ -92,7 +98,8 @@ public class CtripKafkaService implements KafkaService {
     private void initTimestampProducer(Producer<String,Object>[] pool, long bufferMemory) {
         Producer<String, Object> producer;
         try {
-            producer = createKafkaProducer(bufferMemory, TIMESTAMP_TOPIC, TIMESTAMP_CLIENT_ID);
+            producer = createKafkaProducer(bufferMemory, TIMESTAMP_TOPIC, TIMESTAMP_CLIENT_ID,
+                    TIMESTAMP_ACL_USER, TIMESTAMP_ACL_PRO_USER);
         } catch (Throwable th) {
             logger.warn("[initTimestampProducer] fail", th);
             EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA, "TimestampProducer-InitFail");
@@ -147,7 +154,8 @@ public class CtripKafkaService implements KafkaService {
         return timestampInitSuccess.get();
     }
 
-    private Producer<String,Object> createKafkaProducer(long bufferMemory, String topic, String clientId) {
+    private Producer<String,Object> createKafkaProducer(long bufferMemory, String topic, String clientId,
+                                                        String aclUser, String proAclUser) {
         Producer<String, Object> producer = null;
         // 自定义配置，按需配置
         Properties properties = new Properties();
@@ -160,7 +168,7 @@ public class CtripKafkaService implements KafkaService {
         properties.put(ProducerConfig.RETRIES_CONFIG, "2");
         properties.put(ProducerConfig.PARTITIONER_AVAILABILITY_TIMEOUT_MS_CONFIG, "100");
         properties.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, "50");
-        properties.put(ProducerConfig.CLIENT_ID_CONFIG, ACL_USER + "-" + clientId);
+        properties.put(ProducerConfig.CLIENT_ID_CONFIG, aclUser + "-" + clientId);
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, CustomHermesSerializer.class.getCanonicalName());
 
@@ -174,7 +182,7 @@ public class CtripKafkaService implements KafkaService {
 //                            .hermesAvroSerializer()
                             .customProperties(properties) // 从此传入自定义配置，无则不需要关心
                             .topic(topic) // 要发送的topic
-                            .aclUser(ACL_PRO_USER) // acl token如有则替换填入此处，无则忽略
+                            .aclUser(proAclUser) // acl token如有则替换填入此处，无则忽略
                             .build();
                 } else {
                     producer = CKafkaClientBuilder // producer单例需要用户自己维护
@@ -182,7 +190,7 @@ public class CtripKafkaService implements KafkaService {
 //                            .hermesAvroSerializer()
                             .customProperties(properties) // 从此传入自定义配置，无则不需要关心
                             .topic(topic) // 要发送的topic
-                            .aclUser(ACL_USER) // acl token如有则替换填入此处，无则忽略
+                            .aclUser(aclUser) // acl token如有则替换填入此处，无则忽略
                             .build();
                 }
 
